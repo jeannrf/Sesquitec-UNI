@@ -1,0 +1,28 @@
+@import "tailwindcss";
+
+* {
+  font-family: 'Inter', sans-serif;
+}
+
+@layer utilities {
+  .bg-uni { background-color: #800404; }
+  .bg-uni-dark { background-color: #5a0303; }
+  .text-uni { color: #800404; }
+  .border-uni { border-color: #800404; }
+  .ring-uni { --tw-ring-color: #800404; }
+  .hover-uni:hover { background-color: #5a0303; }
+
+  .event-card-overlay {
+    transform: translateY(100%);
+    transition: transform 0.35s ease;
+  }
+  .event-card:hover .event-card-overlay {
+    transform: translateY(0);
+  }
+  .event-card-title {
+    transition: opacity 0.2s ease;
+  }
+  .event-card:hover .event-card-title {
+    opacity: 0;
+  }
+}
