@@ -1,30 +1,6 @@
 import { useState } from 'react'
 import { QrCode, Search, CheckCircle, XCircle, Shield } from 'lucide-react'
-
-const mockValidations = {
-  'CERT-UNI-2026-72341567-001': {
-    valid: true,
-    titular: 'Juan Carlos Pérez López',
-    dni: '72341567',
-    evento: 'Simposio de Ciencias Básicas',
-    fecha: '10 de Junio, 2026',
-    horas: 4,
-    tipo: 'Participación',
-    rector: 'Dr. Alfonso Fujimori Morel',
-    emision: '15 de Junio, 2026',
-  },
-  'CERT-UNI-2026-45678901-002': {
-    valid: true,
-    titular: 'María Fernanda González Soto',
-    dni: '45678901',
-    evento: 'Foro de Innovación Tecnológica',
-    fecha: '18 de Junio, 2026',
-    horas: 3,
-    tipo: 'Ponente',
-    rector: 'Dr. Alfonso Fujimori Morel',
-    emision: '22 de Junio, 2026',
-  },
-}
+import { db } from '../services/db'
 
 export default function Validar() {
   const [code, setCode] = useState('')
@@ -33,9 +9,28 @@ export default function Validar() {
 
   const handleValidate = (e) => {
     e.preventDefault()
-    if (!code.trim()) return
+    const cleanCode = code.trim().toUpperCase()
+    if (!cleanCode) return
     setSearched(true)
-    setResult(mockValidations[code.trim().toUpperCase()] || null)
+    
+    const certs = db.getCertificates()
+    const found = certs.find(c => c.codigoValidacion.toUpperCase() === cleanCode || c.id.toUpperCase() === cleanCode)
+    
+    if (found) {
+      setResult({
+        valid: true,
+        titular: found.titular,
+        dni: found.dni,
+        evento: found.evento,
+        fecha: found.fecha,
+        horas: found.horas,
+        tipo: found.tipo,
+        rector: found.rector || 'Dr. Alfonso Fujimori Morel',
+        emision: found.emitido,
+      })
+    } else {
+      setResult(null)
+    }
   }
 
   return (

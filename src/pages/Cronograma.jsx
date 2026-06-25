@@ -1,136 +1,9 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { ChevronDown, ChevronUp, MapPin, Clock, Calendar, ExternalLink, Play } from 'lucide-react'
+import { db } from '../services/db'
 
-const months = ['Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre']
-
-const events = {
-  Junio: [
-    {
-      id: 'jun1',
-      status: 'post',
-      date: '10 Jun 2026',
-      time: '09:00 – 13:00',
-      title: 'Simposio de Ciencias Básicas',
-      organizer: 'Facultad de Ciencias',
-      location: 'Auditorium A, UNI',
-      description: 'Simposio académico con presentaciones sobre matemáticas, física y química aplicadas a la ingeniería.',
-      photos: '#',
-      report: '#',
-      video: '#',
-    },
-    {
-      id: 'jun2',
-      status: 'post',
-      date: '18 Jun 2026',
-      time: '14:00 – 18:00',
-      title: 'Foro de Innovación Tecnológica',
-      organizer: 'UNICODE',
-      location: 'Aula Magna, UNI',
-      description: 'Exposición de proyectos estudiantiles y ponencias sobre innovación y emprendimiento.',
-      photos: '#',
-      report: '#',
-      video: '#',
-    },
-  ],
-  Julio: [
-    {
-      id: 'jul1',
-      status: 'pre',
-      date: '14 Jul 2026',
-      time: '08:00 – 18:00',
-      title: 'Encuentro Internacional de Ingeniería UNI',
-      organizer: 'Comisión del Sesquicentenario',
-      location: 'Teatro UNI, Lima',
-      description:
-        'Evento central del Sesquicentenario. Incluye 10 conferencias magistrales con ponentes nacionales e internacionales en áreas de Ingeniería Civil, Sistemas, Mecánica, Eléctrica y más.',
-      registrationOpen: true,
-      quota: 850,
-      mapsUrl: '#',
-    },
-    {
-      id: 'jul2',
-      status: 'pre',
-      date: '25 Jul 2026',
-      time: '10:00 – 12:00',
-      title: 'Ceremonia de Aniversario Oficial',
-      organizer: 'Rectorado UNI',
-      location: 'Teatro UNI, Lima',
-      description: 'Ceremonia oficial de celebración de los 150 años de la UNI con presencia de autoridades nacionales.',
-      registrationOpen: false,
-      quota: 0,
-    },
-  ],
-  Agosto: [
-    {
-      id: 'ago1',
-      status: 'pre',
-      date: '08 Ago 2026',
-      time: '09:00 – 17:00',
-      title: 'Congreso de Ingeniería Ambiental',
-      organizer: 'Facultad de Ingeniería Ambiental',
-      location: 'Auditorium C, UNI',
-      description: 'Congreso sobre energías renovables, gestión ambiental y tecnologías verdes para el desarrollo sostenible del Perú.',
-      registrationOpen: true,
-      quota: 300,
-    },
-    {
-      id: 'ago2',
-      status: 'pre',
-      date: '22 Ago 2026',
-      time: '19:00 – 23:00',
-      title: 'Cena de Gala de Egresados',
-      organizer: 'Comisión del Sesquicentenario',
-      location: 'Gran Hotel Bolívar, Lima',
-      description: 'Evento social exclusivo para egresados de la UNI. Cena, música en vivo y reconocimientos especiales.',
-      registrationOpen: true,
-      quota: 500,
-      isPaid: true,
-    },
-  ],
-  Septiembre: [
-    {
-      id: 'sep1',
-      status: 'pre',
-      date: '15 Sep 2026',
-      time: '09:00 – 13:00',
-      title: 'Feria de Empleo UNI 2026',
-      organizer: 'Oficina de Bienestar Universitario',
-      location: 'Pabellón Central, UNI',
-      description: 'Conecta con más de 50 empresas líderes en ingeniería y tecnología. Trae tu CV actualizado.',
-      registrationOpen: true,
-      quota: 1200,
-    },
-  ],
-  Octubre: [
-    {
-      id: 'oct1',
-      status: 'pre',
-      date: '10 Oct 2026',
-      time: '10:00 – 14:00',
-      title: 'Hackathon Sesquicentenario',
-      organizer: 'UNICODE',
-      location: 'Laboratorios de Cómputo, UNI',
-      description: 'Competencia de 48 horas para resolver problemas reales de ingeniería con tecnología.',
-      registrationOpen: false,
-      quota: 200,
-    },
-  ],
-  Noviembre: [
-    {
-      id: 'nov1',
-      status: 'pre',
-      date: '28 Nov 2026',
-      time: '16:00 – 20:00',
-      title: 'Clausura del Sesquicentenario',
-      organizer: 'Comisión del Sesquicentenario',
-      location: 'Teatro UNI, Lima',
-      description: 'Ceremonia de clausura y presentación del libro histórico de los 150 años de la UNI.',
-      registrationOpen: false,
-      quota: 0,
-    },
-  ],
-}
+const months = ['Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre']
 
 function EventCard({ event }) {
   const [open, setOpen] = useState(false)
@@ -198,42 +71,62 @@ function EventCard({ event }) {
                       <MapPin size={14} />Ver en Google Maps
                     </a>
                   )}
-                  {event.registrationOpen ? (
-                    event.isPaid ? (
-                      <Link
-                        to="/cena-gala"
-                        className="block w-full text-center bg-[#800404] text-white font-black py-3 hover:bg-[#5a0303] transition-colors text-sm"
-                      >
-                        Comprar entradas
-                      </Link>
-                    ) : (
-                      <Link
-                        to="/inscripcion"
-                        className="block w-full text-center bg-[#800404] text-white font-black py-3 hover:bg-[#5a0303] transition-colors text-sm"
-                      >
-                        Inscribirme a este evento
-                      </Link>
-                    )
-                  ) : (
-                    <button disabled className="block w-full text-center bg-gray-200 text-gray-400 font-bold py-3 text-sm cursor-not-allowed">
-                      Inscripciones no disponibles
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => alert(`Detalles del Evento:\n\nEvento: ${event.title}\nOrganizador: ${event.organizer}\nLugar: ${event.location}\nFecha: ${event.date}\nHora: ${event.time}\n\nDescripción:\n${event.description}`)}
+                      className="flex-1 text-center border border-[#800404] text-[#800404] font-black py-3 hover:bg-red-50 transition-colors text-sm bg-white cursor-pointer"
+                    >
+                      Ver Evento
                     </button>
-                  )}
+                    {event.registrationOpen ? (
+                      event.isPaid ? (
+                        <Link
+                          to="/cena-gala"
+                          className="flex-1 text-center bg-[#800404] text-white font-black py-3 hover:bg-[#5a0303] transition-colors text-sm"
+                        >
+                          Comprar entradas
+                        </Link>
+                      ) : (
+                        <Link
+                          to="/inscripcion"
+                          className="flex-1 text-center bg-[#800404] text-white font-black py-3 hover:bg-[#5a0303] transition-colors text-sm"
+                        >
+                          Inscribirme
+                        </Link>
+                      )
+                    ) : (
+                      <button disabled className="flex-1 text-center bg-gray-200 text-gray-400 font-bold py-3 text-sm cursor-not-allowed">
+                        Cerrado
+                      </button>
+                    )}
+                  </div>
                 </div>
               ) : (
                 <div className="space-y-3">
-                  <p className="text-sm font-black text-gray-700 mb-3 uppercase tracking-wider">Recursos del evento</p>
-                  <a href={event.report} className="flex items-center gap-2 text-sm text-[#800404] hover:underline font-medium">
-                    <ExternalLink size={14} />Ver informe final
-                  </a>
-                  <a href={event.photos} className="flex items-center gap-2 text-sm text-[#800404] hover:underline font-medium">
-                    <ExternalLink size={14} />Galería de fotos
-                  </a>
-                  {event.video && (
-                    <a href={event.video} className="flex items-center gap-2 text-sm text-[#800404] hover:underline font-medium">
-                      <Play size={14} />Ver video en YouTube
+                  <p className="text-sm font-black text-gray-700 mb-1 uppercase tracking-wider">El evento ha finalizado</p>
+                  <button
+                    onClick={() => {
+                      alert(`RESUMEN (RECAP) DEL EVENTO:\n"${event.title}"\n\nEl evento finalizó exitosamente. Se ha registrado una asistencia masiva y los certificados de participación ya están disponibles para su descarga ingresando tu DNI en el buscador de certificados.`);
+                    }}
+                    className="w-full bg-[#800404] hover:bg-[#5a0303] text-white font-black py-3 text-sm transition-colors mb-3 flex items-center justify-center gap-2 cursor-pointer"
+                  >
+                    <Play size={15} /> Ver Recap del Evento
+                  </button>
+
+                  <div className="bg-white border border-gray-200 p-4 space-y-2">
+                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wide">Recursos del evento</p>
+                    <a href={event.report || '#'} className="flex items-center gap-2 text-sm text-[#800404] hover:underline font-medium">
+                      <ExternalLink size={14} />Ver informe final
                     </a>
-                  )}
+                    <a href={event.photos || '#'} className="flex items-center gap-2 text-sm text-[#800404] hover:underline font-medium">
+                      <ExternalLink size={14} />Galería de fotos
+                    </a>
+                    {event.video && (
+                      <a href={event.video || '#'} className="flex items-center gap-2 text-sm text-[#800404] hover:underline font-medium">
+                        <Play size={14} />Ver video en YouTube
+                      </a>
+                    )}
+                  </div>
                 </div>
               )}
             </div>
@@ -247,12 +140,46 @@ function EventCard({ event }) {
 export default function Cronograma() {
   const [activeMonth, setActiveMonth] = useState('Julio')
 
+  // Cargar eventos desde localStorage
+  const dbEvents = db.getEvents()
+
+  // Helper para extraer el mes en español a partir del string de fecha del evento
+  const getEventMonth = (dateStr) => {
+    if (!dateStr) return 'Otros'
+    const lower = dateStr.toLowerCase()
+    if (lower.includes('jun')) return 'Junio'
+    if (lower.includes('jul')) return 'Julio'
+    if (lower.includes('ago')) return 'Agosto'
+    if (lower.includes('sep')) return 'Septiembre'
+    if (lower.includes('oct')) return 'Octubre'
+    if (lower.includes('nov')) return 'Noviembre'
+    if (lower.includes('dic')) return 'Diciembre'
+    if (lower.includes('ene')) return 'Enero'
+    if (lower.includes('feb')) return 'Febrero'
+    if (lower.includes('mar')) return 'Marzo'
+    if (lower.includes('abr')) return 'Abril'
+    if (lower.includes('may')) return 'Mayo'
+    return 'Otros'
+  }
+
+  // Agrupar los eventos planos en un objeto por mes
+  const eventsByMonth = {}
+  dbEvents.forEach(ev => {
+    const month = getEventMonth(ev.date)
+    if (!eventsByMonth[month]) {
+      eventsByMonth[month] = []
+    }
+    eventsByMonth[month].push(ev)
+  })
+
+  const currentEvents = eventsByMonth[activeMonth] || []
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <div className="bg-[#800404] text-white py-12">
         <div className="max-w-7xl mx-auto px-4">
-          <h1 className="text-4xl font-black mb-2">Cronograma de Eventos</h1>
+          <h1 className="text-4xl font-black mb-2">Eventos</h1>
           <p className="text-white/70 text-lg">Todos los eventos del Sesquicentenario UNI 2026</p>
         </div>
       </div>
@@ -281,18 +208,18 @@ export default function Cronograma() {
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-2xl font-black text-gray-900">{activeMonth} 2026</h2>
           <span className="text-sm text-gray-400">
-            {(events[activeMonth] || []).length} evento(s)
+            {currentEvents.length} evento(s)
           </span>
         </div>
 
-        {(events[activeMonth] || []).length === 0 ? (
+        {currentEvents.length === 0 ? (
           <div className="text-center py-20 text-gray-300">
             <Calendar size={48} className="mx-auto mb-4 opacity-30" />
             <p className="text-lg text-gray-400">No hay eventos programados para {activeMonth}</p>
           </div>
         ) : (
           <div className="space-y-3">
-            {(events[activeMonth] || []).map(ev => (
+            {currentEvents.map(ev => (
               <EventCard key={ev.id} event={ev} />
             ))}
           </div>
