@@ -1,15 +1,6 @@
 import { useState } from 'react'
 import { Search, Download, Award, FileText, AlertCircle } from 'lucide-react'
-
-const mockCertificates = {
-  '72341567': [
-    { id: 'cert-001', evento: 'Simposio de Ciencias Básicas', fecha: '10 Jun 2026', horas: 4, emitido: '15 Jun 2026', tipo: 'Participación' },
-    { id: 'cert-002', evento: 'Foro de Innovación Tecnológica', fecha: '18 Jun 2026', horas: 3, emitido: '22 Jun 2026', tipo: 'Ponencia' },
-  ],
-  '45678901': [
-    { id: 'cert-003', evento: 'Simposio de Ciencias Básicas', fecha: '10 Jun 2026', horas: 4, emitido: '15 Jun 2026', tipo: 'Participación' },
-  ],
-}
+import { db } from '../services/db'
 
 export default function Certificados() {
   const [dni, setDni] = useState('')
@@ -22,7 +13,8 @@ export default function Certificados() {
     if (!/^\d{8}$/.test(dni)) { setError('Ingresa un DNI válido de 8 dígitos'); return }
     setError('')
     setSearched(true)
-    setResults(mockCertificates[dni] || [])
+    const certs = db.getCertificates()
+    setResults(certs.filter(c => c.dni === dni))
   }
 
   return (

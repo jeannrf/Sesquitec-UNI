@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect } from 'react'
+import { db } from '../services/db'
 
 const AuthContext = createContext(null)
 
@@ -18,12 +19,37 @@ export function AuthProvider({ children }) {
 
   // Load all users and check session from localStorage on mount
   useEffect(() => {
+    // Inicializar base de datos local (eventos, ponencias, certificados, logs)
+    db.initializeDb()
+
     const storedUsers = localStorage.getItem('uni_eventos_users')
     const activeSession = localStorage.getItem('uni_eventos_session')
     
     let parsedUsers = []
+    
+    const adminUser = {
+      nombres: 'Admin',
+      apellidos: 'Sesquitec UNI',
+      email: 'admin@uni.pe',
+      dni: '99999999',
+      telefono: '999999999',
+      institucion: 'Universidad Nacional de Ingeniería',
+      password: 'adminpassword',
+      verified: true,
+      role: 'ADMIN',
+      profilePic: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200',
+      registeredEvents: [],
+      tickets: [],
+      certificates: []
+    }
+
     if (storedUsers) {
       parsedUsers = JSON.parse(storedUsers)
+      // Asegurarse de que el usuario administrador de prueba esté sembrado
+      if (!parsedUsers.some(u => u.email === 'admin@uni.pe')) {
+        parsedUsers.push(adminUser)
+        localStorage.setItem('uni_eventos_users', JSON.stringify(parsedUsers))
+      }
       setUsers(parsedUsers)
     } else {
       // Seed initial users for testing purposes
@@ -37,6 +63,7 @@ export function AuthProvider({ children }) {
           institucion: 'Universidad Nacional de Ingeniería',
           password: 'password123',
           verified: true,
+          role: 'USER',
           profilePic: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=200',
           registeredEvents: [
             {
@@ -72,7 +99,8 @@ export function AuthProvider({ children }) {
               codigoValidacion: 'UNI-CERT-101-12345678-2947'
             }
           ]
-        }
+        },
+        adminUser
       ]
       localStorage.setItem('uni_eventos_users', JSON.stringify(parsedUsers))
       setUsers(parsedUsers)
@@ -118,6 +146,7 @@ export function AuthProvider({ children }) {
       institucion: userData.institucion || 'Universidad Nacional de Ingeniería',
       password: userData.password,
       verified: false,
+      role: 'USER',
       verificationCode: verificationCode,
       profilePic: `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(userData.nombres + ' ' + userData.apellidos)}`,
       registeredEvents: [],
@@ -220,6 +249,7 @@ export function AuthProvider({ children }) {
       institucion: fullUserData.institucion || 'Universidad Nacional de Ingeniería',
       password: '', // Password is empty for Google accounts
       verified: true,
+      role: 'USER',
       profilePic: fullUserData.profilePic,
       registeredEvents: [],
       tickets: [],

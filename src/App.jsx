@@ -10,6 +10,7 @@ import Validar from './pages/Validar'
 import Dashboard from './pages/Dashboard'
 import IniciarSesion from './pages/IniciarSesion'
 import Registrarse from './pages/Registrarse'
+import Admin from './pages/Admin'
 import AuthModal from './components/auth/AuthModal'
 import { useAuth } from './context/AuthContext'
 
@@ -28,6 +29,7 @@ export default function App() {
           <Route path="/cena-gala" element={<CenaGala />} />
           <Route path="/validar" element={<Validar />} />
           <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/admin" element={<Admin />} />
           
           {/* Authentic Routes */}
           <Route path="/iniciar-sesion" element={<IniciarSesion />} />

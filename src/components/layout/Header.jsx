@@ -1,12 +1,12 @@
 import { useState, useRef, useEffect } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
-import { Menu, X, Search, User, ChevronDown, Calendar, CreditCard, Award, Settings, LogOut } from 'lucide-react'
+import { Menu, X, Search, User, ChevronDown, Calendar, CreditCard, Award, Settings, LogOut, Shield } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
 import logo from '../../assets/logo.png'
 
 const navLinks = [
   { label: 'Inicio', path: '/' },
-  { label: 'Cronograma', path: '/cronograma' },
+  { label: 'Eventos', path: '/cronograma' },
   { label: 'Inscripción', path: '/inscripcion' },
   { label: 'Certificados', path: '/certificados' },
   { label: 'Cena de Gala', path: '/cena-gala' },
@@ -132,6 +132,16 @@ export default function Header() {
                   
                   {/* Dropdown Options */}
                   <div className="py-1">
+                    {user.role === 'ADMIN' && (
+                      <Link
+                        to="/admin"
+                        onClick={() => setDropdownOpen(false)}
+                        className="w-full flex items-center gap-2.5 px-4 py-2 text-left text-sm font-black text-[#800404] hover:bg-red-50 transition-colors flex"
+                      >
+                        <Shield size={15} />
+                        Panel Admin
+                      </Link>
+                    )}
                     <button
                       onClick={() => navigateToTab('perfil')}
                       className="w-full flex items-center gap-2.5 px-4 py-2 text-left text-sm text-gray-700 hover:bg-red-50 hover:text-[#800404] transition-colors cursor-pointer"
@@ -268,6 +278,15 @@ export default function Header() {
                     Certificados
                   </button>
                 </div>
+
+                {user.role === 'ADMIN' && (
+                  <button
+                    onClick={() => { setMenuOpen(false); navigate('/admin') }}
+                    className="w-full bg-[#800404] text-white py-2 font-black text-xs hover:bg-[#5a0303] transition-colors cursor-pointer mt-2"
+                  >
+                    Panel de Administración
+                  </button>
+                )}
 
                 <button
                   onClick={handleLogout}

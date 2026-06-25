@@ -2,25 +2,15 @@ import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { CheckCircle, QrCode, Mail, Lock, User, AlertCircle, Landmark } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
-
-const conferences = [
-  { id: 'c1', time: '09:00', title: 'Inteligencia Artificial en la Ingeniería Peruana', speaker: 'Dr. Roberto Vargas', room: 'Auditorium A', quota: 200 },
-  { id: 'c2', time: '09:00', title: 'Gestión de Proyectos con Metodologías Ágiles', speaker: 'Mg. Sofia Herrera', room: 'Auditorium B', quota: 150 },
-  { id: 'c3', time: '11:00', title: 'Infraestructura Sostenible para el Siglo XXI', speaker: 'Mg. Carmen Flores', room: 'Auditorium C', quota: 180 },
-  { id: 'c4', time: '11:00', title: 'Ciberseguridad en Sistemas Críticos', speaker: 'Dr. Andrés Gutiérrez', room: 'Aula Magna', quota: 300 },
-  { id: 'c5', time: '13:00', title: 'Robótica e Industria 4.0 en el Perú', speaker: 'Ing. María Quispe', room: 'Auditorium A', quota: 200 },
-  { id: 'c6', time: '13:00', title: 'Modelado BIM para Construcción Moderna', speaker: 'Arq. Javier Romero', room: 'Auditorium B', quota: 150 },
-  { id: 'c7', time: '15:00', title: 'Energías Renovables y Transición Energética', speaker: 'Dr. Ana Torres', room: 'Auditorium C', quota: 180 },
-  { id: 'c8', time: '15:00', title: 'Emprendimiento Tecnológico Universitario', speaker: 'Ing. Luis Mendoza', room: 'Aula Magna', quota: 300 },
-  { id: 'c9', time: '17:00', title: 'Minería Sostenible y Tecnología Verde', speaker: 'Dr. Pablo Díaz', room: 'Auditorium A', quota: 200 },
-  { id: 'c10', time: '17:00', title: 'Algoritmos para Optimización Industrial', speaker: 'Mg. Rosa Salinas', room: 'Auditorium B', quota: 150 },
-]
+import { db } from '../services/db'
 
 const STEPS = ['Datos personales', 'Selección de conferencias', 'Confirmación']
 
 export default function Inscripcion() {
   const { user, registerForEvent } = useAuth()
   const navigate = useNavigate()
+  
+  const conferences = db.getConferences()
   
   const [step, setStep] = useState(0)
   const [submitted, setSubmitted] = useState(false)
