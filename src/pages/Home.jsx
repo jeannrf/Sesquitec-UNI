@@ -1,11 +1,13 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { Calendar, Award, CreditCard, ChevronRight, MapPin, Clock, Users, CheckCircle, Ticket, X } from 'lucide-react'
+import { Calendar, Award, CreditCard, ChevronRight, ChevronLeft, MapPin, Clock, Users, CheckCircle, Ticket, X } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { db } from '../services/db'
 import { useAlert } from '../context/AlertContext'
-import banner from '../assets/banner.jpg'
-import logo from '../assets/logo.png'
+import galaGif from '../assets/Dark Gray and White Luxury Gala Invitation (1).gif'
+import brochure1 from '../assets/Copia de BROCHURE SOFTWARE WEEK 2026.png'
+import brochure2 from '../assets/Copia de BROCHURE SOFTWARE WEEK 2026 (1).png'
+import brochure3 from '../assets/Copia de BROCHURE SOFTWARE WEEK 2026 (2).png'
 
 // Los eventos destacados se cargan dinámicamente desde la base de datos en el componente Home.
 
@@ -170,6 +172,13 @@ export default function Home() {
   const { showAlert } = useAlert()
   const [successModal, setSuccessModal] = useState(null)
   const navigate = useNavigate()
+  const [carouselIndex, setCarouselIndex] = useState(0)
+  const banners = [brochure1, brochure2, brochure3]
+
+  useEffect(() => {
+    const timer = setInterval(() => setCarouselIndex(i => (i + 1) % banners.length), 9000)
+    return () => clearInterval(timer)
+  }, [])
 
   // Cargar eventos destacados desde localStorage de forma dinámica (los más próximos)
   const dbEvents = db.getEvents()
@@ -218,78 +227,50 @@ export default function Home() {
 
   return (
     <>
-      {/* Hero */}
-      <section className="relative text-white overflow-hidden min-h-[560px] flex items-center">
-        {/* Banner como fondo real */}
-        <div
-          className="absolute inset-0"
-          style={{
-            backgroundImage: `url(${banner})`,
-            backgroundSize: 'cover',
-            backgroundPosition: 'center top',
-          }}
-        />
-        {/* Overlay degradado: oscuro en la mitad derecha para leer el texto del card */}
-        <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/50 to-black/40" />
+      {/* Hero + Cena de Gala */}
+      <section className="bg-white px-4 py-4">
+        <div className="grid lg:grid-cols-[1fr_420px] gap-3 items-stretch">
+            {/* Carrusel */}
+            <div className="relative overflow-hidden bg-black">
+              {/* Espaciador invisible para mantener la altura natural */}
+              <img src={banners[carouselIndex]} alt="" className="w-full block opacity-0 pointer-events-none" aria-hidden="true" />
+              {banners.map((img, i) => (
+                <img
+                  key={i}
+                  src={img}
+                  alt={`Banner ${i + 1}`}
+                  className={`absolute top-0 left-0 w-full scale-[1.02] transition-opacity duration-1000 ease-in-out ${i === carouselIndex ? 'opacity-100' : 'opacity-0'}`}
+                />
+              ))}
 
-        <div className="relative max-w-7xl mx-auto px-4 py-20 grid lg:grid-cols-2 gap-12 items-center w-full">
-          <div>
-            {/* Logo del Sesquicentenario sobre el hero */}
-            <img
-              src={logo}
-              alt="150 Años UNI"
-              className="h-24 w-auto object-contain mb-6"
-              style={{ filter: 'brightness(0) invert(1)' }}
-            />
-            <p className="text-lg text-white/80 mb-8 max-w-lg leading-relaxed">
-              Participa en los eventos académicos, culturales y sociales de este hito histórico en la Universidad Nacional de Ingeniería.
-            </p>
-            <div className="flex flex-wrap gap-3">
-              <Link
-                to="/cronograma"
-                className="bg-white text-[#800404] font-black px-6 py-3 hover:bg-gray-100 transition-colors flex items-center gap-2 text-sm"
-              >
-                Ver todos los eventos <ChevronRight size={16} />
-              </Link>
               <button
-                onClick={() => handleInscribe(mainEvent)}
-                className="bg-[#800404] border-2 border-[#800404] text-white font-black px-6 py-3 hover:bg-[#5a0303] transition-colors text-sm cursor-pointer"
+                onClick={() => setCarouselIndex(i => (i - 1 + banners.length) % banners.length)}
+                className="absolute left-3 top-1/2 -translate-y-1/2 z-10 bg-black/40 hover:bg-black/70 text-white p-2 transition-colors cursor-pointer"
               >
-                Inscribirme ahora
+                <ChevronLeft size={22} />
               </button>
-            </div>
-          </div>
+              <button
+                onClick={() => setCarouselIndex(i => (i + 1) % banners.length)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 z-10 bg-black/40 hover:bg-black/70 text-white p-2 transition-colors cursor-pointer"
+              >
+                <ChevronRight size={22} />
+              </button>
 
-          {/* Featured card */}
-          <div className="hidden lg:block">
-            <div className="bg-black/50 backdrop-blur-sm border border-white/20 p-6">
-              <p className="text-white/50 text-xs font-black uppercase tracking-widest mb-4">Próximo evento destacado</p>
-              <h3 className="text-white text-xl font-black mb-4 leading-tight">Encuentro Internacional de Ingeniería</h3>
-              <div className="space-y-2 mb-5">
-                <div className="flex items-center gap-2 text-white/70 text-sm">
-                  <Calendar size={14} />
-                  <span>14 de Julio, 2026</span>
-                </div>
-                <div className="flex items-center gap-2 text-white/70 text-sm">
-                  <MapPin size={14} />
-                  <span>Teatro UNI, Lima</span>
-                </div>
-                <div className="flex items-center gap-2 text-white/70 text-sm">
-                  <Clock size={14} />
-                  <span>08:00 – 18:00 hrs</span>
-                </div>
-              </div>
-              <div className="border-t border-white/20 pt-5">
-                <p className="text-sm text-white/50 mb-3">10 conferencias disponibles</p>
-                <button
-                  onClick={() => handleInscribe(mainEvent)}
-                  className="block w-full text-center bg-[#800404] text-white font-black py-3 hover:bg-[#5a0303] transition-colors text-sm cursor-pointer border-0"
-                >
-                  Inscribirme ahora
-                </button>
+              <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10 flex gap-2">
+                {banners.map((_, i) => (
+                  <button
+                    key={i}
+                    onClick={() => setCarouselIndex(i)}
+                    className={`w-2.5 h-2.5 rounded-full transition-colors cursor-pointer border-0 ${i === carouselIndex ? 'bg-white' : 'bg-white/40'}`}
+                  />
+                ))}
               </div>
             </div>
-          </div>
+
+            {/* Cena de Gala panel */}
+            <Link to="/cena-gala" className="block overflow-hidden">
+              <img src={galaGif} alt="Cena de Gala" className="w-full h-full object-cover" />
+            </Link>
         </div>
       </section>
 
@@ -317,31 +298,6 @@ export default function Home() {
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-1">
             {featuredEvents.map(ev => (
               <EventCard key={ev.id} ev={ev} onInscribe={handleInscribe} />
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Main modules */}
-      <section className="py-16 bg-white">
-        <div className="max-w-7xl mx-auto px-4">
-          <div className="text-center mb-10">
-            <h2 className="text-3xl font-black text-gray-900 mb-2">¿Qué puedes hacer aquí?</h2>
-            <p className="text-gray-500">Todo lo que necesitas para participar en el Sesquicentenario</p>
-          </div>
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {modules.map(m => (
-              <div key={m.title} className="bg-white border border-gray-200 p-6 hover:border-[#800404] hover:shadow-lg transition-all group">
-                <div className="mb-4">{m.icon}</div>
-                <h3 className="text-lg font-black text-gray-900 mb-2">{m.title}</h3>
-                <p className="text-sm text-gray-500 mb-5 leading-relaxed">{m.desc}</p>
-                <Link
-                  to={m.link}
-                  className="text-sm font-bold text-[#800404] flex items-center gap-1 group-hover:gap-2 transition-all"
-                >
-                  {m.cta} <ChevronRight size={16} />
-                </Link>
-              </div>
             ))}
           </div>
         </div>
@@ -385,25 +341,6 @@ export default function Home() {
               </div>
             ))}
           </div>
-        </div>
-      </section>
-
-      {/* CTA Gala */}
-      <section className="py-16 bg-[#800404]">
-        <div className="max-w-7xl mx-auto px-4 flex flex-col lg:flex-row items-center justify-between gap-8">
-          <div>
-            <p className="text-white/60 font-bold text-sm uppercase tracking-widest mb-2">Evento exclusivo para egresados</p>
-            <h2 className="text-4xl font-black text-white mb-3">Cena de Gala · 22 AGO 2026</h2>
-            <p className="text-white/80 max-w-xl">
-              Celebra el Sesquicentenario en una velada especial junto a egresados y autoridades de la UNI. Cupos limitados.
-            </p>
-          </div>
-          <Link
-            to="/cena-gala"
-            className="shrink-0 bg-white text-[#800404] font-black px-8 py-4 hover:bg-gray-100 transition-colors text-lg"
-          >
-            Adquirir entradas
-          </Link>
         </div>
       </section>
 
