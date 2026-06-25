@@ -51,21 +51,6 @@ export default function Header() {
 
   return (
     <header className="bg-white shadow-sm sticky top-0 z-50">
-      {/* Top bar */}
-      <div className="bg-gray-100 border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 flex items-center justify-between h-9 text-xs text-gray-600">
-          <div className="flex items-center gap-6">
-            <span className="font-black text-[#800404] uppercase tracking-wider">UNI</span>
-            <span className="hidden sm:inline">Sesquicentenario 2026</span>
-            <span className="hidden sm:inline">UNICODE</span>
-          </div>
-          <div className="flex items-center gap-4">
-            <Link to="/cena-gala" className="hover:text-[#800404] transition-colors">Cena de Gala</Link>
-            <Link to="/validar" className="hover:text-[#800404] transition-colors">Validar Certificado</Link>
-          </div>
-        </div>
-      </div>
-
       {/* Main nav */}
       <div className="max-w-7xl mx-auto px-4 flex items-center justify-between h-16">
         <Link to="/" className="flex items-center shrink-0">

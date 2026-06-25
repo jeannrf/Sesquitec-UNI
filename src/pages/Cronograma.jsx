@@ -1,9 +1,9 @@
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { ChevronDown, ChevronUp, MapPin, Clock, Calendar, ExternalLink, Play } from 'lucide-react'
+import { ChevronDown, ChevronUp, MapPin, Clock, Calendar, ExternalLink, Play, Filter } from 'lucide-react'
 import { db } from '../services/db'
 
-const months = ['Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre']
+const months = ['Todos', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre']
 
 function EventCard({ event }) {
   const [open, setOpen] = useState(false)
@@ -138,7 +138,20 @@ function EventCard({ event }) {
 }
 
 export default function Cronograma() {
-  const [activeMonth, setActiveMonth] = useState('Julio')
+  const [activeMonth, setActiveMonth] = useState('Todos')
+  const [filterDropdownOpen, setFilterDropdownOpen] = useState(false)
+  const filterDropdownRef = useRef(null)
+
+  // Close dropdown on click outside
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (filterDropdownRef.current && !filterDropdownRef.current.contains(event.target)) {
+        setFilterDropdownOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
 
   // Cargar eventos desde localStorage
   const dbEvents = db.getEvents()
@@ -172,7 +185,9 @@ export default function Cronograma() {
     eventsByMonth[month].push(ev)
   })
 
-  const currentEvents = eventsByMonth[activeMonth] || []
+  const currentEvents = activeMonth === 'Todos'
+    ? dbEvents
+    : (eventsByMonth[activeMonth] || [])
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -184,29 +199,50 @@ export default function Cronograma() {
         </div>
       </div>
 
-      {/* Month tabs */}
-      <div className="bg-white border-b border-gray-200 sticky top-16 z-40">
-        <div className="max-w-7xl mx-auto px-4 flex gap-0 overflow-x-auto">
-          {months.map(m => (
+      {/* Filters bar */}
+      <div className="bg-white border-b border-gray-200 sticky top-16 z-40 py-3 shadow-sm">
+        <div className="max-w-7xl mx-auto px-4 flex justify-between items-center">
+          <span className="text-sm font-semibold text-gray-500">
+            Filtrar y explorar cronograma
+          </span>
+          <div className="relative" ref={filterDropdownRef}>
             <button
-              key={m}
-              onClick={() => setActiveMonth(m)}
-              className={`shrink-0 px-6 py-4 text-sm font-bold border-b-2 transition-colors ${
-                activeMonth === m
-                  ? 'border-[#800404] text-[#800404]'
-                  : 'border-transparent text-gray-400 hover:text-gray-900'
-              }`}
+              onClick={() => setFilterDropdownOpen(!filterDropdownOpen)}
+              className="flex items-center gap-2 border border-gray-300 px-4 py-2 hover:border-gray-400 hover:bg-gray-50 transition-all cursor-pointer font-bold text-sm text-gray-700 bg-white rounded-none shadow-sm"
             >
-              {m}
+              <Filter size={15} className="text-[#800404]" />
+              <span>Mes: {activeMonth}</span>
+              <ChevronDown size={14} className={`text-gray-400 transition-transform ${filterDropdownOpen ? 'rotate-180' : ''}`} />
             </button>
-          ))}
+            
+            {filterDropdownOpen && (
+              <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-200 shadow-xl z-50 py-1 max-h-60 overflow-y-auto animate-in fade-in slide-in-from-top-1 duration-150">
+                {months.map(m => (
+                  <button
+                    key={m}
+                    onClick={() => {
+                      setActiveMonth(m)
+                      setFilterDropdownOpen(false)
+                    }}
+                    className={`w-full text-left px-4 py-2.5 text-sm hover:bg-red-50 hover:text-[#800404] transition-colors ${
+                      activeMonth === m ? 'font-bold text-[#800404] bg-red-50/50' : 'text-gray-700'
+                    }`}
+                  >
+                    {m}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
       {/* Events list */}
       <div className="max-w-7xl mx-auto px-4 py-10">
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-black text-gray-900">{activeMonth} 2026</h2>
+          <h2 className="text-2xl font-black text-gray-900">
+            {activeMonth === 'Todos' ? 'Todos los Eventos' : `${activeMonth} 2026`}
+          </h2>
           <span className="text-sm text-gray-400">
             {currentEvents.length} evento(s)
           </span>
@@ -215,7 +251,9 @@ export default function Cronograma() {
         {currentEvents.length === 0 ? (
           <div className="text-center py-20 text-gray-300">
             <Calendar size={48} className="mx-auto mb-4 opacity-30" />
-            <p className="text-lg text-gray-400">No hay eventos programados para {activeMonth}</p>
+            <p className="text-lg text-gray-400">
+              {activeMonth === 'Todos' ? 'No hay eventos programados' : `No hay eventos programados para ${activeMonth}`}
+            </p>
           </div>
         ) : (
           <div className="space-y-3">
