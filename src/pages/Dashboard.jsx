@@ -712,7 +712,7 @@ export default function Dashboard() {
                       maxLength={8}
                       value={profileForm.dni}
                       onChange={e => setProfileForm(f => ({ ...f, dni: e.target.value.replace(/\D/g, '').slice(0, 8) }))}
-                      className="w-full border border-gray-300 px-4 py-2.5 text-sm focus:outline-none focus:border-[#800404] font-bold text-center tracking-wider"
+                      className="w-full border border-gray-300 px-4 py-2.5 text-sm focus:outline-none focus:border-[#800404]"
                       required
                     />
                   </div>
