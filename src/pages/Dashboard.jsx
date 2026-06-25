@@ -107,6 +107,11 @@ export default function Dashboard() {
     }
   }, [user, activeTab])
 
+  const handleInputChange = (e) => {
+    const { name, value } = e.target
+    setProfileForm(prev => ({ ...prev, [name]: value }))
+  }
+
   if (!user) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
