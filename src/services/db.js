@@ -21,7 +21,8 @@ const initialEvents = [
     quota: 0,
     registrationOpen: false,
     imageUrl: 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?auto=format&fit=crop&q=80&w=800',
-    category: 'Académico'
+    category: 'Académico',
+    tags: ['Investigación', 'Innovación', 'Tecnología']
   },
   {
     id: 'jun1',
@@ -35,7 +36,8 @@ const initialEvents = [
     quota: 0,
     registrationOpen: false,
     imageUrl: 'https://images.unsplash.com/photo-1507679799987-c73779587ccf?auto=format&fit=crop&q=80&w=800',
-    category: 'Académico'
+    category: 'Académico',
+    tags: ['FC', 'Ciencias', 'Física']
   },
   {
     id: 'jun2',
@@ -49,7 +51,8 @@ const initialEvents = [
     quota: 0,
     registrationOpen: false,
     imageUrl: 'https://images.unsplash.com/photo-1531482615713-2afd69097998?auto=format&fit=crop&q=80&w=800',
-    category: 'Académico'
+    category: 'Académico',
+    tags: ['FIIS', 'Tecnología', 'Programación']
   },
   {
     id: 'jul1', // También conocido como ID 1
@@ -63,7 +66,8 @@ const initialEvents = [
     registrationOpen: true,
     quota: 850,
     imageUrl: 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?auto=format&fit=crop&q=80&w=800',
-    category: 'Académico'
+    category: 'Académico',
+    tags: ['FIC', 'FIM', 'FIIS', 'Internacional']
   },
   {
     id: 'jul2',
@@ -77,7 +81,8 @@ const initialEvents = [
     registrationOpen: false,
     quota: 0,
     imageUrl: 'https://images.unsplash.com/photo-1523050854058-8df90110c9f1?auto=format&fit=crop&q=80&w=800',
-    category: 'Cultural'
+    category: 'Cultural',
+    tags: ['UNI', 'Aniversario', 'Cultural']
   },
   {
     id: 'ago1',
@@ -91,7 +96,8 @@ const initialEvents = [
     registrationOpen: true,
     quota: 300,
     imageUrl: 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&q=80&w=800',
-    category: 'Académico'
+    category: 'Académico',
+    tags: ['FIA', 'Ambiental', 'Sostenibilidad']
   },
   {
     id: 'ago2', // También conocido como ID 2
@@ -106,7 +112,8 @@ const initialEvents = [
     quota: 500,
     isPaid: true,
     imageUrl: 'https://images.unsplash.com/photo-1519671482749-fd09be7ccebf?auto=format&fit=crop&q=80&w=800',
-    category: 'Egresados'
+    category: 'Egresados',
+    tags: ['Egresados', 'Gala', 'Social']
   },
   {
     id: 'sep1', // También conocido como ID 4
@@ -120,7 +127,8 @@ const initialEvents = [
     registrationOpen: true,
     quota: 1200,
     imageUrl: 'https://images.unsplash.com/photo-1521791136368-1a8684c0286d?auto=format&fit=crop&q=80&w=800',
-    category: 'Laboral'
+    category: 'Laboral',
+    tags: ['Feria', 'Empleo', 'Empresas']
   },
   {
     id: 'oct1',
@@ -134,7 +142,8 @@ const initialEvents = [
     registrationOpen: false,
     quota: 200,
     imageUrl: 'https://images.unsplash.com/photo-1504384308090-c894fdcc538d?auto=format&fit=crop&q=80&w=800',
-    category: 'Laboral'
+    category: 'Laboral',
+    tags: ['FIIS', 'Hackathon', 'Tecnología']
   },
   {
     id: 'nov1',
@@ -148,7 +157,8 @@ const initialEvents = [
     registrationOpen: false,
     quota: 0,
     imageUrl: 'https://images.unsplash.com/photo-1511578314322-379afb476865?auto=format&fit=crop&q=80&w=800',
-    category: 'Cultural'
+    category: 'Cultural',
+    tags: ['Clausura', 'Cultura', 'Historia']
   },
   {
     id: 'dec1',
@@ -162,7 +172,8 @@ const initialEvents = [
     quota: 1200,
     registrationOpen: true,
     imageUrl: 'https://images.unsplash.com/photo-1465847899084-d164df4dedc6?auto=format&fit=crop&q=80&w=800',
-    category: 'Cultural'
+    category: 'Cultural',
+    tags: ['Música', 'Cultura', 'Sinfónica']
   }
 ]
 
@@ -252,6 +263,25 @@ export const db = {
 
     if (!localStorage.getItem(EVENTS_KEY)) {
       localStorage.setItem(EVENTS_KEY, JSON.stringify(initialEvents))
+    } else {
+      // Auto-actualizar eventos existentes en localStorage para asegurar que tengan tags si faltan
+      try {
+        const currentEvents = JSON.parse(localStorage.getItem(EVENTS_KEY))
+        let updated = false
+        const updatedEvents = currentEvents.map(ev => {
+          if (!ev.tags) {
+            const seedEv = initialEvents.find(ie => ie.id === ev.id)
+            ev.tags = seedEv ? (seedEv.tags || []) : []
+            updated = true
+          }
+          return ev
+        })
+        if (updated) {
+          localStorage.setItem(EVENTS_KEY, JSON.stringify(updatedEvents))
+        }
+      } catch (e) {
+        console.error("Error auto-updating event tags in DB:", e)
+      }
     }
     if (!localStorage.getItem(CONFERENCES_KEY)) {
       localStorage.setItem(CONFERENCES_KEY, JSON.stringify(initialConferences))

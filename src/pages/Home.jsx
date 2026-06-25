@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { Calendar, Award, CreditCard, ChevronRight, MapPin, Clock, Users, CheckCircle, Ticket, X } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { db } from '../services/db'
+import { useAlert } from '../context/AlertContext'
 import banner from '../assets/banner.jpg'
 import logo from '../assets/logo.png'
 
@@ -84,16 +85,39 @@ function EventCard({ ev, onInscribe }) {
         <div className="event-card-title">
           <p className="text-white/80 text-xs font-bold uppercase tracking-wider mb-1">{ev.date}</p>
           <h3 className="text-white font-black text-lg leading-tight drop-shadow-md">{ev.title}</h3>
+          {ev.tags && ev.tags.length > 0 && (
+            <div className="flex flex-wrap gap-1 mt-1.5">
+              {ev.tags.map(tag => (
+                <span key={tag} className="bg-red-50 text-[#800404] text-[9px] font-bold px-1.5 py-0.5 uppercase border border-red-200/30 rounded-none tracking-wide">
+                  {tag}
+                </span>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
       {/* Hover overlay – slides up from bottom, covering the background photo */}
       <div className="event-card-overlay absolute inset-0 z-20 bg-[#800404] p-5 flex flex-col justify-between">
         <div>
-          <span className="bg-white text-[#800404] text-xs font-black px-2.5 py-1 uppercase tracking-wider inline-block mb-4">
-            {isPost ? 'FINALIZADO' : 'PRÓXIMO'}
-          </span>
-          <h3 className="text-white font-black text-base leading-tight mb-3">{ev.title}</h3>
+          <div className="flex items-start justify-between mb-3">
+            <span className="bg-white text-[#800404] text-xs font-black px-2.5 py-1 uppercase tracking-wider inline-block">
+              {isPost ? 'FINALIZADO' : 'PRÓXIMO'}
+            </span>
+            <span className="bg-white/15 text-white text-[9px] font-bold px-2 py-0.5 border border-white/20 uppercase tracking-wider">
+              {ev.category || 'EVENTO'}
+            </span>
+          </div>
+          <h3 className="text-white font-black text-base leading-tight mb-2">{ev.title}</h3>
+          {ev.tags && ev.tags.length > 0 && (
+            <div className="flex flex-wrap gap-1 mb-3">
+              {ev.tags.map(tag => (
+                <span key={tag} className="bg-red-50 text-[#800404] text-[9px] font-bold px-1.5 py-0.5 uppercase border border-red-200/30 rounded-none tracking-wide">
+                  {tag}
+                </span>
+              ))}
+            </div>
+          )}
           <div className="space-y-1 text-xs">
             <div className="flex items-center gap-2 text-white/80">
               <Calendar size={12} className="shrink-0 text-white/60" />
@@ -143,6 +167,7 @@ function EventCard({ ev, onInscribe }) {
 
 export default function Home() {
   const { user, registerForEvent, openAuth } = useAuth()
+  const { showAlert } = useAlert()
   const [successModal, setSuccessModal] = useState(null)
   const navigate = useNavigate()
 
@@ -187,7 +212,7 @@ export default function Home() {
         ticketId: res.ticket.id
       })
     } else {
-      alert(res.error)
+      showAlert(res.error, 'Error de Inscripción', 'error')
     }
   }
 

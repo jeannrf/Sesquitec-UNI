@@ -261,27 +261,64 @@ export default function AuthModal({ isOpen, onClose, initialView = 'login', onAu
       }
     })
 
-    // Click on custom account
     document.getElementById('google-new-account').onclick = () => {
-      cleanup()
-      // Ask email prompt
-      const email = prompt('Introduce tu correo de Google (ej: egresado.uni@gmail.com):')
-      if (!email) return
-      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-        alert('Correo inválido')
-        return
+      popup.innerHTML = `
+        <div class="p-5 border-b border-gray-100 bg-[#f8f9fa] flex items-center justify-between">
+          <span class="text-sm font-semibold text-gray-700">Usar otra cuenta</span>
+          <button id="close-google-new" class="text-gray-400 hover:text-gray-600 transition-colors cursor-pointer">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+          </button>
+        </div>
+        <form id="google-new-form" class="p-5 space-y-4 font-sans">
+          <div>
+            <label class="block text-xs font-bold text-gray-600 uppercase mb-1">Correo Electrónico *</label>
+            <input type="email" id="google-new-email" required class="w-full border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:border-[#800404]" placeholder="ejemplo@correo.com" />
+            <p id="google-new-email-error" class="text-red-500 text-xs mt-1 hidden">Correo inválido</p>
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-gray-600 uppercase mb-1">Nombres *</label>
+            <input type="text" id="google-new-names" required class="w-full border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:border-[#800404]" placeholder="Nombres" />
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-gray-600 uppercase mb-1">Apellidos *</label>
+            <input type="text" id="google-new-apellidos" required class="w-full border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:border-[#800404]" placeholder="Apellidos" />
+          </div>
+          <div class="flex gap-2 justify-end pt-2">
+            <button type="button" id="google-new-cancel" class="border border-gray-300 hover:bg-gray-50 text-gray-700 text-xs font-bold px-4 py-2 transition-colors cursor-pointer">
+              Volver
+            </button>
+            <button type="submit" class="bg-[#800404] hover:bg-[#5a0303] text-white text-xs font-bold px-4 py-2 transition-colors cursor-pointer">
+              Continuar
+            </button>
+          </div>
+        </form>
+      `
+      
+      document.getElementById('close-google-new').onclick = cleanup
+      document.getElementById('google-new-cancel').onclick = () => {
+        cleanup()
+        triggerGoogleLogin()
       }
-      const names = prompt('Introduce tus nombres:')
-      if (!names) return
-      const apellidos = prompt('Introduce tus apellidos:')
-      if (!apellidos) return
 
-      handleGoogleCallback({
-        nombres: names,
-        apellidos: apellidos,
-        email: email,
-        picture: `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(names)}`
-      })
+      document.getElementById('google-new-form').onsubmit = (e) => {
+        e.preventDefault()
+        const email = document.getElementById('google-new-email').value.trim()
+        const names = document.getElementById('google-new-names').value.trim()
+        const apellidos = document.getElementById('google-new-apellidos').value.trim()
+
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+          document.getElementById('google-new-email-error').classList.remove('hidden')
+          return
+        }
+
+        cleanup()
+        handleGoogleCallback({
+          nombres: names,
+          apellidos: apellidos,
+          email: email,
+          picture: `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(names)}`
+        })
+      }
     }
   }
 
@@ -540,7 +577,7 @@ export default function AuthModal({ isOpen, onClose, initialView = 'login', onAu
                     maxLength={8}
                     value={form.dni}
                     onChange={e => setForm(f => ({ ...f, dni: e.target.value.replace(/\D/g, '').slice(0, 8) }))}
-                    className="w-full border border-gray-300 px-3.5 py-2 text-sm focus:outline-none focus:border-[#800404] placeholder-gray-300 text-center tracking-wider font-bold"
+                    className="w-full border border-gray-300 px-3.5 py-2 text-sm focus:outline-none focus:border-[#800404] placeholder-gray-300"
                     required
                   />
                 </div>
@@ -764,7 +801,7 @@ export default function AuthModal({ isOpen, onClose, initialView = 'login', onAu
                     maxLength={8}
                     value={form.dni}
                     onChange={e => setForm(f => ({ ...f, dni: e.target.value.replace(/\D/g, '').slice(0, 8) }))}
-                    className="w-full border border-gray-300 px-3.5 py-2 text-sm focus:outline-none focus:border-[#800404] placeholder-gray-300 text-center tracking-wider font-bold"
+                    className="w-full border border-gray-300 px-3.5 py-2 text-sm focus:outline-none focus:border-[#800404] placeholder-gray-300"
                     required
                   />
                 </div>

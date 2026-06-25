@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { db } from '../services/db'
+import { useAlert } from '../context/AlertContext'
 import { 
   LayoutDashboard, Calendar, Mic, Users, QrCode, Award, Settings, 
   LogOut, Search, Plus, Trash2, Edit2, ShieldAlert, CheckCircle, 
@@ -11,6 +12,7 @@ import {
 
 export default function Admin() {
   const { user, logout, updateProfile, loading } = useAuth()
+  const { showAlert, showConfirm } = useAlert()
   const navigate = useNavigate()
   const [activeTab, setActiveTab] = useState('dashboard')
 
@@ -65,7 +67,8 @@ export default function Admin() {
     status: 'pre',
     isPaid: false,
     imageUrl: '',
-    category: 'Académico'
+    category: 'Académico',
+    tags: ''
   })
 
   const handleOpenEventModal = (ev = null) => {
@@ -82,7 +85,8 @@ export default function Admin() {
         status: ev.status || 'pre',
         isPaid: ev.isPaid || false,
         imageUrl: ev.imageUrl || '',
-        category: ev.category || 'Académico'
+        category: ev.category || 'Académico',
+        tags: ev.tags ? ev.tags.join(', ') : ''
       })
     } else {
       setEditingEvent(null)
@@ -97,7 +101,8 @@ export default function Admin() {
         status: 'pre',
         isPaid: false,
         imageUrl: '',
-        category: 'Académico'
+        category: 'Académico',
+        tags: ''
       })
     }
     setIsEventModalOpen(true)
@@ -106,18 +111,27 @@ export default function Admin() {
   const handleSaveEvent = (e) => {
     e.preventDefault()
     if (!eventForm.title.trim() || !eventForm.date.trim() || !eventForm.location.trim()) {
-      alert('Por favor complete los campos obligatorios: Título, Fecha y Ubicación.')
+      showAlert('Por favor complete los campos obligatorios: Título, Fecha y Ubicación.', 'Campos Requeridos', 'warning')
       return
+    }
+
+    const parsedTags = typeof eventForm.tags === 'string'
+      ? eventForm.tags.split(',').map(t => t.trim()).filter(Boolean)
+      : eventForm.tags || []
+
+    const eventData = {
+      ...eventForm,
+      tags: parsedTags
     }
 
     if (editingEvent) {
       db.updateEvent({
         id: editingEvent.id,
-        ...eventForm
+        ...eventData
       })
     } else {
       db.createEvent({
-        ...eventForm
+        ...eventData
       })
     }
     setIsEventModalOpen(false)
@@ -125,10 +139,10 @@ export default function Admin() {
   }
 
   const handleDeleteEvent = (id) => {
-    if (confirm('¿Está seguro de eliminar este evento y todas sus ponencias asociadas?')) {
+    showConfirm('¿Está seguro de eliminar este evento y todas sus ponencias asociadas?', () => {
       db.deleteEvent(id)
       refreshAllData()
-    }
+    }, 'Confirmar Eliminación', 'warning')
   }
 
   // --- PONENCIAS STATE & LOGIC ---
@@ -177,7 +191,7 @@ export default function Admin() {
   const handleSaveConf = (e) => {
     e.preventDefault()
     if (!confForm.title.trim() || !confForm.speaker.trim() || !confForm.eventId) {
-      alert('Por favor complete los campos obligatorios: Título, Expositor y Evento relacionado.')
+      showAlert('Por favor complete los campos obligatorios: Título, Expositor y Evento relacionado.', 'Campos Requeridos', 'warning')
       return
     }
 
@@ -196,10 +210,10 @@ export default function Admin() {
   }
 
   const handleDeleteConf = (id) => {
-    if (confirm('¿Está seguro de eliminar esta ponencia?')) {
+    showConfirm('¿Está seguro de eliminar esta ponencia?', () => {
       db.deleteConference(id)
       refreshAllData()
-    }
+    }, 'Confirmar Eliminación', 'warning')
   }
 
   // --- CRONOGRAMA STATE & LOGIC ---
@@ -490,7 +504,7 @@ export default function Admin() {
 
     } catch (err) {
       console.error('No se pudo acceder a la cámara:', err)
-      alert('No se pudo acceder a la webcam. Por favor, utilice el simulador de entrada de texto.')
+      showAlert('No se pudo acceder a la webcam. Por favor, utilice el simulador de entrada de texto.', 'Error de Cámara', 'error')
       setIsCameraActive(false)
     }
   }
@@ -557,7 +571,7 @@ export default function Admin() {
   const handleProcessUploads = () => {
     if (uploadQueue.length === 0) return
     if (!selectedEventForCert) {
-      alert('Por favor seleccione el evento asociado.')
+      showAlert('Por favor seleccione el evento asociado.', 'Evento Requerido', 'warning')
       return
     }
 
@@ -585,7 +599,7 @@ export default function Admin() {
             }
           })
           
-          alert(`Carga masiva finalizada. Se procesaron y emitieron ${count} certificados con éxito.`);
+          showAlert(`Carga masiva finalizada. Se procesaron y emitieron ${count} certificados con éxito.`, 'Carga Exitosa', 'success');
           setUploadQueue([])
           setIsUploading(false)
           setUploadProgress(0)
@@ -598,10 +612,10 @@ export default function Admin() {
   }
 
   const handleDeleteCertificate = (id) => {
-    if (confirm('¿Está seguro de revocar y eliminar permanentemente este certificado?')) {
+    showConfirm('¿Está seguro de revocar y eliminar permanentemente este certificado?', () => {
       db.deleteCertificate(id)
       refreshAllData()
-    }
+    }, 'Revocar Certificado', 'error')
   }
 
   const handleTestValidate = (e) => {
@@ -974,7 +988,17 @@ export default function Admin() {
                           <tr key={ev.id} className="hover:bg-gray-50/50 transition-colors">
                             <td className="px-6 py-4">
                               <p className="font-bold text-gray-900 leading-tight">{ev.title}</p>
-                              <p className="text-xs text-gray-400 mt-0.5">{ev.organizer}</p>
+                              <div className="flex flex-wrap gap-1.5 mt-1.5">
+                                <span className="bg-red-50 text-[#800404] text-[9px] font-bold px-1.5 py-0.5 uppercase border border-red-200/30 rounded-none">
+                                  {ev.category}
+                                </span>
+                                {ev.tags && ev.tags.map(tag => (
+                                  <span key={tag} className="bg-red-50 text-[#800404] text-[9px] font-bold px-1.5 py-0.5 uppercase border border-red-200/30 rounded-none">
+                                    {tag}
+                                  </span>
+                                ))}
+                              </div>
+                              <p className="text-xs text-gray-400 mt-1">{ev.organizer}</p>
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap">
                               <p className="text-gray-700">{ev.date}</p>
@@ -1822,7 +1846,7 @@ export default function Admin() {
                               <div className="flex gap-2 justify-end">
                                 <a
                                   href="#"
-                                  onClick={(e) => { e.preventDefault(); alert(`Simulación de descarga del PDF de certificado: ${cert.codigoValidacion}.pdf`) }}
+                                  onClick={(e) => { e.preventDefault(); showAlert(`Simulación de descarga del PDF de certificado: ${cert.codigoValidacion}.pdf`, 'Descarga en Proceso', 'success') }}
                                   className="text-xs font-bold text-[#800404] hover:underline"
                                 >
                                   Descargar
@@ -2102,6 +2126,49 @@ export default function Admin() {
                   className="w-full border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:border-[#800404] text-gray-850"
                   placeholder="Resumen del evento..."
                 ></textarea>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Etiquetas / Badges (Separadas por comas)</label>
+                <input
+                  type="text"
+                  value={eventForm.tags || ''}
+                  onChange={e => setEventForm(prev => ({ ...prev, tags: e.target.value }))}
+                  className="w-full border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:border-[#800404] text-gray-850 rounded-none"
+                  placeholder="Ej: FIC, FIIS, FIM, Tecnología, Innovación"
+                />
+                <div className="flex flex-wrap gap-1 mt-1.5 items-center">
+                  <span className="text-[10px] text-gray-400 font-bold uppercase mr-1">Sugerencias:</span>
+                  {[
+                    'FC', 'FIC', 'FIIS', 'FIM', 'FIA', 'FIEE', 'FIGMM', 'FAUA', 
+                    'Tecnología', 'Innovación', 'Investigación', 'Egresados', 'Cultural'
+                  ].map(sug => {
+                    const currentTags = eventForm.tags
+                      ? eventForm.tags.split(',').map(t => t.trim()).filter(Boolean)
+                      : [];
+                    const isAlreadyAdded = currentTags.includes(sug);
+                    return (
+                      <button
+                        key={sug}
+                        type="button"
+                        onClick={() => {
+                          if (!isAlreadyAdded) {
+                            const newTags = [...currentTags, sug].join(', ');
+                            setEventForm(prev => ({ ...prev, tags: newTags }));
+                          }
+                        }}
+                        className={`text-[9px] font-bold px-1.5 py-0.5 uppercase border transition-all ${
+                          isAlreadyAdded
+                            ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed'
+                            : 'bg-white hover:bg-red-50 text-[#800404] border-red-200 cursor-pointer active:scale-95'
+                        }`}
+                        disabled={isAlreadyAdded}
+                      >
+                        + {sug}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
 
               <div className="flex items-center gap-4 bg-gray-50 p-3 border border-gray-150">

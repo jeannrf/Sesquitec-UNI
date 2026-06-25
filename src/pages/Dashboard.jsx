@@ -6,6 +6,7 @@ import {
   MapPin, Clock, Download, Eye, QrCode, Upload, CheckCircle, 
   AlertCircle, Lock, Edit2, CheckSquare, Trash2
 } from 'lucide-react'
+import { useAlert } from '../context/AlertContext'
 
 // Dummy events catalog to query details
 const eventsCatalog = {
@@ -63,6 +64,7 @@ const conferencesCatalog = {
 
 export default function Dashboard() {
   const { user, updateProfile, openAuth } = useAuth()
+  const { showAlert } = useAlert()
   const [searchParams, setSearchParams] = useSearchParams()
   const navigate = useNavigate()
 
@@ -214,7 +216,7 @@ export default function Dashboard() {
     const file = e.target.files[0]
     if (file) {
       if (file.size > 2 * 1024 * 1024) {
-        alert('La imagen es demasiado grande. El límite es de 2MB.')
+        showAlert('La imagen es demasiado grande. El límite es de 2MB.', 'Imagen Excede Límite', 'warning')
         return
       }
       const reader = new FileReader()
