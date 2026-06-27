@@ -32,7 +32,6 @@ export default function Footer() {
             <h3 className="font-bold text-xs uppercase tracking-widest mb-4 text-[#800404]">Sesquicentenario</h3>
             <ul className="space-y-2.5 text-sm text-gray-400">
               <li><Link to="/cronograma" className="hover:text-white transition-colors">Cronograma de Eventos</Link></li>
-              <li><Link to="/inscripcion" className="hover:text-white transition-colors">Inscripción a Eventos</Link></li>
               <li><Link to="/certificados" className="hover:text-white transition-colors">Mis Certificados</Link></li>
               <li><Link to="/cena-gala" className="hover:text-white transition-colors">Cena de Gala</Link></li>
             </ul>

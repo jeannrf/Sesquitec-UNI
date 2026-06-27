@@ -3,7 +3,6 @@ import Header from './components/layout/Header'
 import Footer from './components/layout/Footer'
 import Home from './pages/Home'
 import Cronograma from './pages/Cronograma'
-import Inscripcion from './pages/Inscripcion'
 import Certificados from './pages/Certificados'
 import CenaGala from './pages/CenaGala'
 import Validar from './pages/Validar'
@@ -24,7 +23,7 @@ export default function App() {
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/cronograma" element={<Cronograma />} />
-          <Route path="/inscripcion" element={<Inscripcion />} />
+          <Route path="/inscripcion" element={<Navigate to="/" replace />} />
           <Route path="/certificados" element={<Certificados />} />
           <Route path="/cena-gala" element={<CenaGala />} />
           <Route path="/validar" element={<Validar />} />

@@ -13,9 +13,9 @@ import brochure3 from '../assets/Copia de BROCHURE SOFTWARE WEEK 2026 (2).png'
 
 const stats = [
   { value: '150', label: 'Años de historia' },
-  { value: '47', label: 'Eventos programados' },
-  { value: '9,000+', label: 'Participantes esperados' },
-  { value: '10', label: 'Facultades participantes' },
+  { value: '+50', label: 'Eventos programados' },
+  { value: '+30', label: 'Agrupaciones participantes' },
+  { value: '+10', label: 'Facultades involucradas' },
 ]
 
 const modules = [
@@ -63,7 +63,7 @@ function EventCard({ ev, onInscribe }) {
   return (
     <div className="event-card relative overflow-hidden cursor-pointer group h-72">
       {/* Background Cover Photo */}
-      <div 
+      <div
         className="absolute inset-0 bg-cover bg-center transition-transform duration-500 group-hover:scale-110"
         style={{ backgroundImage: `url(${bgImg})` }}
       />
@@ -73,9 +73,8 @@ function EventCard({ ev, onInscribe }) {
       {/* Static: status + date (visible by default) */}
       <div className="relative z-10 h-full flex flex-col justify-between p-5">
         <div className="flex items-start justify-between">
-          <span className={`text-[10px] font-black px-2.5 py-1 uppercase tracking-wider ${
-            isPost ? 'bg-gray-200 text-gray-700' : 'bg-[#800404] text-white'
-          }`}>
+          <span className={`text-[10px] font-black px-2.5 py-1 uppercase tracking-wider ${isPost ? 'bg-gray-200 text-gray-700' : 'bg-[#800404] text-white'
+            }`}>
             {isPost ? 'FINALIZADO' : 'PRÓXIMO'}
           </span>
           <span className="text-[10px] text-white bg-black/60 px-2 py-0.5 border border-white/20 font-bold uppercase tracking-wider">
@@ -146,20 +145,13 @@ function EventCard({ ev, onInscribe }) {
           >
             Ver Evento
           </Link>
-          {isPost ? (
+          {isPost && (
             <Link
               to="/cronograma"
               className="flex-1 text-center bg-white text-[#800404] font-black py-2 text-xs hover:bg-gray-100 transition-colors"
             >
               Ver Recap
             </Link>
-          ) : (
-            <button
-              onClick={(e) => { e.stopPropagation(); onInscribe(ev) }}
-              className="flex-1 text-center bg-white text-[#800404] font-black py-2 text-xs hover:bg-gray-100 transition-colors cursor-pointer border-0"
-            >
-              Inscribirme
-            </button>
           )}
         </div>
       </div>
@@ -185,7 +177,7 @@ export default function Home() {
   const featuredEvents = dbEvents
     .filter(e => e.status !== 'post')
     .slice(0, 4)
-  
+
   if (featuredEvents.length < 4) {
     const postEvents = dbEvents.filter(e => e.status === 'post')
     featuredEvents.push(...postEvents.slice(0, 4 - featuredEvents.length))
@@ -230,47 +222,47 @@ export default function Home() {
       {/* Hero + Cena de Gala */}
       <section className="bg-white px-4 py-4">
         <div className="grid lg:grid-cols-[1fr_420px] gap-3 items-stretch">
-            {/* Carrusel */}
-            <div className="relative overflow-hidden bg-black">
-              {/* Espaciador invisible para mantener la altura natural */}
-              <img src={banners[carouselIndex]} alt="" className="w-full block opacity-0 pointer-events-none" aria-hidden="true" />
-              {banners.map((img, i) => (
-                <img
+          {/* Carrusel */}
+          <div className="relative overflow-hidden bg-black">
+            {/* Espaciador invisible para mantener la altura natural */}
+            <img src={banners[carouselIndex]} alt="" className="w-full block opacity-0 pointer-events-none" aria-hidden="true" />
+            {banners.map((img, i) => (
+              <img
+                key={i}
+                src={img}
+                alt={`Banner ${i + 1}`}
+                className={`absolute top-0 left-0 w-full scale-[1.02] transition-opacity duration-1000 ease-in-out ${i === carouselIndex ? 'opacity-100' : 'opacity-0'}`}
+              />
+            ))}
+
+            <button
+              onClick={() => setCarouselIndex(i => (i - 1 + banners.length) % banners.length)}
+              className="absolute left-3 top-1/2 -translate-y-1/2 z-10 bg-black/40 hover:bg-black/70 text-white p-2 transition-colors cursor-pointer"
+            >
+              <ChevronLeft size={22} />
+            </button>
+            <button
+              onClick={() => setCarouselIndex(i => (i + 1) % banners.length)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 z-10 bg-black/40 hover:bg-black/70 text-white p-2 transition-colors cursor-pointer"
+            >
+              <ChevronRight size={22} />
+            </button>
+
+            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10 flex gap-2">
+              {banners.map((_, i) => (
+                <button
                   key={i}
-                  src={img}
-                  alt={`Banner ${i + 1}`}
-                  className={`absolute top-0 left-0 w-full scale-[1.02] transition-opacity duration-1000 ease-in-out ${i === carouselIndex ? 'opacity-100' : 'opacity-0'}`}
+                  onClick={() => setCarouselIndex(i)}
+                  className={`w-2.5 h-2.5 rounded-full transition-colors cursor-pointer border-0 ${i === carouselIndex ? 'bg-white' : 'bg-white/40'}`}
                 />
               ))}
-
-              <button
-                onClick={() => setCarouselIndex(i => (i - 1 + banners.length) % banners.length)}
-                className="absolute left-3 top-1/2 -translate-y-1/2 z-10 bg-black/40 hover:bg-black/70 text-white p-2 transition-colors cursor-pointer"
-              >
-                <ChevronLeft size={22} />
-              </button>
-              <button
-                onClick={() => setCarouselIndex(i => (i + 1) % banners.length)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 z-10 bg-black/40 hover:bg-black/70 text-white p-2 transition-colors cursor-pointer"
-              >
-                <ChevronRight size={22} />
-              </button>
-
-              <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10 flex gap-2">
-                {banners.map((_, i) => (
-                  <button
-                    key={i}
-                    onClick={() => setCarouselIndex(i)}
-                    className={`w-2.5 h-2.5 rounded-full transition-colors cursor-pointer border-0 ${i === carouselIndex ? 'bg-white' : 'bg-white/40'}`}
-                  />
-                ))}
-              </div>
             </div>
+          </div>
 
-            {/* Cena de Gala panel */}
-            <Link to="/cena-gala" className="block overflow-hidden">
-              <img src={galaGif} alt="Cena de Gala" className="w-full h-full object-cover" />
-            </Link>
+          {/* Cena de Gala panel */}
+          <Link to="/cena-gala" className="block overflow-hidden">
+            <img src={galaGif} alt="Cena de Gala" className="w-full h-full object-cover" />
+          </Link>
         </div>
       </section>
 
@@ -311,12 +303,6 @@ export default function Home() {
               <h2 className="text-3xl font-black text-gray-900">Próximas Conferencias</h2>
               <p className="text-gray-500 mt-1">Encuentro Internacional · 14 Jul 2026</p>
             </div>
-            <button
-              onClick={() => handleInscribe(mainEvent)}
-              className="bg-[#800404] text-white font-bold px-5 py-2 text-sm hover:bg-[#5a0303] transition-colors cursor-pointer"
-            >
-              Inscribirme
-            </button>
           </div>
           <div className="divide-y divide-gray-200 bg-white border border-gray-200">
             {upcomingConferences.map((c, i) => (
@@ -332,12 +318,6 @@ export default function Home() {
                   <MapPin size={14} />
                   {c.room}
                 </div>
-                <button
-                  onClick={() => handleInscribe({ ...mainEvent, title: `${mainEvent.title} - ${c.title}` })}
-                  className="shrink-0 border border-[#800404] text-[#800404] text-xs font-bold px-3 py-1.5 hover:bg-[#800404] hover:text-white transition-colors cursor-pointer bg-white"
-                >
-                  Asistir
-                </button>
               </div>
             ))}
           </div>
@@ -351,21 +331,21 @@ export default function Home() {
             <div className="h-1.5 bg-[#800404]" />
             <div className="p-8">
               <div className="flex justify-end">
-                <button 
+                <button
                   onClick={() => setSuccessModal(null)}
                   className="text-gray-400 hover:text-gray-600 p-1 hover:bg-gray-100 cursor-pointer"
                 >
                   <X size={18} />
                 </button>
               </div>
-              
+
               <div className="w-16 h-16 bg-green-50 border-2 border-green-500 rounded-full flex items-center justify-center mx-auto mb-5 text-green-600">
                 <CheckCircle size={32} />
               </div>
 
               <h2 className="text-xl font-black text-gray-900 mb-1">¡Inscripción Exitosa!</h2>
               <p className="text-xs text-gray-400 mb-4">Se ha completado tu registro en el sistema de la UNI</p>
-              
+
               <div className="bg-gray-50 border border-gray-200 p-4 text-left text-xs mb-6">
                 <p className="font-bold text-gray-700 mb-1.5">Detalles del pase:</p>
                 <div className="space-y-1 text-gray-600">

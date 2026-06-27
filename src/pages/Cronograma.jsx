@@ -103,8 +103,8 @@ function EventCard({ event }) {
                     >
                       Ver Evento
                     </button>
-                    {event.registrationOpen ? (
-                      event.isPaid ? (
+                    {event.isPaid && (
+                      event.registrationOpen ? (
                         <Link
                           to="/cena-gala"
                           className="flex-1 text-center bg-[#800404] text-white font-black py-3 hover:bg-[#5a0303] transition-colors text-sm"
@@ -112,17 +112,10 @@ function EventCard({ event }) {
                           Comprar entradas
                         </Link>
                       ) : (
-                        <Link
-                          to="/inscripcion"
-                          className="flex-1 text-center bg-[#800404] text-white font-black py-3 hover:bg-[#5a0303] transition-colors text-sm"
-                        >
-                          Inscribirme
-                        </Link>
+                        <button disabled className="flex-1 text-center bg-gray-200 text-gray-400 font-bold py-3 text-sm cursor-not-allowed">
+                          Cerrado
+                        </button>
                       )
-                    ) : (
-                      <button disabled className="flex-1 text-center bg-gray-200 text-gray-400 font-bold py-3 text-sm cursor-not-allowed">
-                        Cerrado
-                      </button>
                     )}
                   </div>
                 </div>

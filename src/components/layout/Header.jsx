@@ -7,7 +7,6 @@ import logo from '../../assets/logo.png'
 const navLinks = [
   { label: 'Inicio', path: '/' },
   { label: 'Eventos', path: '/cronograma' },
-  { label: 'Inscripción', path: '/inscripcion' },
   { label: 'Certificados', path: '/certificados' },
   { label: 'Cena de Gala', path: '/cena-gala' },
   { label: 'Validar Certificado', path: '/validar' },

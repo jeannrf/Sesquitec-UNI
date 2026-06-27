@@ -1985,16 +1985,17 @@ export default function Admin() {
       {/* MODAL: CREAR O EDITAR EVENTO */}
       {isEventModalOpen && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white w-full max-w-lg shadow-2xl border border-gray-200 overflow-hidden font-sans">
+          <div className="bg-white w-full max-w-lg shadow-2xl border border-gray-200 overflow-hidden font-sans flex flex-col max-h-[90vh]">
             
-            <div className="bg-[#800404] text-white p-5 flex items-center justify-between">
+            <div className="bg-[#800404] text-white p-5 flex items-center justify-between shrink-0">
               <h4 className="font-black text-base">{editingEvent ? 'Editar Evento' : 'Crear Nuevo Evento'}</h4>
               <button onClick={() => setIsEventModalOpen(false)} className="text-white/60 hover:text-white transition-colors cursor-pointer">
                 <X size={20} />
               </button>
             </div>
 
-            <form onSubmit={handleSaveEvent} className="p-6 space-y-4">
+            <form onSubmit={handleSaveEvent} className="flex flex-col flex-1 overflow-hidden">
+              <div className="p-6 space-y-4 overflow-y-auto flex-1">
               <div>
                 <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Título del Evento *</label>
                 <input
@@ -2183,11 +2184,13 @@ export default function Admin() {
                 </label>
               </div>
 
-              <div className="pt-4 border-t border-gray-100 flex gap-3 justify-end">
+              </div>
+
+              <div className="p-5 border-t border-gray-100 bg-gray-50 flex gap-3 justify-end shrink-0">
                 <button
                   type="button"
                   onClick={() => setIsEventModalOpen(false)}
-                  className="border border-gray-300 hover:bg-gray-50 text-gray-700 text-sm font-bold px-4 py-2 transition-colors cursor-pointer"
+                  className="border border-gray-300 bg-white hover:bg-gray-50 text-gray-700 text-sm font-bold px-4 py-2 transition-colors cursor-pointer"
                 >
                   Cancelar
                 </button>
@@ -2206,16 +2209,17 @@ export default function Admin() {
       {/* MODAL: CREAR O EDITAR PONENCIA */}
       {isConfModalOpen && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white w-full max-w-lg shadow-2xl border border-gray-200 overflow-hidden font-sans">
+          <div className="bg-white w-full max-w-lg shadow-2xl border border-gray-200 overflow-hidden font-sans flex flex-col max-h-[90vh]">
             
-            <div className="bg-[#800404] text-white p-5 flex items-center justify-between">
+            <div className="bg-[#800404] text-white p-5 flex items-center justify-between shrink-0">
               <h4 className="font-black text-base">{editingConf ? 'Editar Ponencia' : 'Crear Nueva Ponencia'}</h4>
               <button onClick={() => setIsConfModalOpen(false)} className="text-white/60 hover:text-white transition-colors cursor-pointer">
                 <X size={20} />
               </button>
             </div>
 
-            <form onSubmit={handleSaveConf} className="p-6 space-y-4">
+            <form onSubmit={handleSaveConf} className="flex flex-col flex-1 overflow-hidden">
+              <div className="p-6 space-y-4 overflow-y-auto flex-1">
               <div>
                 <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Título de la Ponencia *</label>
                 <input
@@ -2299,11 +2303,13 @@ export default function Admin() {
                 />
               </div>
 
-              <div className="pt-4 border-t border-gray-100 flex gap-3 justify-end">
+              </div>
+
+              <div className="p-5 border-t border-gray-100 bg-gray-50 flex gap-3 justify-end shrink-0">
                 <button
                   type="button"
                   onClick={() => setIsConfModalOpen(false)}
-                  className="border border-gray-300 hover:bg-gray-50 text-gray-700 text-sm font-bold px-4 py-2 transition-colors cursor-pointer"
+                  className="border border-gray-300 bg-white hover:bg-gray-50 text-gray-700 text-sm font-bold px-4 py-2 transition-colors cursor-pointer"
                 >
                   Cancelar
                 </button>
