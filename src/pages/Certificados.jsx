@@ -19,6 +19,10 @@ export default function Certificados() {
   }
 
   const handleDownload = (cert) => {
+    if (cert.pdfUrl) {
+      window.open(cert.pdfUrl, '_blank')
+      return
+    }
     // Generate a simple valid raw PDF stream on-the-fly
     const pdfContent = `%PDF-1.4
 %âãÏÓ

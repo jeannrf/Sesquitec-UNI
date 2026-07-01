@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { db } from '../services/db'
+import { supabase } from '../services/supabaseClient'
 import { useAlert } from '../context/AlertContext'
 import { 
   LayoutDashboard, Calendar, Mic, Users, QrCode, Award, Settings, 
@@ -580,7 +581,7 @@ export default function Admin() {
     setUploadQueue(prev => prev.filter(item => item.id !== id))
   }
 
-  const handleProcessUploads = () => {
+  const handleProcessUploads = async () => {
     if (uploadQueue.length === 0) return
     if (!selectedEventForCert) {
       showAlert('Por favor seleccione el evento asociado.', 'Evento Requerido', 'warning')
@@ -588,39 +589,99 @@ export default function Admin() {
     }
 
     setIsUploading(true)
-    setUploadProgress(10)
+    setUploadProgress(5)
     
-    // Simulate loading bars
-    const timer = setInterval(() => {
-      setUploadProgress(prev => {
-        if (prev >= 100) {
-          clearInterval(timer)
-          
-          // Actually create certificates in database
-          let count = 0
-          uploadQueue.forEach(item => {
-            if (item.dni !== 'No encontrado') {
-              db.createCertificate({
-                dni: item.dni,
-                titular: item.titular,
-                evento: selectedEventForCert,
-                horas: 0, // No curricular hours
-                tipo: certType,
-              })
-              count++
+    if (supabase) {
+      try {
+        let count = 0
+        const total = uploadQueue.length
+
+        for (let i = 0; i < total; i++) {
+          const item = uploadQueue[i]
+          if (item.dni !== 'No encontrado') {
+            const file = item.file
+            const fileExt = file.name.split('.').pop()
+            const fileName = `${item.dni}.${fileExt}`
+            const filePath = `${fileName}`
+
+            // Subir archivo al bucket 'certificados'
+            const { error: uploadError } = await supabase.storage
+              .from('certificados')
+              .upload(filePath, file, { cacheControl: '3600', upsert: true })
+
+            if (uploadError) {
+              console.error(`Error al subir archivo de DNI ${item.dni} a Storage:`, uploadError)
             }
-          })
-          
-          showAlert(`Carga masiva finalizada. Se procesaron y emitieron ${count} certificados con éxito.`, 'Carga Exitosa', 'success');
-          setUploadQueue([])
-          setIsUploading(false)
-          setUploadProgress(0)
-          refreshAllData()
-          return 100
+
+            // Obtener URL pública
+            const { data } = supabase.storage
+              .from('certificados')
+              .getPublicUrl(filePath)
+            
+            const publicUrl = data?.publicUrl || ''
+
+            // Registrar certificado en base de datos
+            db.createCertificate({
+              dni: item.dni,
+              titular: item.titular,
+              evento: selectedEventForCert,
+              horas: 0,
+              tipo: certType,
+              pdfUrl: publicUrl
+            })
+
+            count++
+          }
+
+          // Actualizar barra de progreso
+          setUploadProgress(Math.round(((i + 1) / total) * 100))
         }
-        return prev + 15
-      })
-    }, 200)
+
+        showAlert(`Carga masiva finalizada. Se procesaron y emitieron ${count} certificados con éxito.`, 'Carga Exitosa', 'success');
+        setUploadQueue([])
+        setIsUploading(false)
+        setUploadProgress(0)
+        refreshAllData()
+      } catch (err) {
+        console.error("Error en proceso de carga masiva Supabase:", err)
+        showAlert('Hubo un error al procesar las cargas masivas.', 'Error de Carga', 'error')
+        setIsUploading(false)
+        setUploadProgress(0)
+      }
+    } else {
+      // Fallback: Simulación local
+      setUploadProgress(10)
+      const timer = setInterval(() => {
+        setUploadProgress(prev => {
+          if (prev >= 100) {
+            clearInterval(timer)
+            
+            let count = 0
+            uploadQueue.forEach(item => {
+              if (item.dni !== 'No encontrado') {
+                db.createCertificate({
+                  dni: item.dni,
+                  titular: item.titular,
+                  evento: selectedEventForCert,
+                  horas: 0,
+                  tipo: certType,
+                  pdfUrl: ''
+                })
+                count++
+              }
+            })
+            
+            showAlert(`Carga masiva finalizada (Simulado). Se procesaron y emitieron ${count} certificados con éxito.`, 'Carga Exitosa', 'success');
+            setUploadQueue([])
+            setIsUploading(false)
+            setUploadProgress(0)
+            refreshAllData()
+            return 100
+          }
+          return prev + 15
+        })
+      }, 200)
+    }
   }
 
   const handleDeleteCertificate = (id) => {

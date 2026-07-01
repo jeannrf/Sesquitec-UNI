@@ -22,125 +22,132 @@ export function AuthProvider({ children }) {
     // Inicializar base de datos local (eventos, ponencias, certificados, logs)
     db.initializeDb()
 
-    const storedUsers = localStorage.getItem('uni_eventos_users')
-    const activeSession = localStorage.getItem('uni_eventos_session')
-    
-    let parsedUsers = []
-    
-    const adminUser = {
-      nombres: 'Admin',
-      apellidos: 'Sesquitec UNI',
-      email: 'admin@uni.pe',
-      dni: '99999999',
-      telefono: '999999999',
-      institucion: 'Universidad Nacional de Ingeniería',
-      password: 'adminpassword',
-      verified: true,
-      role: 'ADMIN',
-      profilePic: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200',
-      registeredEvents: [],
-      tickets: [],
-      certificates: []
-    }
+    const initAndSync = async () => {
+      // Sincronizar desde Supabase si está disponible
+      await db.syncFromSupabase()
 
-    const staffUser = {
-      nombres: 'Staff',
-      apellidos: 'Voluntario UNI',
-      email: 'staff@uni.pe',
-      dni: '88888888',
-      telefono: '988888888',
-      institucion: 'Universidad Nacional de Ingeniería',
-      password: 'staffpassword',
-      verified: true,
-      role: 'STAFF',
-      profilePic: 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&q=80&w=200',
-      registeredEvents: [],
-      tickets: [],
-      certificates: []
-    }
+      const storedUsers = localStorage.getItem('uni_eventos_users')
+      const activeSession = localStorage.getItem('uni_eventos_session')
+      
+      let parsedUsers = []
+      
+      const adminUser = {
+        nombres: 'Admin',
+        apellidos: 'Sesquitec UNI',
+        email: 'admin@uni.pe',
+        dni: '99999999',
+        telefono: '999999999',
+        institucion: 'Universidad Nacional de Ingeniería',
+        password: 'adminpassword',
+        verified: true,
+        role: 'ADMIN',
+        profilePic: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200',
+        registeredEvents: [],
+        tickets: [],
+        certificates: []
+      }
 
-    if (storedUsers) {
-      parsedUsers = JSON.parse(storedUsers)
-      let modified = false
-      // Asegurarse de que el usuario administrador de prueba esté sembrado
-      if (!parsedUsers.some(u => u.email === 'admin@uni.pe')) {
-        parsedUsers.push(adminUser)
-        modified = true
+      const staffUser = {
+        nombres: 'Staff',
+        apellidos: 'Voluntario UNI',
+        email: 'staff@uni.pe',
+        dni: '88888888',
+        telefono: '988888888',
+        institucion: 'Universidad Nacional de Ingeniería',
+        password: 'staffpassword',
+        verified: true,
+        role: 'STAFF',
+        profilePic: 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&q=80&w=200',
+        registeredEvents: [],
+        tickets: [],
+        certificates: []
       }
-      // Asegurarse de que el usuario staff de prueba esté sembrado
-      if (!parsedUsers.some(u => u.email === 'staff@uni.pe')) {
-        parsedUsers.push(staffUser)
-        modified = true
-      }
-      if (modified) {
+
+      if (storedUsers) {
+        parsedUsers = JSON.parse(storedUsers)
+        let modified = false
+        // Asegurarse de que el usuario administrador de prueba esté sembrado
+        if (!parsedUsers.some(u => u.email === 'admin@uni.pe')) {
+          parsedUsers.push(adminUser)
+          modified = true
+        }
+        // Asegurarse de que el usuario staff de prueba esté sembrado
+        if (!parsedUsers.some(u => u.email === 'staff@uni.pe')) {
+          parsedUsers.push(staffUser)
+          modified = true
+        }
+        if (modified) {
+          localStorage.setItem('uni_eventos_users', JSON.stringify(parsedUsers))
+        }
+        setUsers(parsedUsers)
+      } else {
+        // Seed initial users for testing purposes
+        parsedUsers = [
+          {
+            nombres: 'Juan',
+            apellidos: 'Pérez Silva',
+            email: 'juan.perez@uni.pe',
+            dni: '12345678',
+            telefono: '987654321',
+            institucion: 'Universidad Nacional de Ingeniería',
+            password: 'password123',
+            verified: true,
+            role: 'USER',
+            profilePic: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=200',
+            registeredEvents: [
+              {
+                id: 1,
+                title: 'Encuentro Internacional de Ingeniería UNI',
+                date: '14 JUL 2026',
+                time: '08:00 – 18:00',
+                location: 'Teatro UNI, Lima',
+                status: 'Confirmado',
+                conferences: ['c1', 'c3']
+              }
+            ],
+            tickets: [
+              {
+                id: 't-101',
+                eventId: 1,
+                eventTitle: 'Encuentro Internacional de Ingeniería UNI',
+                qrCode: 'UNI-150-TICKET-1-12345678-854721',
+                status: 'Por asistir',
+                date: '14 JUL 2026',
+                location: 'Teatro UNI, Lima',
+                conferences: ['c1', 'c3']
+              }
+            ],
+            certificates: [
+              {
+                id: 'cert-101',
+                evento: 'Taller de Introducción a Python (Pre-Sesquicentenario)',
+                fecha: '15 May 2026',
+                horas: 8,
+                emitido: '20 May 2026',
+                tipo: 'Participación',
+                codigoValidacion: 'UNI-CERT-101-12345678-2947'
+              }
+            ]
+          },
+          adminUser,
+          staffUser
+        ]
         localStorage.setItem('uni_eventos_users', JSON.stringify(parsedUsers))
+        setUsers(parsedUsers)
       }
-      setUsers(parsedUsers)
-    } else {
-      // Seed initial users for testing purposes
-      parsedUsers = [
-        {
-          nombres: 'Juan',
-          apellidos: 'Pérez Silva',
-          email: 'juan.perez@uni.pe',
-          dni: '12345678',
-          telefono: '987654321',
-          institucion: 'Universidad Nacional de Ingeniería',
-          password: 'password123',
-          verified: true,
-          role: 'USER',
-          profilePic: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=200',
-          registeredEvents: [
-            {
-              id: 1,
-              title: 'Encuentro Internacional de Ingeniería UNI',
-              date: '14 JUL 2026',
-              time: '08:00 – 18:00',
-              location: 'Teatro UNI, Lima',
-              status: 'Confirmado',
-              conferences: ['c1', 'c3']
-            }
-          ],
-          tickets: [
-            {
-              id: 't-101',
-              eventId: 1,
-              eventTitle: 'Encuentro Internacional de Ingeniería UNI',
-              qrCode: 'UNI-150-TICKET-1-12345678-854721',
-              status: 'Por asistir',
-              date: '14 JUL 2026',
-              location: 'Teatro UNI, Lima',
-              conferences: ['c1', 'c3']
-            }
-          ],
-          certificates: [
-            {
-              id: 'cert-101',
-              evento: 'Taller de Introducción a Python (Pre-Sesquicentenario)',
-              fecha: '15 May 2026',
-              horas: 8,
-              emitido: '20 May 2026',
-              tipo: 'Participación',
-              codigoValidacion: 'UNI-CERT-101-12345678-2947'
-            }
-          ]
-        },
-        adminUser,
-        staffUser
-      ]
-      localStorage.setItem('uni_eventos_users', JSON.stringify(parsedUsers))
-      setUsers(parsedUsers)
+
+      if (activeSession) {
+        const sessionData = JSON.parse(activeSession)
+        // Find latest user data from our local database
+        const foundUser = parsedUsers.find(u => u.email === sessionData.email)
+        if (foundUser) {
+          setUser(foundUser)
+        }
+      }
+      setLoading(false)
     }
 
-    if (activeSession) {
-      const sessionData = JSON.parse(activeSession)
-      // Find latest user data from our local database
-      const foundUser = parsedUsers.find(u => u.email === sessionData.email)
-      if (foundUser) {
-        setUser(foundUser)
-      }
-    }
-    setLoading(false)
+    initAndSync()
   }, [])
 
   // Save changes to a user inside the database
@@ -150,6 +157,7 @@ export function AuthProvider({ children }) {
     localStorage.setItem('uni_eventos_session', JSON.stringify({ email: updatedUser.email }))
     setUsers(updatedUsers)
     setUser(updatedUser)
+    db.syncUserToSupabase(updatedUser)
   }
 
   // Register standard email/password

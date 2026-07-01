@@ -68,7 +68,19 @@ CREATE TABLE certificados (
     emitido VARCHAR(50),
     tipo VARCHAR(50) DEFAULT 'Participación',
     codigo_validacion VARCHAR(100) UNIQUE NOT NULL,
-    pdf_url VARCHAR(255) -- Ruta al PDF o link en Supabase Storage
+);
+
+-- 6. Tabla de Logs de Asistencia QR
+CREATE TABLE qr_logs (
+    id VARCHAR(50) PRIMARY KEY,
+    timestamp VARCHAR(100) NOT NULL,
+    ticket_id VARCHAR(50),
+    event_title VARCHAR(200),
+    user_dni VARCHAR(8),
+    user_name VARCHAR(200),
+    status VARCHAR(50),
+    scanned_by VARCHAR(100),
+    tipo VARCHAR(50)
 );
 
 -- Índices recomendados para optimización de consultas recurrentes
@@ -76,3 +88,5 @@ CREATE INDEX idx_certificados_dni ON certificados(dni);
 CREATE INDEX idx_inscripciones_user_dni ON inscripciones(user_dni);
 CREATE INDEX idx_inscripciones_event_id ON inscripciones(event_id);
 CREATE INDEX idx_ponencias_event_id ON ponencias(event_id);
+CREATE INDEX idx_qr_logs_ticket_id ON qr_logs(ticket_id);
+CREATE INDEX idx_qr_logs_user_dni ON qr_logs(user_dni);

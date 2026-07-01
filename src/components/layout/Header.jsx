@@ -7,17 +7,8 @@ import logo from '../../assets/logo.png'
 const navLinks = [
   { label: 'Inicio', path: '/' },
   { label: 'Eventos', path: '/cronograma' },
-  { 
-    label: 'Encuentro Internacional', 
-    path: '/encuentro-internacional', 
-    subLinks: [
-      { label: 'Conferencias Internacionales', path: '/encuentro-internacional#sep1' },
-      { label: 'Feria Tecnológica Internacional', path: '/encuentro-internacional#sep2' },
-      { label: 'Cena de Reconocimiento', path: '/encuentro-internacional#sep3' },
-    ]
-  },
+  { label: 'Encuentro Internacional', path: '/encuentro-internacional' },
   { label: 'Certificados', path: '/certificados' },
-  { label: 'Validar Certificado', path: '/validar' },
 ]
 
 export default function Header() {
