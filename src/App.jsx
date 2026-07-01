@@ -4,7 +4,7 @@ import Footer from './components/layout/Footer'
 import Home from './pages/Home'
 import Cronograma from './pages/Cronograma'
 import Certificados from './pages/Certificados'
-import CenaGala from './pages/CenaGala'
+import EncuentroInternacional from './pages/EncuentroInternacional'
 import Validar from './pages/Validar'
 import Dashboard from './pages/Dashboard'
 import IniciarSesion from './pages/IniciarSesion'
@@ -25,7 +25,8 @@ export default function App() {
           <Route path="/cronograma" element={<Cronograma />} />
           <Route path="/inscripcion" element={<Navigate to="/" replace />} />
           <Route path="/certificados" element={<Certificados />} />
-          <Route path="/cena-gala" element={<CenaGala />} />
+          <Route path="/encuentro-internacional" element={<EncuentroInternacional />} />
+          <Route path="/cena-gala" element={<Navigate to="/encuentro-internacional" replace />} />
           <Route path="/validar" element={<Validar />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/admin" element={<Admin />} />

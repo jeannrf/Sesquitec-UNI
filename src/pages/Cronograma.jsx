@@ -1,8 +1,9 @@
 import { useState, useRef, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { ChevronDown, ChevronUp, MapPin, Clock, Calendar, ExternalLink, Play, Filter, X, Users, Image, ThumbsUp, MessageSquare, Share2, FileText, Award } from 'lucide-react'
+import { ChevronDown, ChevronUp, MapPin, Clock, Calendar, ExternalLink, Play, Filter, X, Users, Image, ThumbsUp, MessageSquare, Share2, FileText, Award, CheckCircle, UserPlus } from 'lucide-react'
 import { db } from '../services/db'
 import { useAlert } from '../context/AlertContext'
+import { useAuth } from '../context/AuthContext'
 
 const months = ['Todos', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre']
 
@@ -10,8 +11,34 @@ function EventCard({ event }) {
   const [open, setOpen] = useState(false)
   const [isDetailsOpen, setIsDetailsOpen] = useState(false)
   const [isRecapOpen, setIsRecapOpen] = useState(false)
+  const [isRegistering, setIsRegistering] = useState(false)
   const { showAlert } = useAlert()
+  const { user, openAuth } = useAuth()
   const isPost = event.status === 'post'
+
+  const registrationCount = event.registrationOpen && event.quota > 0
+    ? db.getEventRegistrationCount(event.id)
+    : 0
+  const isUserAlreadyRegistered = user ? db.isUserRegistered(user.email, event.id) : false
+  const isFull = event.quota > 0 && registrationCount >= event.quota
+
+  const handleQuickRegister = () => {
+    if (!user) {
+      openAuth('login')
+      return
+    }
+    setIsRegistering(true)
+    // Small delay for UX feedback
+    setTimeout(() => {
+      const result = db.registerUserToEvent(user.email, event.id)
+      setIsRegistering(false)
+      if (result.success) {
+        showAlert(result.message, 'Inscripción Exitosa', 'success')
+      } else {
+        showAlert(result.message, 'Error de Inscripción', 'warning')
+      }
+    }, 400)
+  }
   useEffect(() => {
     if (isDetailsOpen || isRecapOpen) {
       document.body.style.overflow = 'hidden'
@@ -86,10 +113,27 @@ function EventCard({ event }) {
             <div>
               {!isPost ? (
                 <div className="space-y-3">
-                  {event.quota > 0 && (
-                    <p className="text-sm text-gray-600">
-                      <span className="font-black text-[#800404]">{event.quota}</span> cupos disponibles
-                    </p>
+                  {/* Aforo progress bar */}
+                  {event.quota > 0 && event.registrationOpen && (
+                    <div>
+                      <div className="flex justify-between items-center mb-1">
+                        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wide">Aforo</span>
+                        <span className="text-[10px] font-black text-gray-600">
+                          {registrationCount} / {event.quota}
+                        </span>
+                      </div>
+                      <div className="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                        <div
+                          className={`h-full transition-all duration-500 rounded-full ${
+                            isFull ? 'bg-red-500' : registrationCount / event.quota > 0.8 ? 'bg-amber-500' : 'bg-emerald-500'
+                          }`}
+                          style={{ width: `${Math.min((registrationCount / event.quota) * 100, 100)}%` }}
+                        />
+                      </div>
+                      {isFull && (
+                        <p className="text-[10px] font-bold text-red-600 mt-1">Aforo completo</p>
+                      )}
+                    </div>
                   )}
                   {event.mapsUrl && (
                     <a href={event.mapsUrl} className="flex items-center gap-2 text-sm text-[#800404] hover:underline font-medium">
@@ -103,10 +147,10 @@ function EventCard({ event }) {
                     >
                       Ver Evento
                     </button>
-                    {event.isPaid && (
+                    {event.isPaid ? (
                       event.registrationOpen ? (
                         <Link
-                          to="/cena-gala"
+                          to="/encuentro-internacional"
                           className="flex-1 text-center bg-[#800404] text-white font-black py-3 hover:bg-[#5a0303] transition-colors text-sm"
                         >
                           Comprar entradas
@@ -116,7 +160,29 @@ function EventCard({ event }) {
                           Cerrado
                         </button>
                       )
-                    )}
+                    ) : event.registrationOpen ? (
+                      isUserAlreadyRegistered ? (
+                        <button disabled className="flex-1 text-center bg-emerald-50 text-emerald-700 font-black py-3 text-sm border border-emerald-200 cursor-default flex items-center justify-center gap-1.5">
+                          <CheckCircle size={14} /> Inscrito
+                        </button>
+                      ) : isFull ? (
+                        <button disabled className="flex-1 text-center bg-gray-100 text-gray-400 font-bold py-3 text-sm cursor-not-allowed border border-gray-200">
+                          Aforo Completo
+                        </button>
+                      ) : (
+                        <button
+                          onClick={handleQuickRegister}
+                          disabled={isRegistering}
+                          className="flex-1 text-center bg-[#800404] text-white font-black py-3 hover:bg-[#5a0303] transition-colors text-sm cursor-pointer flex items-center justify-center gap-1.5 disabled:opacity-60"
+                        >
+                          {isRegistering ? (
+                            <span className="animate-pulse">Procesando...</span>
+                          ) : (
+                            <><UserPlus size={14} /> Inscribirse</>
+                          )}
+                        </button>
+                      )
+                    ) : null}
                   </div>
                 </div>
               ) : (

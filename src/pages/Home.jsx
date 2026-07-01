@@ -49,11 +49,25 @@ const modules = [
   },
 ]
 
-const upcomingConferences = [
-  { id: 'c1', time: '09:00', title: 'Inteligencia Artificial en la Ingeniería Peruana', speaker: 'Dr. Roberto Vargas', room: 'Auditorium A' },
-  { id: 'c3', time: '11:00', title: 'Infraestructura Sostenible para el Siglo XXI', speaker: 'Mg. Carmen Flores', room: 'Auditorium B' },
-  { id: 'c8', time: '14:00', title: 'Innovación y Emprendimiento Tecnológico', speaker: 'Ing. Luis Mendoza', room: 'Aula Magna' },
-  { id: 'c7', time: '16:30', title: 'Energías Renovables en el Perú', speaker: 'Dr. Ana Torres', room: 'Auditorium C' },
+const programaGeneral = [
+  { date: 'JUEVES 2 DE JULIO', time: '10:00 a.m.', title: 'Ceremonia solemne de distinción honorífica "Doctor Honoris Causa" al Ph.D. Francisco Sagasti Hochhausler, expresidente de la República.', location: 'Auditorio de la Facultad de Ingeniería Industrial y de Sistemas.' },
+  { date: 'JUEVES 2 DE JULIO', time: '03:00 p.m.', title: 'Inauguración de la exposición temporal de obras de arte José Tola: "La danza de las sombras vivas".', location: 'Museo de Artes y Ciencias, Ing. Eduardo de Habich (Primer piso del pabellón central).' },
+  { date: 'VIERNES 3 DE JULIO', time: '10:00 a.m.', title: 'Ceremonia solemne de distinción honorífica "Doctor Honoris Causa" al Ing. James Valenzuela Murillo, fundador y CEO de RESEMIN.', location: 'Sala de Consejo Universitario.' },
+  { date: 'DOMINGO 5 DE JULIO', time: '10:00 a.m.', title: 'Paseo e izamiento de la bandera y desfile cívico.', location: 'Plaza a la Bandera - Pueblo Libre.' },
+  { date: 'VIERNES 10 DE JULIO', time: '11:00 a.m.', title: 'Reconocimiento a la excelencia académica e institucional.', location: 'Gran Teatro.' },
+  { date: 'SÁBADO 11 DE JULIO', time: '11:00 a.m.', title: 'Ceremonia de premiación "Olimpiada Nacional de Matemáticas" nivel escolar y nivel universitario.', location: 'Sala de Consejo Universitario.' },
+  { date: 'MARTES 14 DE JULIO', time: '11:00 a.m.', title: 'Romería en homenaje a los personajes ilustres de la UNI.', location: 'Puerta N.° 4 - Cementerio Presbítero Maestro - Barrios Altos / Lima.' },
+  { date: 'MARTES 14 DE JULIO', time: '04:00 p.m.', title: 'Presentación de libro "Universidad Nacional de Ingeniería: Una historia desde la intimidad (1876-2000)".', location: 'Sala de Consejo Universitario.' },
+  { date: 'MIÉRCOLES 15 DE JULIO', time: '06:00 p.m.', title: 'La historia de la UNI: 150 años el musical.', location: 'Gran Teatro.' },
+  { date: 'JUEVES 16 DE JULIO', time: '11:00 a.m.', title: 'Ceremonia de presentación de la moneda conmemorativa del Sesquicentenario.', location: 'Auditorio del Banco Central de Reserva del Perú / Jr. Sta. Rosa 441 - Lima.' },
+  { date: 'JUEVES 16 DE JULIO', time: '03:00 p.m.', title: 'Foro: Aportes que construyen país.', location: 'Gran Teatro.' },
+  { date: 'VIERNES 17 DE JULIO', time: '09:00 a.m.', title: 'Gran desfile cívico institucional del Sesquicentenario.', location: 'Cuadras 2 y 3 de Av. Habich - San Martín de Porres.' },
+  { date: 'LUNES 20 DE JULIO', time: '10:00 a.m.', title: 'Misa Te Deum.', location: 'Catedral de Lima - Plaza de Armas de Lima, Jr. Carabaya s/n.' },
+  { date: 'MARTES 21 DE JULIO', time: '10:00 a.m.', title: 'Inauguración de la olimpiada interuniversitaria (Fútbol, Vóley, Natación).', location: 'Estadio.' },
+  { date: 'MIÉRCOLES 22 DE JULIO', time: '08:00 a.m.', title: 'Izamiento de banderas y colocación de ofrendas florales.', location: 'Plazuela externa del pabellón central.' },
+  { date: 'MIÉRCOLES 22 DE JULIO', time: '09:30 a.m.', title: 'Ceremonia de cápsula del tiempo.', location: 'Plazuela interna del pabellón central.' },
+  { date: 'MIÉRCOLES 22 DE JULIO', time: '11:00 a.m.', title: 'Ceremonia central sesión solemne.', location: 'Gran Teatro.' },
+  { date: 'LUNES 3 DE AGOSTO', time: '03:00 p.m.', title: 'Ceremonia solemne de distinción honorífica "Doctor Honoris Causa" al Ing. Jorge Rodríguez Rodríguez, presidente fundador del Grupo Gloria.', location: 'Sala de Consejo Universitario.' }
 ]
 
 function EventCard({ ev, onInscribe }) {
@@ -165,6 +179,7 @@ export default function Home() {
   const [successModal, setSuccessModal] = useState(null)
   const navigate = useNavigate()
   const [carouselIndex, setCarouselIndex] = useState(0)
+  const [showAllActivities, setShowAllActivities] = useState(false)
   const banners = [brochure1, brochure2, brochure3]
 
   useEffect(() => {
@@ -259,10 +274,71 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Cena de Gala panel */}
-          <Link to="/cena-gala" className="block overflow-hidden">
-            <img src={galaGif} alt="Cena de Gala" className="w-full h-full object-cover" />
-          </Link>
+          {/* Actividades de Septiembre (Columna Derecha) */}
+          <div className="flex flex-col gap-2.5 justify-between h-full min-w-0">
+            {/* Card 1: Encuentro Internacional */}
+            <Link 
+              to="/cronograma?filtro=conferencias" 
+              className="relative overflow-hidden group flex-1 h-[120px] lg:h-auto min-h-[110px] border border-gray-150 flex flex-col justify-end p-4 text-white shadow-sm"
+            >
+              <div 
+                className="absolute inset-0 bg-cover bg-center transition-transform duration-500 group-hover:scale-115"
+                style={{ backgroundImage: `url('https://images.unsplash.com/photo-1540575467063-178a50c2df87?auto=format&fit=crop&q=80&w=600')` }}
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/40 to-transparent z-[1]" />
+              <div className="relative z-10">
+                <span className="text-[9px] bg-[#800404] text-white font-black px-2 py-0.5 uppercase tracking-wider inline-block">
+                  7 - 11 Sep
+                </span>
+                <h4 className="font-black text-sm mt-1 leading-tight group-hover:text-red-200 transition-colors uppercase tracking-wide">
+                  Encuentro Internacional
+                </h4>
+                <p className="text-[10px] text-gray-305">Conferencias Magistrales UNI</p>
+              </div>
+            </Link>
+
+            {/* Card 2: Feria Tecnológica */}
+            <Link 
+              to="/cronograma?filtro=feria" 
+              className="relative overflow-hidden group flex-1 h-[120px] lg:h-auto min-h-[110px] border border-gray-150 flex flex-col justify-end p-4 text-white shadow-sm"
+            >
+              <div 
+                className="absolute inset-0 bg-cover bg-center transition-transform duration-500 group-hover:scale-115"
+                style={{ backgroundImage: `url('https://images.unsplash.com/photo-1485827404703-89b55fcc595e?auto=format&fit=crop&q=80&w=600')` }}
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/40 to-transparent z-[1]" />
+              <div className="relative z-10">
+                <span className="text-[9px] bg-[#800404] text-white font-black px-2 py-0.5 uppercase tracking-wider inline-block">
+                  7 - 11 Sep
+                </span>
+                <h4 className="font-black text-sm mt-1 leading-tight group-hover:text-red-200 transition-colors uppercase tracking-wide">
+                  Feria Tecnológica
+                </h4>
+                <p className="text-[10px] text-gray-305">Innovación y Exposición Internacional</p>
+              </div>
+            </Link>
+
+            {/* Card 3: Cena de Reconocimiento */}
+            <Link 
+              to="/cena-gala" 
+              className="relative overflow-hidden group flex-1 h-[120px] lg:h-auto min-h-[110px] border border-[#d4af37]/35 flex flex-col justify-end p-4 text-white shadow-sm"
+            >
+              <div 
+                className="absolute inset-0 bg-cover bg-center transition-transform duration-500 group-hover:scale-115"
+                style={{ backgroundImage: `url('https://images.unsplash.com/photo-1519671482749-fd09be7ccebf?auto=format&fit=crop&q=80&w=600')` }}
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/45 to-transparent z-[1]" />
+              <div className="relative z-10">
+                <span className="text-[9px] bg-[#d4af37] text-black font-black px-2 py-0.5 uppercase tracking-wider inline-block">
+                  12 Sep
+                </span>
+                <h4 className="font-black text-sm mt-1 leading-tight text-[#d4af37] group-hover:text-white transition-colors uppercase tracking-wide">
+                  Cena de Reconocimiento
+                </h4>
+                <p className="text-[10px] text-gray-305">Homenaje del Sesquicentenario</p>
+              </div>
+            </Link>
+          </div>
         </div>
       </section>
 
@@ -295,31 +371,215 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Upcoming conferences */}
-      <section className="py-16 bg-gray-50">
-        <div className="max-w-7xl mx-auto px-4">
-          <div className="flex items-center justify-between mb-8">
-            <div>
-              <h2 className="text-3xl font-black text-gray-900">Próximas Conferencias</h2>
-              <p className="text-gray-500 mt-1">Encuentro Internacional · 14 Jul 2026</p>
+      {/* Qué significa 150 años de la UNI */}
+      <section className="py-20 bg-white">
+        <div className="max-w-7xl mx-auto px-4 grid md:grid-cols-12 gap-10 items-center">
+          {/* Left Text */}
+          <div className="md:col-span-7 space-y-6">
+            <h2 className="text-3xl font-black text-gray-900 tracking-tight leading-none">
+              ¿Qué significa 150 años de la UNI?
+            </h2>
+            <div className="text-sm text-gray-605 space-y-4 leading-relaxed font-sans font-medium">
+              <p>
+                Un siglo y medio de excelencia al servicio de la ciencia, la ingeniería, la arquitectura y el desarrollo del Perú.
+              </p>
+              <p>
+                <strong>Desde 1876, la Universidad Nacional de Ingeniería (UNI)</strong> ha sido un referente en la formación de profesionales, la Investigación y la Innovación, contribuyendo de manera decisiva al progreso del país. Durante estos 150 años, la ciencia ha impulsado la generación de conocimiento, la ingeniería ha transformado desafíos en soluciones para la industria, la infraestructura y la tecnología, y la arquitectura ha promovido el diseño de espacios sostenibles que mejoran la calidad de vida.
+              </p>
+              <p>
+                El legado de la UNI se refleja en miles de egresados que, con talento, ética y compromiso, lideran proyectos de alto impacto en los sectores público y privado, impulsan el desarrollo científico y tecnológico, y contribuyen a construir un Perú más competitivo y un mundo más innovador y sostenible.
+              </p>
+            </div>
+            <div className="pt-2">
+              <button 
+                onClick={() => showAlert('El Sesquicentenario de la UNI conmemora 150 años de liderazgo académico, desde su fundación en 1876 por el Ing. Eduardo de Habich.', 'Significado de los 150 Años', 'info')}
+                className="text-[#800404] hover:text-[#5a0303] text-xs font-black tracking-wide uppercase flex items-center gap-1 group hover:underline cursor-pointer"
+              >
+                + Información <ChevronRight size={14} className="transition-transform group-hover:translate-x-0.5" />
+              </button>
             </div>
           </div>
-          <div className="divide-y divide-gray-200 bg-white border border-gray-200">
-            {upcomingConferences.map((c, i) => (
-              <div key={i} className="flex items-center gap-6 py-4 px-5 hover:bg-red-50 transition-colors group">
-                <div className="w-16 shrink-0 text-center">
-                  <span className="text-lg font-black text-[#800404]">{c.time}</span>
-                </div>
-                <div className="flex-1">
-                  <p className="font-bold text-gray-900 group-hover:text-[#800404] transition-colors">{c.title}</p>
-                  <p className="text-sm text-gray-500 mt-0.5">{c.speaker}</p>
-                </div>
-                <div className="hidden sm:flex items-center gap-1.5 text-gray-400 text-sm shrink-0">
-                  <MapPin size={14} />
-                  {c.room}
+
+          {/* Right Image */}
+          <div className="md:col-span-5 relative group">
+            <div className="absolute inset-0 bg-[#800404] translate-x-3 translate-y-3 z-0" />
+            <div className="relative z-10 overflow-hidden border border-gray-250 bg-white">
+              <img 
+                src="https://images.unsplash.com/photo-1606857521015-7f9fcf423740?auto=format&fit=crop&q=80&w=800" 
+                alt="150 Años de la UNI" 
+                className="w-full h-80 object-cover grayscale-[35%] group-hover:grayscale-0 transition-all duration-700 group-hover:scale-105"
+              />
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Propuesta de la UNI para el Futuro del Perú 2026-2050 */}
+      <section className="py-20 bg-gray-50 border-t border-b border-gray-200">
+        <div className="max-w-7xl mx-auto px-4">
+          
+          {/* Header area of Propuesta */}
+          <div className="grid md:grid-cols-12 gap-8 items-start mb-16">
+            <div className="md:col-span-6">
+              <h2 className="text-3xl font-black text-gray-900 tracking-tight leading-tight">
+                Propuesta de la UNI para el Futuro del Perú 2026-2050 –
+              </h2>
+              <h3 className="text-lg font-black text-[#800404] uppercase tracking-wider mt-2">
+                Libro de Oro del Sesquicentenario
+              </h3>
+            </div>
+            <div className="md:col-span-6 md:border-l-2 md:border-gray-250 md:pl-8 pt-2">
+              <p className="text-sm text-gray-505 leading-relaxed font-sans font-medium">
+                El objetivo de la propuesta de libro de oro de la UNI es generar aportes académicos y técnicos sobre las perspectivas de desarrollo del país hacia el año 2050.
+              </p>
+            </div>
+          </div>
+
+          {/* Grid of Books */}
+          <div className="grid sm:grid-cols-3 gap-8">
+            {/* Book 1: Primera Versión */}
+            <div 
+              onClick={() => showAlert('La Primera Versión comprende la etapa de Análisis y Diagnóstico integral de los 150 años de trayectoria de la UNI y su impacto nacional.', 'Primera Versión - Libro de Oro', 'info')}
+              className="flex flex-col items-center group cursor-pointer"
+            >
+              {/* Book Spine Cover 3D simulation */}
+              <div className="relative w-48 h-72 bg-gradient-to-br from-stone-900 via-stone-800 to-stone-950 shadow-xl transition-all duration-500 group-hover:-translate-y-3 group-hover:shadow-2xl flex flex-col justify-between p-6 border-l-[12px] border-l-stone-950 border border-stone-800 rounded-r-sm">
+                {/* Gold details */}
+                <div className="border border-[#d4af37]/20 p-3 h-full flex flex-col justify-between items-center text-center w-full">
+                  <span className="text-[8px] text-[#d4af37] font-black uppercase tracking-widest">150 Años UNI</span>
+                  <div className="space-y-1">
+                    <p className="text-[10px] text-white font-bold uppercase tracking-wide leading-tight">PROPUESTA DE LA UNI</p>
+                    <p className="text-[8px] text-gray-400 font-medium">para el Futuro del Perú</p>
+                    <p className="text-[9px] text-[#d4af37] font-bold">2026 – 2050</p>
+                  </div>
+                  <div className="w-6 h-px bg-[#d4af37]/40" />
+                  <span className="text-[8px] text-gray-300 font-bold uppercase tracking-wider">Libro de Oro</span>
                 </div>
               </div>
-            ))}
+              {/* Book Description Below */}
+              <div className="text-center mt-5 space-y-1.5 px-2">
+                <h4 className="font-black text-gray-900 text-sm">Primera Versión</h4>
+                <p className="text-xs text-gray-405 leading-normal">Etapa de Análisis y Diagnóstico de los 150 años de la UNI</p>
+                <span className="text-[10px] text-[#800404] font-black group-hover:underline inline-flex items-center gap-0.5">
+                  + Información <ChevronRight size={10} />
+                </span>
+              </div>
+            </div>
+
+            {/* Book 2: Segunda Versión */}
+            <div 
+              onClick={() => showAlert('La Segunda Versión documenta la elaboración de propuestas técnicas y académicas específicas de las 11 facultades de la UNI.', 'Segunda Versión - Libro de Oro', 'info')}
+              className="flex flex-col items-center group cursor-pointer"
+            >
+              <div className="relative w-48 h-72 bg-gradient-to-br from-[#4a2612] via-[#3a1d0d] to-[#261005] shadow-xl transition-all duration-500 group-hover:-translate-y-3 group-hover:shadow-2xl flex flex-col justify-between p-6 border-l-[12px] border-l-[#261005] border border-[#5a2e17]/20 rounded-r-sm">
+                <div className="border border-[#d4af37]/20 p-3 h-full flex flex-col justify-between items-center text-center w-full">
+                  <span className="text-[8px] text-[#d4af37] font-black uppercase tracking-widest">150 Años UNI</span>
+                  <div className="space-y-1">
+                    <p className="text-[10px] text-white font-bold uppercase tracking-wide leading-tight">PROPUESTA DE LA UNI</p>
+                    <p className="text-[8px] text-gray-300 font-medium">para el Futuro del Perú</p>
+                    <p className="text-[9px] text-[#d4af37] font-bold">2026 – 2050</p>
+                  </div>
+                  <div className="w-6 h-px bg-[#d4af37]/40" />
+                  <span className="text-[8px] text-gray-300 font-bold uppercase tracking-wider">Libro de Oro</span>
+                </div>
+              </div>
+              <div className="text-center mt-5 space-y-1.5 px-2">
+                <h4 className="font-black text-gray-900 text-sm">Segunda Versión</h4>
+                <p className="text-xs text-gray-405 leading-normal">Elaboración de propuestas de las 11 facultades UNI</p>
+                <span className="text-[10px] text-[#800404] font-black group-hover:underline inline-flex items-center gap-0.5">
+                  + Información <ChevronRight size={10} />
+                </span>
+              </div>
+            </div>
+
+            {/* Book 3: Presentación Final */}
+            <div 
+              onClick={() => showAlert('La Presentación Final recopila e integra la propuesta final oficial de la UNI para el desarrollo nacional proyectado hacia el 2050.', 'Presentación Final - Libro de Oro', 'info')}
+              className="flex flex-col items-center group cursor-pointer"
+            >
+              {/* Metallic Gold Book */}
+              <div className="relative w-48 h-72 bg-gradient-to-br from-[#d4af37] via-[#fbf5b7] to-[#aa771c] shadow-xl transition-all duration-500 group-hover:-translate-y-3 group-hover:shadow-2xl flex flex-col justify-between p-6 border-l-[12px] border-l-[#996515] border border-[#ffd700]/30 rounded-r-sm">
+                <div className="border border-stone-900/10 p-3 h-full flex flex-col justify-between items-center text-center w-full">
+                  <span className="text-[8px] text-stone-900 font-black uppercase tracking-widest">150 Años UNI</span>
+                  <div className="space-y-1">
+                    <p className="text-[10px] text-stone-900 font-black uppercase tracking-wide leading-tight">PROPUESTA DE LA UNI</p>
+                    <p className="text-[8px] text-stone-850 font-bold">para el Futuro del Perú</p>
+                    <p className="text-[9px] text-stone-900 font-black">2026 – 2050</p>
+                  </div>
+                  <div className="w-6 h-px bg-stone-900/20" />
+                  <span className="text-[8px] text-stone-900 font-black uppercase tracking-wider">Libro de Oro</span>
+                </div>
+              </div>
+              <div className="text-center mt-5 space-y-1.5 px-2">
+                <h4 className="font-black text-gray-900 text-sm">Presentación Final</h4>
+                <p className="text-xs text-gray-405 leading-normal">Presentación de la Propuesta de la UNI para el desarrollo del Perú</p>
+                <span className="text-[10px] text-[#800404] font-black group-hover:underline inline-flex items-center gap-0.5">
+                  + Información <ChevronRight size={10} />
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Programa General de Actividades (Timeline) */}
+      <section className="py-20 bg-white">
+        <div className="max-w-4xl mx-auto px-4">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl font-black text-gray-900 tracking-tight">Programa General de Actividades</h2>
+            <p className="text-sm text-[#800404] uppercase font-black tracking-widest mt-2">Del 2 de Julio al 3 de Agosto</p>
+          </div>
+
+          <div className="relative border-l border-red-250 ml-4 md:ml-32 space-y-8">
+            {(showAllActivities ? programaGeneral : programaGeneral.slice(0, 6)).map((act, i) => {
+              // Extract date items
+              const dateParts = act.date.split(' DE ');
+              const dayStr = dateParts[0]; // e.g. "JUEVES 2" or "VIERNES 3"
+              const monthStr = dateParts[1]; // e.g. "JULIO" or "AGOSTO"
+              const dayNum = dayStr.match(/\d+/)?.[0] || '';
+              const weekDay = dayStr.replace(dayNum, '').trim();
+
+              return (
+                <div key={i} className="relative pl-6 group">
+                  {/* Timeline node */}
+                  <div className="absolute -left-[6.5px] top-1.5 w-3 h-3 rounded-full bg-[#800404] border-2 border-white group-hover:scale-125 transition-transform duration-200 z-10" />
+
+                  {/* Left Date indicator for large screens */}
+                  <div className="md:absolute md:-left-32 md:top-0 md:w-24 md:text-right hidden md:block">
+                    <p className="text-xl font-black text-gray-900 leading-none">{dayNum}</p>
+                    <p className="text-[10px] text-[#800404] uppercase font-black mt-0.5">{monthStr?.slice(0, 3)}</p>
+                    <p className="text-[8px] text-gray-400 uppercase font-bold tracking-wider mt-0.5">{weekDay}</p>
+                  </div>
+
+                  {/* Main Card */}
+                  <div className="bg-white border border-gray-200 p-5 shadow-sm hover:border-[#800404] transition-all hover:shadow-md rounded-none">
+                    {/* Mobile Date Header */}
+                    <div className="md:hidden block mb-2 text-[#800404] text-xs font-black uppercase tracking-wider">
+                      {act.date}
+                    </div>
+                    
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-2.5 text-[10px] font-bold text-gray-400 uppercase tracking-wider">
+                      <span className="flex items-center gap-1.5"><Clock size={11} className="text-[#800404]" /> {act.time}</span>
+                      <span className="flex items-center gap-1.5 max-w-sm truncate" title={act.location}><MapPin size={11} className="text-[#800404]" /> {act.location}</span>
+                    </div>
+
+                    <h4 className="font-bold text-gray-800 text-sm leading-relaxed group-hover:text-[#800404] transition-colors">
+                      {act.title}
+                    </h4>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Toggle Button */}
+          <div className="text-center mt-12">
+            <button
+              onClick={() => setShowAllActivities(!showAllActivities)}
+              className="bg-[#800404] hover:bg-[#5a0303] text-white font-black text-xs px-6 py-3.5 transition-colors uppercase tracking-wider cursor-pointer inline-flex items-center gap-1.5 shadow-sm active:scale-95 rounded-none"
+            >
+              {showAllActivities ? 'Ver Menos Actividades' : 'Ver Todas las Actividades'}
+            </button>
           </div>
         </div>
       </section>

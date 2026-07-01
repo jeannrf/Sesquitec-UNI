@@ -25,6 +25,36 @@ const initialEvents = [
     tags: ['Investigación', 'Innovación', 'Tecnología']
   },
   {
+    id: 'may2',
+    status: 'post',
+    date: '05 May 2026',
+    time: '18:00 – 20:00',
+    title: 'Lanzamiento del Sesquicentenario UNI',
+    organizer: 'Comisión del Sesquicentenario',
+    location: 'Teatro UNI, Lima',
+    description: 'Ceremonia oficial del lanzamiento del programa oficial de los 150 años de la Universidad Nacional de Ingeniería.',
+    quota: 0,
+    registrationOpen: false,
+    imageUrl: 'https://images.unsplash.com/photo-1511578314322-379afb476865?auto=format&fit=crop&q=80&w=800',
+    category: 'Cultural',
+    tags: ['Aniversario', 'UNI', 'Cultural']
+  },
+  {
+    id: 'may3',
+    status: 'post',
+    date: '26 May 2026',
+    time: '14:30 – 17:30',
+    title: 'Taller: Metodologías de Investigación Científica',
+    organizer: 'Vicerrectorado Académico',
+    location: 'Auditorio del Pabellón Central, Lima',
+    description: 'Seminario práctico de metodologías de investigación avanzada y redacción de artículos científicos para ingeniería.',
+    quota: 0,
+    registrationOpen: false,
+    imageUrl: 'https://images.unsplash.com/photo-1434030216411-0b793f4b4173?auto=format&fit=crop&q=80&w=800',
+    category: 'Académico',
+    tags: ['Taller', 'Investigación', 'Académico']
+  },
+  {
     id: 'jun1',
     status: 'post',
     date: '10 Jun 2026',
@@ -55,11 +85,27 @@ const initialEvents = [
     tags: ['FIIS', 'Tecnología', 'Programación']
   },
   {
+    id: 'jun3',
+    status: 'post',
+    date: '25 Jun 2026',
+    time: '15:00 – 19:00',
+    title: 'Taller de Robótica y Automatización Aplicada',
+    organizer: 'CTIC UNI',
+    location: 'Laboratorios del CTIC, Lima',
+    description: 'Taller práctico sobre microcontroladores y programación aplicados a sistemas de robótica e inteligencia artificial.',
+    quota: 0,
+    registrationOpen: false,
+    imageUrl: 'https://images.unsplash.com/photo-1485827404703-89b55fcc595e?auto=format&fit=crop&q=80&w=800',
+    category: 'Académico',
+    tags: ['Robótica', 'Automatización', 'Taller']
+  },
+  {
     id: 'jul1', // También conocido como ID 1
     status: 'pre',
     date: '14 Jul 2026',
     time: '08:00 – 18:00',
-    title: 'Encuentro Internacional de Ingeniería UNI',
+    max_edit_date: '2026-07-10T23:59:59Z',
+    title: 'Encuentro Internacional de Ingeniería UNI - Fase I',
     organizer: 'Comisión del Sesquicentenario',
     location: 'Teatro UNI, Lima',
     description: 'Evento central del Sesquicentenario. Incluye 10 conferencias magistrales con ponentes nacionales e internacionales en áreas de Ingeniería Civil, Sistemas, Mecánica, Eléctrica y más.',
@@ -85,6 +131,21 @@ const initialEvents = [
     tags: ['UNI', 'Aniversario', 'Cultural']
   },
   {
+    id: 'jul3',
+    status: 'pre',
+    date: '28 Jul 2026',
+    time: '18:00 – 21:00',
+    title: 'Presentación del Libro de Oro del Sesquicentenario',
+    organizer: 'Rectorado y Centro Cultural UNI',
+    location: 'Cúpula UNI, Lima',
+    description: 'Ceremonia de presentación y entrega de la edición de gala del Libro de Oro de la Universidad Nacional de Ingeniería.',
+    registrationOpen: false,
+    quota: 0,
+    imageUrl: 'https://images.unsplash.com/photo-1512820790803-83ca734da794?auto=format&fit=crop&q=80&w=800',
+    category: 'Cultural',
+    tags: ['Libro de Oro', 'Historia', 'Cultura']
+  },
+  {
     id: 'ago1',
     status: 'pre',
     date: '08 Ago 2026',
@@ -104,6 +165,7 @@ const initialEvents = [
     status: 'pre',
     date: '22 Ago 2026',
     time: '19:00 – 23:00',
+    max_edit_date: '2026-08-15T23:59:59Z',
     title: 'Cena de Gala de Egresados',
     organizer: 'Comisión del Sesquicentenario',
     location: 'Gran Hotel Bolívar, Lima',
@@ -116,19 +178,53 @@ const initialEvents = [
     tags: ['Egresados', 'Gala', 'Social']
   },
   {
-    id: 'sep1', // También conocido como ID 4
+    id: 'sep1',
     status: 'pre',
-    date: '15 Sep 2026',
-    time: '09:00 – 13:00',
-    title: 'Feria de Empleo UNI 2026',
-    organizer: 'Oficina de Bienestar Universitario',
-    location: 'Pabellón Central, UNI, Lima',
-    description: 'Conecta con más de 50 empresas líderes en ingeniería y tecnología. Trae tu CV actualizado.',
+    date: '08 Sep 2026',
+    time: '09:00 – 18:00',
+    max_edit_date: '2026-09-01T23:59:59Z',
+    title: 'Encuentro Internacional de Ingeniería - Fase II',
+    organizer: 'Comisión del Sesquicentenario',
+    location: 'Teatro UNI, Lima',
+    description: 'Segunda fase de conferencias magistrales e integradoras de investigadores y líderes globales de la ingeniería.',
     registrationOpen: true,
-    quota: 1200,
-    imageUrl: 'https://images.unsplash.com/photo-1521791136368-1a8684c0286d?auto=format&fit=crop&q=80&w=800',
-    category: 'Laboral',
-    tags: ['Feria', 'Empleo', 'Empresas']
+    quota: 960,
+    imageUrl: 'https://images.unsplash.com/photo-1475721027785-f74eccf877e2?auto=format&fit=crop&q=80&w=800',
+    category: 'Académico',
+    tags: ['Internacional', 'Conferencias', 'Septiembre']
+  },
+  {
+    id: 'sep2',
+    status: 'pre',
+    date: '10 Sep 2026',
+    time: '10:00 – 20:00',
+    max_edit_date: '2026-09-01T23:59:59Z',
+    title: 'Feria Tecnológica Internacional UNI',
+    organizer: 'Sesquitec / OTI',
+    location: 'Explanada de la UNI, Lima',
+    description: 'La feria tecnológica internacional más grande del Sesquicentenario con exhibición de prototipos, stands empresariales y ponencias de innovación.',
+    registrationOpen: true,
+    quota: 1500,
+    imageUrl: 'https://images.unsplash.com/photo-1485827404703-89b55fcc595e?auto=format&fit=crop&q=80&w=800',
+    category: 'Tecnología',
+    tags: ['Feria', 'Tecnología', 'Innovación']
+  },
+  {
+    id: 'sep3',
+    status: 'pre',
+    date: '12 Sep 2026',
+    time: '20:00 – 23:59',
+    max_edit_date: '2026-09-05T23:59:59Z',
+    title: 'Cena de Reconocimiento del Sesquicentenario',
+    organizer: 'Comisión del Sesquicentenario',
+    location: 'Gran Hotel Bolívar, Lima',
+    description: 'Homenaje central y cena de honor del Sesquicentenario de la UNI para egresados, personalidades destacadas y autoridades nacionales.',
+    registrationOpen: true,
+    quota: 500,
+    isPaid: true,
+    imageUrl: 'https://images.unsplash.com/photo-1469371670807-013ccf25f16a?auto=format&fit=crop&q=80&w=800',
+    category: 'Egresados',
+    tags: ['Cena', 'Reconocimiento', 'Gala', 'Social']
   },
   {
     id: 'oct1',
@@ -251,7 +347,7 @@ export const db = {
       try {
         const parsed = JSON.parse(existingEvents)
         // Limpiar si es la base de datos antigua (sin imágenes o con menos eventos)
-        if (parsed.length > 0 && (!parsed[0].imageUrl || parsed.length < 11)) {
+        if (parsed.length > 0 && (!parsed[0].imageUrl || parsed.length < 15)) {
           localStorage.removeItem(EVENTS_KEY)
           localStorage.removeItem(CONFERENCES_KEY)
           localStorage.removeItem(CERTIFICATES_KEY)
@@ -397,7 +493,7 @@ export const db = {
       titular: cert.titular,
       evento: cert.evento,
       fecha: cert.fecha || new Date().toLocaleDateString('es-PE', { day: '2-digit', month: 'short', year: 'numeric' }),
-      horas: parseInt(cert.horas) || 4,
+      horas: (typeof cert.horas !== 'undefined' && cert.horas !== null) ? parseInt(cert.horas) : 4,
       emitido: cert.emitido || new Date().toLocaleDateString('es-PE', { day: '2-digit', month: 'short', year: 'numeric' }),
       tipo: cert.tipo || 'Participación',
       codigoValidacion: cert.codigoValidacion || `CERT-UNI-2026-${cert.dni}-${Math.floor(100 + Math.random() * 900)}`,
@@ -486,5 +582,106 @@ export const db = {
       return true
     }
     return false
+  },
+
+  // --- INSCRIPCIÓN A EVENTOS ---
+
+  /** Cuenta cuántos usuarios tienen un ticket para el eventId dado */
+  getEventRegistrationCount(eventId) {
+    const users = this.getUsers()
+    let count = 0
+    users.forEach(u => {
+      if ((u.tickets || []).some(t => String(t.eventId) === String(eventId))) {
+        count++
+      }
+    })
+    return count
+  },
+
+  /** Verifica si un usuario (por email) ya está inscrito a un evento */
+  isUserRegistered(userEmail, eventId) {
+    const users = this.getUsers()
+    const user = users.find(u => u.email === userEmail)
+    if (!user) return false
+    return (user.tickets || []).some(t => String(t.eventId) === String(eventId))
+  },
+
+  /** Registra a un usuario en un evento, generando su ticket QR.
+   *  Retorna: { success: boolean, message: string, ticket?: object } */
+  registerUserToEvent(userEmail, eventId) {
+    const users = this.getUsers()
+    const userIdx = users.findIndex(u => u.email === userEmail)
+    if (userIdx === -1) {
+      return { success: false, message: 'Usuario no encontrado. Inicia sesión primero.' }
+    }
+
+    const events = this.getEvents()
+    const event = events.find(e => String(e.id) === String(eventId))
+    if (!event) {
+      return { success: false, message: 'Evento no encontrado.' }
+    }
+    if (!event.registrationOpen) {
+      return { success: false, message: 'Las inscripciones para este evento están cerradas.' }
+    }
+
+    // Verificar inscripción duplicada
+    const user = users[userIdx]
+    if ((user.tickets || []).some(t => String(t.eventId) === String(eventId))) {
+      return { success: false, message: 'Ya estás inscrito a este evento.' }
+    }
+
+    // Verificar aforo
+    if (event.quota > 0) {
+      const currentCount = this.getEventRegistrationCount(eventId)
+      if (currentCount >= event.quota) {
+        return { success: false, message: 'El aforo de este evento está completo.' }
+      }
+    }
+
+    // Generar ticket
+    const ticket = {
+      id: `TKT-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+      eventId: event.id,
+      eventTitle: event.title,
+      date: event.date,
+      time: event.time,
+      location: event.location,
+      status: 'Vigente',
+      qrCode: `QR-${event.id}-${user.dni}-${Date.now()}`,
+      registeredAt: new Date().toISOString()
+    }
+
+    if (!user.tickets) user.tickets = []
+    user.tickets.push(ticket)
+    users[userIdx] = user
+    this.saveUsers(users)
+
+    return { success: true, message: '¡Inscripción exitosa!', ticket }
+  },
+
+  /** Cancela la inscripción de un usuario a un evento (elimina el ticket) */
+  unregisterUserFromEvent(userEmail, eventId) {
+    const users = this.getUsers()
+    const userIdx = users.findIndex(u => u.email === userEmail)
+    if (userIdx === -1) return { success: false, message: 'Usuario no encontrado.' }
+
+    const user = users[userIdx]
+    const ticketIdx = (user.tickets || []).findIndex(t => String(t.eventId) === String(eventId))
+    if (ticketIdx === -1) return { success: false, message: 'No estás inscrito a este evento.' }
+
+    // Verificar max_edit_date del evento
+    const events = this.getEvents()
+    const event = events.find(e => String(e.id) === String(eventId))
+    if (event && event.max_edit_date) {
+      if (new Date() > new Date(event.max_edit_date)) {
+        return { success: false, message: 'El plazo para cancelar la inscripción ha vencido.' }
+      }
+    }
+
+    user.tickets.splice(ticketIdx, 1)
+    users[userIdx] = user
+    this.saveUsers(users)
+    return { success: true, message: 'Inscripción cancelada correctamente.' }
   }
 }
+

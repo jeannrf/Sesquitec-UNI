@@ -43,11 +43,36 @@ export function AuthProvider({ children }) {
       certificates: []
     }
 
+    const staffUser = {
+      nombres: 'Staff',
+      apellidos: 'Voluntario UNI',
+      email: 'staff@uni.pe',
+      dni: '88888888',
+      telefono: '988888888',
+      institucion: 'Universidad Nacional de Ingeniería',
+      password: 'staffpassword',
+      verified: true,
+      role: 'STAFF',
+      profilePic: 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?auto=format&fit=crop&q=80&w=200',
+      registeredEvents: [],
+      tickets: [],
+      certificates: []
+    }
+
     if (storedUsers) {
       parsedUsers = JSON.parse(storedUsers)
+      let modified = false
       // Asegurarse de que el usuario administrador de prueba esté sembrado
       if (!parsedUsers.some(u => u.email === 'admin@uni.pe')) {
         parsedUsers.push(adminUser)
+        modified = true
+      }
+      // Asegurarse de que el usuario staff de prueba esté sembrado
+      if (!parsedUsers.some(u => u.email === 'staff@uni.pe')) {
+        parsedUsers.push(staffUser)
+        modified = true
+      }
+      if (modified) {
         localStorage.setItem('uni_eventos_users', JSON.stringify(parsedUsers))
       }
       setUsers(parsedUsers)
@@ -100,7 +125,8 @@ export function AuthProvider({ children }) {
             }
           ]
         },
-        adminUser
+        adminUser,
+        staffUser
       ]
       localStorage.setItem('uni_eventos_users', JSON.stringify(parsedUsers))
       setUsers(parsedUsers)

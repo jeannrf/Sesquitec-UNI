@@ -10,6 +10,15 @@ import {
   Clock, MapPin, Eye, FileSpreadsheet, EyeOff, ShieldCheck
 } from 'lucide-react'
 
+const cleanNameFromFileName = (fileName, Dni) => {
+  let name = fileName.replace(/\.[^/.]+$/, ""); // remove extension
+  if (Dni) name = name.replace(Dni, ""); // remove Dni
+  name = name.replace(/[_\-\.]/g, " "); // replace delimiters
+  name = name.trim().replace(/\s+/g, " "); // collapse spaces
+  // Capitalize first letters
+  return name.split(" ").map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(" ") || "Participante";
+}
+
 export default function Admin() {
   const { user, logout, updateProfile, loading } = useAuth()
   const { showAlert, showConfirm } = useAlert()
@@ -529,7 +538,7 @@ export default function Admin() {
   const [certSearch, setCertSearch] = useState('')
   const [uploadQueue, setUploadQueue] = useState([])
   const [selectedEventForCert, setSelectedEventForCert] = useState('')
-  const [certHours, setCertHours] = useState('4')
+  const [certHours, setCertHours] = useState('0')
   const [certType, setCertType] = useState('Participación')
   const [uploadProgress, setUploadProgress] = useState(0)
   const [isUploading, setIsUploading] = useState(false)
@@ -548,15 +557,18 @@ export default function Admin() {
   const handleFileSelect = (e) => {
     const files = Array.from(e.target.files)
     const list = files.map(file => {
-      // Find DNI in filename (8 consecutive digits)
-      const dniMatch = file.name.match(/\b\d{8}\b/)
+      // Find DNI in filename (8 consecutive digits anywhere)
+      const dniMatch = file.name.match(/\d{8}/)
       const dni = dniMatch ? dniMatch[0] : null
       const matchedUser = dni ? usersList.find(u => u.dni === dni) : null
+      const titular = matchedUser 
+        ? `${matchedUser.nombres} ${matchedUser.apellidos}` 
+        : (dni ? cleanNameFromFileName(file.name, dni) : 'No registrado')
       return {
         id: `uq-${Math.random().toString(36).substring(2, 9)}`,
         fileName: file.name,
         dni: dni || 'No encontrado',
-        titular: matchedUser ? `${matchedUser.nombres} ${matchedUser.apellidos}` : 'No registrado',
+        titular: titular,
         userFound: !!matchedUser,
         file: file
       }
@@ -587,12 +599,12 @@ export default function Admin() {
           // Actually create certificates in database
           let count = 0
           uploadQueue.forEach(item => {
-            if (item.userFound && item.dni !== 'No encontrado') {
+            if (item.dni !== 'No encontrado') {
               db.createCertificate({
                 dni: item.dni,
                 titular: item.titular,
                 evento: selectedEventForCert,
-                horas: certHours,
+                horas: 0, // No curricular hours
                 tipo: certType,
               })
               count++
@@ -1616,32 +1628,17 @@ export default function Admin() {
                     <h3 className="text-base font-black text-gray-900 mb-1">Carga Masiva de Certificados</h3>
                     <p className="text-xs text-gray-400 mb-4">Sube múltiples archivos PDF de certificados. El sistema extraerá el DNI del nombre de archivo y lo asociará al participante.</p>
 
-                    <div className="grid grid-cols-2 gap-3 mb-4">
-                      <div>
-                        <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Horas Curriculares</label>
-                        <select 
-                          value={certHours}
-                          onChange={e => setCertHours(e.target.value)}
-                          className="w-full border border-gray-300 px-3 py-2 text-xs focus:outline-none bg-white text-gray-800"
-                        >
-                          <option value="2">2 Horas</option>
-                          <option value="4">4 Horas</option>
-                          <option value="8">8 Horas</option>
-                          <option value="12">12 Horas</option>
-                        </select>
-                      </div>
-                      <div>
-                        <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Tipo de Certificado</label>
-                        <select 
-                          value={certType}
-                          onChange={e => setCertType(e.target.value)}
-                          className="w-full border border-gray-300 px-3 py-2 text-xs focus:outline-none bg-white text-gray-800"
-                        >
-                          <option value="Participación">Participación</option>
-                          <option value="Ponencia">Ponencia</option>
-                          <option value="Organización">Organización</option>
-                        </select>
-                      </div>
+                    <div className="mb-4">
+                      <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Tipo de Certificado</label>
+                      <select 
+                        value={certType}
+                        onChange={e => setCertType(e.target.value)}
+                        className="w-full border border-gray-300 px-3 py-2 text-xs focus:outline-none bg-white text-gray-800"
+                      >
+                        <option value="Participación">Participación</option>
+                        <option value="Ponencia">Ponencia</option>
+                        <option value="Organización">Organización</option>
+                      </select>
                     </div>
 
                     <div className="mb-4">
