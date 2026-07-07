@@ -85,11 +85,11 @@ function PhaseCard({ phase }) {
   }
 
   return (
-    <div className="bg-white border border-gray-200 overflow-hidden group hover:shadow-lg transition-shadow duration-300">
+    <div className="bg-white border border-gray-200 overflow-hidden group hover:shadow-lg transition-shadow duration-300 flex flex-col h-full">
       {/* Top gradient bar */}
-      <div className={`h-1.5 bg-gradient-to-r ${phase.color}`} />
+      <div className={`h-1.5 shrink-0 bg-gradient-to-r ${phase.color}`} />
 
-      <div className="p-6 md:p-8">
+      <div className="p-6 md:p-8 flex flex-col flex-grow">
         {/* Header */}
         <div className="flex items-start justify-between mb-4">
           <div>
@@ -132,8 +132,9 @@ function PhaseCard({ phase }) {
           </div>
         </div>
 
-        {/* Aforo bar */}
-        {phase.quota > 0 && (
+        <div className="mt-auto w-full">
+          {/* Aforo bar */}
+          {phase.quota > 0 && (
           <div className="mb-5">
             <div className="flex justify-between items-center mb-1">
               <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wide">Aforo</span>
@@ -178,6 +179,7 @@ function PhaseCard({ phase }) {
             )}
           </button>
         )}
+        </div>
       </div>
     </div>
   )
