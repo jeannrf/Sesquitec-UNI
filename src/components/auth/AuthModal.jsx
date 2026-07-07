@@ -83,23 +83,13 @@ export default function AuthModal({ isOpen, onClose, initialView = 'login', onAu
     setError('')
 
     // Validations
-    if (!form.nombres.trim() || !form.apellidos.trim() || !form.email.trim() || !form.dni.trim() || !form.password) {
+    if (!form.nombres.trim() || !form.apellidos.trim() || !form.email.trim() || !form.password) {
       setError('Por favor complete todos los campos obligatorios (*).')
       return
     }
 
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
       setError('Por favor ingrese un correo electrónico válido.')
-      return
-    }
-
-    if (!/^\d{8}$/.test(form.dni)) {
-      setError('El DNI debe contener exactamente 8 números.')
-      return
-    }
-
-    if (form.telefono && !/^\d{9}$/.test(form.telefono)) {
-      setError('El teléfono debe tener 9 números (Ej: 999888777).')
       return
     }
 
@@ -385,22 +375,8 @@ export default function AuthModal({ isOpen, onClose, initialView = 'login', onAu
   const handleGoogleCallback = (googleUser) => {
     const res = loginWithGoogle(googleUser)
     if (res.success) {
-      if (res.isNew) {
-        setGoogleTempUser(res.tempUser)
-        setForm(prev => ({
-          ...prev,
-          nombres: res.tempUser.nombres,
-          apellidos: res.tempUser.apellidos,
-          email: res.tempUser.email,
-          dni: '',
-          telefono: '',
-          institucion: 'Universidad Nacional de Ingeniería'
-        }))
-        setView('google-complete')
-      } else {
-        if (onAuthSuccess) onAuthSuccess()
-        onClose()
-      }
+      if (onAuthSuccess) onAuthSuccess()
+      onClose()
     } else {
       setError(res.error)
     }
@@ -627,52 +603,7 @@ export default function AuthModal({ isOpen, onClose, initialView = 'login', onAu
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3.5">
-                <div>
-                  <label className="block text-xs font-bold text-gray-700 uppercase mb-1">DNI (8 dígitos) *</label>
-                  <input
-                    type="text"
-                    name="dni"
-                    placeholder="12345678"
-                    maxLength={8}
-                    value={form.dni}
-                    onChange={e => setForm(f => ({ ...f, dni: e.target.value.replace(/\D/g, '').slice(0, 8) }))}
-                    className="w-full border border-gray-300 px-3.5 py-2 text-sm focus:outline-none focus:border-[#800404] placeholder-gray-300"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-gray-700 uppercase mb-1">Teléfono</label>
-                  <input
-                    type="tel"
-                    name="telefono"
-                    placeholder="999888777"
-                    maxLength={9}
-                    value={e => setForm(f => ({ ...f, telefono: e.target.value.replace(/\D/g, '').slice(0, 9) }))}
-                    value={form.telefono}
-                    onChange={handleInputChange}
-                    className="w-full border border-gray-300 px-3.5 py-2 text-sm focus:outline-none focus:border-[#800404] placeholder-gray-300"
-                  />
-                </div>
-              </div>
 
-              <div>
-                <label className="block text-xs font-bold text-gray-700 uppercase mb-1">Universidad o Institución *</label>
-                <div className="relative">
-                  <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center text-gray-400">
-                    <Landmark size={15} />
-                  </span>
-                  <input
-                    type="text"
-                    name="institucion"
-                    placeholder="Universidad Nacional de Ingeniería"
-                    value={form.institucion}
-                    onChange={handleInputChange}
-                    className="w-full border border-gray-300 pl-10 pr-4 py-2 text-sm focus:outline-none focus:border-[#800404] placeholder-gray-300"
-                    required
-                  />
-                </div>
-              </div>
 
               <div>
                 <label className="block text-xs font-bold text-gray-700 uppercase mb-1">Correo Electrónico *</label>

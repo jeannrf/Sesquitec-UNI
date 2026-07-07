@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
-import { Menu, X, Search, User, ChevronDown, Calendar, CreditCard, Award, Settings, LogOut, Shield } from 'lucide-react'
+import { Menu, X, User, ChevronDown, Calendar, CreditCard, Award, Settings, LogOut, Shield } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
 import logo from '../../assets/logo.png'
 
@@ -58,7 +58,7 @@ export default function Header() {
   return (
     <header className="bg-white shadow-sm sticky top-0 z-50">
       {/* Main nav */}
-      <div className="max-w-7xl mx-auto px-4 flex items-center justify-between h-16">
+      <div className="max-w-7xl mx-auto px-4 flex items-center justify-between h-16 relative">
         <Link to="/" className="flex items-center shrink-0">
           <img
             src={logo}
@@ -68,7 +68,7 @@ export default function Header() {
         </Link>
 
         {/* Desktop nav */}
-        <nav className="hidden lg:flex items-center gap-0">
+        <nav className="hidden lg:flex items-center gap-0 lg:absolute lg:left-1/2 lg:-translate-x-1/2">
           {navLinks.map(link => {
             if (link.subLinks) {
               return (
@@ -127,9 +127,6 @@ export default function Header() {
 
         {/* Action Buttons / Profile info */}
         <div className="flex items-center gap-3">
-          <button className="p-2 text-gray-500 hover:text-[#800404] transition-colors cursor-pointer">
-            <Search size={20} />
-          </button>
           
           {/* User state buttons */}
           {user ? (
@@ -188,13 +185,7 @@ export default function Header() {
                       <Calendar size={15} />
                       Mis Eventos
                     </button>
-                    <button
-                      onClick={() => navigateToTab('entradas')}
-                      className="w-full flex items-center gap-2.5 px-4 py-2 text-left text-sm text-gray-700 hover:bg-red-50 hover:text-[#800404] transition-colors cursor-pointer"
-                    >
-                      <CreditCard size={15} />
-                      Mis Entradas
-                    </button>
+
                     <button
                       onClick={() => navigateToTab('certificados')}
                       className="w-full flex items-center gap-2.5 px-4 py-2 text-left text-sm text-gray-700 hover:bg-red-50 hover:text-[#800404] transition-colors cursor-pointer"
@@ -333,12 +324,7 @@ export default function Header() {
                   >
                     Mis Eventos
                   </button>
-                  <button
-                    onClick={() => { setMenuOpen(false); navigate('/dashboard?tab=entradas') }}
-                    className="border border-gray-200 bg-white p-2.5 font-bold text-gray-700 hover:bg-gray-150 cursor-pointer"
-                  >
-                    Mis Entradas
-                  </button>
+
                   <button
                     onClick={() => { setMenuOpen(false); navigate('/dashboard?tab=certificados') }}
                     className="border border-gray-200 bg-white p-2.5 font-bold text-gray-700 hover:bg-gray-150 cursor-pointer"
