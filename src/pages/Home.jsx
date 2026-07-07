@@ -201,14 +201,45 @@ export default function Home() {
   const { showAlert } = useAlert()
   const [successModal, setSuccessModal] = useState(null)
   const navigate = useNavigate()
-  const [carouselIndex, setCarouselIndex] = useState(0)
+  const [carouselIndex, setCarouselIndex] = useState(1)
+  const [isTransitioning, setIsTransitioning] = useState(false)
   const [showAllActivities, setShowAllActivities] = useState(false)
   const banners = [brochure1, brochure2, brochure3]
+  const slides = [banners[banners.length - 1], ...banners, banners[0]]
+
+  const handleNext = () => {
+    if (isTransitioning) return
+    setIsTransitioning(true)
+    setCarouselIndex(prev => prev + 1)
+  }
+
+  const handlePrev = () => {
+    if (isTransitioning) return
+    setIsTransitioning(true)
+    setCarouselIndex(prev => prev - 1)
+  }
+
+  const handleTransitionEnd = () => {
+    setIsTransitioning(false)
+    if (carouselIndex === 0) {
+      setCarouselIndex(banners.length)
+    } else if (carouselIndex === banners.length + 1) {
+      setCarouselIndex(1)
+    }
+  }
+
+  const handleDotClick = (index) => {
+    if (isTransitioning) return
+    setIsTransitioning(true)
+    setCarouselIndex(index + 1)
+  }
 
   useEffect(() => {
-    const timer = setInterval(() => setCarouselIndex(i => (i + 1) % banners.length), 9000)
+    const timer = setInterval(() => {
+      handleNext()
+    }, 9000)
     return () => clearInterval(timer)
-  }, [])
+  }, [carouselIndex, isTransitioning])
 
   // Filtrar y ordenar actividades generales según la fecha actual
   const today = new Date();
@@ -288,14 +319,15 @@ export default function Home() {
             
             {/* Contenedor deslizante */}
             <div 
-              className="absolute inset-0 flex transition-transform duration-500 ease-out"
+              className={`absolute inset-0 flex ${isTransitioning ? 'transition-transform duration-500 ease-out' : 'transition-none'}`}
               style={{ transform: `translateX(-${carouselIndex * 100}%)` }}
+              onTransitionEnd={handleTransitionEnd}
             >
-              {banners.map((img, i) => (
+              {slides.map((img, i) => (
                 <div key={i} className="w-full h-full shrink-0 overflow-hidden">
                   <img
                     src={img}
-                    alt={`Banner ${i + 1}`}
+                    alt={`Banner ${i}`}
                     className="w-full h-full object-cover scale-[1.02]"
                   />
                 </div>
@@ -303,26 +335,29 @@ export default function Home() {
             </div>
 
             <button
-              onClick={() => setCarouselIndex(i => (i - 1 + banners.length) % banners.length)}
+              onClick={handlePrev}
               className="absolute left-3 top-1/2 -translate-y-1/2 z-10 bg-black/40 hover:bg-black/70 text-white p-2 transition-colors cursor-pointer"
             >
               <ChevronLeft size={22} />
             </button>
             <button
-              onClick={() => setCarouselIndex(i => (i + 1) % banners.length)}
+              onClick={handleNext}
               className="absolute right-3 top-1/2 -translate-y-1/2 z-10 bg-black/40 hover:bg-black/70 text-white p-2 transition-colors cursor-pointer"
             >
               <ChevronRight size={22} />
             </button>
 
             <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10 flex gap-2">
-              {banners.map((_, i) => (
-                <button
-                  key={i}
-                  onClick={() => setCarouselIndex(i)}
-                  className={`w-2.5 h-2.5 rounded-full transition-colors cursor-pointer border-0 ${i === carouselIndex ? 'bg-white' : 'bg-white/40'}`}
-                />
-              ))}
+              {banners.map((_, i) => {
+                const activeDotIndex = (carouselIndex - 1 + banners.length) % banners.length
+                return (
+                  <button
+                    key={i}
+                    onClick={() => handleDotClick(i)}
+                    className={`w-2.5 h-2.5 rounded-full transition-colors cursor-pointer border-0 ${i === activeDotIndex ? 'bg-white' : 'bg-white/40'}`}
+                  />
+                )
+              })}
             </div>
           </div>
 
