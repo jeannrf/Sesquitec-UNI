@@ -417,7 +417,12 @@ function EventCard({ event }) {
 
 export default function Cronograma() {
   const [searchQuery, setSearchQuery] = useState('')
-  const [activeMonth, setActiveMonth] = useState('Todos')
+  const [activeMonth, setActiveMonth] = useState(() => {
+    const spanishMonths = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre']
+    const currentMonthName = spanishMonths[new Date().getMonth()]
+    const monthsOptions = ['Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre']
+    return monthsOptions.includes(currentMonthName) ? currentMonthName : 'Todos'
+  })
   const [activeCategory, setActiveCategory] = useState('Todos')
   const [activeStatus, setActiveStatus] = useState('Todos') // 'Todos', 'Próximos', 'Pasados'
   const [activeCost, setActiveCost] = useState('Todos') // 'Todos', 'Gratuitos', 'De Pago'
@@ -518,10 +523,10 @@ export default function Cronograma() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <div className="bg-[#800404] text-white py-12">
+      <div className="bg-[#800404] text-white py-6">
         <div className="max-w-7xl mx-auto px-4">
-          <h1 className="text-4xl font-black mb-2">Eventos</h1>
-          <p className="text-white/70 text-lg">Todos los eventos del Sesquicentenario UNI 2026</p>
+          <h1 className="text-2xl font-black">Eventos</h1>
+          <p className="text-white/70 text-xs sm:text-sm mt-0.5">Todos los eventos del Sesquicentenario UNI 2026</p>
         </div>
       </div>
 
