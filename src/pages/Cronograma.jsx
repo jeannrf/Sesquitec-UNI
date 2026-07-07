@@ -284,14 +284,32 @@ function EventCard({ event }) {
               </div>
             </div>
 
-            {/* Footer Button */}
-            <div className="flex justify-end mt-6">
-              <button
-                onClick={() => setIsDetailsOpen(false)}
-                className="bg-[#800404] hover:bg-[#5a0303] text-white text-xs font-black px-6 py-2.5 transition-colors uppercase tracking-wider cursor-pointer rounded-none"
-              >
-                Aceptar
-              </button>
+            {/* Footer Buttons */}
+            <div className="flex justify-end mt-6 gap-3">
+              {!isPost && event.registrationOpen && (
+                isUserAlreadyRegistered ? (
+                  <button disabled className="bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-black px-6 py-2.5 uppercase tracking-wider cursor-default flex items-center gap-2">
+                    <CheckCircle size={14} /> Inscrito
+                  </button>
+                ) : isFull ? (
+                  <button disabled className="bg-gray-100 text-gray-400 border border-gray-200 text-xs font-black px-6 py-2.5 uppercase tracking-wider cursor-not-allowed">
+                    Aforo Lleno
+                  </button>
+                ) : (
+                  <button
+                    onClick={handleQuickRegister}
+                    disabled={isRegistering}
+                    className="bg-[#800404] hover:bg-[#5a0303] text-white text-xs font-black px-6 py-2.5 transition-colors uppercase tracking-wider cursor-pointer rounded-none flex items-center gap-2 disabled:opacity-60"
+                  >
+                    {isRegistering ? 'Procesando...' : (
+                      <>
+                        <UserPlus size={14} />
+                        {event.isPaid ? 'Reservar' : 'Inscribirse'}
+                      </>
+                    )}
+                  </button>
+                )
+              )}
             </div>
           </div>
         </div>
