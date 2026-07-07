@@ -488,86 +488,67 @@ export default function Home() {
           </div>
 
           {/* Grid of Books */}
-          <div className="grid sm:grid-cols-3 gap-8">
+          <div className="grid sm:grid-cols-3 gap-12 max-w-5xl mx-auto">
             {/* Book 1: Primera Versión */}
-            <div 
-              onClick={() => showAlert('La Primera Versión comprende la etapa de Análisis y Diagnóstico integral de los 150 años de trayectoria de la UNI y su impacto nacional.', 'Primera Versión - Libro de Oro', 'info')}
-              className="flex flex-col items-center group cursor-pointer"
-            >
-              {/* Book Spine Cover 3D simulation */}
-              <div className="relative w-48 h-72 bg-gradient-to-br from-stone-900 via-stone-800 to-stone-950 shadow-xl transition-all duration-500 group-hover:-translate-y-3 group-hover:shadow-2xl flex flex-col justify-between p-6 border-l-[12px] border-l-stone-950 border border-stone-800 rounded-r-sm">
-                {/* Gold details */}
-                <div className="border border-[#d4af37]/20 p-3 h-full flex flex-col justify-between items-center text-center w-full">
-                  <span className="text-[8px] text-[#d4af37] font-black uppercase tracking-widest">150 Años UNI</span>
-                  <div className="space-y-1">
-                    <p className="text-[10px] text-white font-bold uppercase tracking-wide leading-tight">PROPUESTA DE LA UNI</p>
-                    <p className="text-[8px] text-gray-400 font-medium">para el Futuro del Perú</p>
-                    <p className="text-[9px] text-[#d4af37] font-bold">2026 – 2050</p>
-                  </div>
-                  <div className="w-6 h-px bg-[#d4af37]/40" />
-                  <span className="text-[8px] text-gray-300 font-bold uppercase tracking-wider">Libro de Oro</span>
-                </div>
+            <div className="flex flex-col items-center group">
+              <div className="relative overflow-hidden rounded-xl shadow-md hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 mb-5 max-w-[280px]">
+                <img 
+                  src="/home/propuestaUNI/libro-primera-version.png" 
+                  alt="Primera Versión" 
+                  className="w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                />
               </div>
-              {/* Book Description Below */}
-              <div className="text-center mt-5 space-y-1.5 px-2">
-                <h4 className="font-black text-gray-900 text-sm">Primera Versión</h4>
-                <p className="text-xs text-gray-405 leading-normal">Etapa de Análisis y Diagnóstico de los 150 años de la UNI</p>
-                <span className="text-[10px] text-[#800404] font-black group-hover:underline inline-flex items-center gap-0.5">
-                  + Información <ChevronRight size={10} />
-                </span>
+              <div className="text-center space-y-2 max-w-[280px] flex flex-col items-center">
+                <h4 className="font-extrabold text-gray-900 text-lg leading-tight">Primera Versión</h4>
+                <p className="text-sm text-gray-600 leading-snug">Etapa de Análisis y Diagnóstico de los 150 años de la UNI</p>
+                <button 
+                  onClick={() => showAlert('La Primera Versión comprende la etapa de Análisis y Diagnóstico integral de los 150 años de trayectoria de la UNI y su impacto nacional.', 'Primera Versión - Libro de Oro', 'info')}
+                  className="w-full max-w-[200px] py-2.5 border border-[#800404] text-[#800404] hover:bg-[#800404] hover:text-white font-bold text-xs uppercase tracking-wider transition-colors duration-300 mt-3 cursor-pointer text-center"
+                >
+                  Más información
+                </button>
               </div>
             </div>
 
             {/* Book 2: Segunda Versión */}
-            <div 
-              onClick={() => showAlert('La Segunda Versión documenta la elaboración de propuestas técnicas y académicas específicas de las 11 facultades de la UNI.', 'Segunda Versión - Libro de Oro', 'info')}
-              className="flex flex-col items-center group cursor-pointer"
-            >
-              <div className="relative w-48 h-72 bg-gradient-to-br from-[#4a2612] via-[#3a1d0d] to-[#261005] shadow-xl transition-all duration-500 group-hover:-translate-y-3 group-hover:shadow-2xl flex flex-col justify-between p-6 border-l-[12px] border-l-[#261005] border border-[#5a2e17]/20 rounded-r-sm">
-                <div className="border border-[#d4af37]/20 p-3 h-full flex flex-col justify-between items-center text-center w-full">
-                  <span className="text-[8px] text-[#d4af37] font-black uppercase tracking-widest">150 Años UNI</span>
-                  <div className="space-y-1">
-                    <p className="text-[10px] text-white font-bold uppercase tracking-wide leading-tight">PROPUESTA DE LA UNI</p>
-                    <p className="text-[8px] text-gray-300 font-medium">para el Futuro del Perú</p>
-                    <p className="text-[9px] text-[#d4af37] font-bold">2026 – 2050</p>
-                  </div>
-                  <div className="w-6 h-px bg-[#d4af37]/40" />
-                  <span className="text-[8px] text-gray-300 font-bold uppercase tracking-wider">Libro de Oro</span>
-                </div>
+            <div className="flex flex-col items-center group">
+              <div className="relative overflow-hidden rounded-xl shadow-md hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 mb-5 max-w-[280px]">
+                <img 
+                  src="/home/propuestaUNI/libro-segunda-version.png" 
+                  alt="Segunda Versión" 
+                  className="w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                />
               </div>
-              <div className="text-center mt-5 space-y-1.5 px-2">
-                <h4 className="font-black text-gray-900 text-sm">Segunda Versión</h4>
-                <p className="text-xs text-gray-405 leading-normal">Elaboración de propuestas de las 11 facultades UNI</p>
-                <span className="text-[10px] text-[#800404] font-black group-hover:underline inline-flex items-center gap-0.5">
-                  + Información <ChevronRight size={10} />
-                </span>
+              <div className="text-center space-y-2 max-w-[280px] flex flex-col items-center">
+                <h4 className="font-extrabold text-gray-900 text-lg leading-tight">Segunda Versión</h4>
+                <p className="text-sm text-gray-600 leading-snug">Elaboración de propuestas de las 11 facultades UNI</p>
+                <button 
+                  onClick={() => showAlert('La Segunda Versión documenta la elaboración de propuestas técnicas y académicas específicas de las 11 facultades de la UNI.', 'Segunda Versión - Libro de Oro', 'info')}
+                  className="w-full max-w-[200px] py-2.5 border border-[#800404] text-[#800404] hover:bg-[#800404] hover:text-white font-bold text-xs uppercase tracking-wider transition-colors duration-300 mt-3 cursor-pointer text-center"
+                >
+                  Más información
+                </button>
               </div>
             </div>
 
             {/* Book 3: Presentación Final */}
-            <div 
-              onClick={() => showAlert('La Presentación Final recopila e integra la propuesta final oficial de la UNI para el desarrollo nacional proyectado hacia el 2050.', 'Presentación Final - Libro de Oro', 'info')}
-              className="flex flex-col items-center group cursor-pointer"
-            >
-              {/* Metallic Gold Book */}
-              <div className="relative w-48 h-72 bg-gradient-to-br from-[#d4af37] via-[#fbf5b7] to-[#aa771c] shadow-xl transition-all duration-500 group-hover:-translate-y-3 group-hover:shadow-2xl flex flex-col justify-between p-6 border-l-[12px] border-l-[#996515] border border-[#ffd700]/30 rounded-r-sm">
-                <div className="border border-stone-900/10 p-3 h-full flex flex-col justify-between items-center text-center w-full">
-                  <span className="text-[8px] text-stone-900 font-black uppercase tracking-widest">150 Años UNI</span>
-                  <div className="space-y-1">
-                    <p className="text-[10px] text-stone-900 font-black uppercase tracking-wide leading-tight">PROPUESTA DE LA UNI</p>
-                    <p className="text-[8px] text-stone-850 font-bold">para el Futuro del Perú</p>
-                    <p className="text-[9px] text-stone-900 font-black">2026 – 2050</p>
-                  </div>
-                  <div className="w-6 h-px bg-stone-900/20" />
-                  <span className="text-[8px] text-stone-900 font-black uppercase tracking-wider">Libro de Oro</span>
-                </div>
+            <div className="flex flex-col items-center group">
+              <div className="relative overflow-hidden rounded-xl shadow-md hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 mb-5 max-w-[280px]">
+                <img 
+                  src="/home/propuestaUNI/libro-presentacion-final.png" 
+                  alt="Presentación Final" 
+                  className="w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                />
               </div>
-              <div className="text-center mt-5 space-y-1.5 px-2">
-                <h4 className="font-black text-gray-900 text-sm">Presentación Final</h4>
-                <p className="text-xs text-gray-405 leading-normal">Presentación de la Propuesta de la UNI para el desarrollo del Perú</p>
-                <span className="text-[10px] text-[#800404] font-black group-hover:underline inline-flex items-center gap-0.5">
-                  + Información <ChevronRight size={10} />
-                </span>
+              <div className="text-center space-y-2 max-w-[280px] flex flex-col items-center">
+                <h4 className="font-extrabold text-gray-900 text-lg leading-tight">Presentación Final</h4>
+                <p className="text-sm text-gray-600 leading-snug">Presentación de la Propuesta de la UNI para el desarrollo del Perú.</p>
+                <button 
+                  onClick={() => showAlert('La Presentación Final recopila e integra la propuesta final oficial de la UNI para el desarrollo nacional proyectado hacia el 2050.', 'Presentación Final - Libro de Oro', 'info')}
+                  className="w-full max-w-[200px] py-2.5 border border-[#800404] text-[#800404] hover:bg-[#800404] hover:text-white font-bold text-xs uppercase tracking-wider transition-colors duration-300 mt-3 cursor-pointer text-center"
+                >
+                  Más información
+                </button>
               </div>
             </div>
           </div>
