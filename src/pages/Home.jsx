@@ -284,15 +284,23 @@ export default function Home() {
           {/* Carrusel */}
           <div className="relative overflow-hidden bg-black">
             {/* Espaciador invisible para mantener la altura natural */}
-            <img src={banners[carouselIndex]} alt="" className="w-full block opacity-0 pointer-events-none" aria-hidden="true" />
-            {banners.map((img, i) => (
-              <img
-                key={i}
-                src={img}
-                alt={`Banner ${i + 1}`}
-                className={`absolute top-0 left-0 w-full scale-[1.02] transition-opacity duration-1000 ease-in-out ${i === carouselIndex ? 'opacity-100' : 'opacity-0'}`}
-              />
-            ))}
+            <img src={banners[0]} alt="" className="w-full block opacity-0 pointer-events-none" aria-hidden="true" />
+            
+            {/* Contenedor deslizante */}
+            <div 
+              className="absolute inset-0 flex transition-transform duration-500 ease-out"
+              style={{ transform: `translateX(-${carouselIndex * 100}%)` }}
+            >
+              {banners.map((img, i) => (
+                <div key={i} className="w-full h-full shrink-0 overflow-hidden">
+                  <img
+                    src={img}
+                    alt={`Banner ${i + 1}`}
+                    className="w-full h-full object-cover scale-[1.02]"
+                  />
+                </div>
+              ))}
+            </div>
 
             <button
               onClick={() => setCarouselIndex(i => (i - 1 + banners.length) % banners.length)}
