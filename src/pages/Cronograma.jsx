@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { ChevronDown, ChevronUp, MapPin, Clock, Calendar, ExternalLink, Play, Filter, X, Users, Image, ThumbsUp, MessageSquare, Share2, FileText, Award, CheckCircle, UserPlus } from 'lucide-react'
 import { db } from '../services/db'
 import { useAlert } from '../context/AlertContext'
@@ -398,20 +398,14 @@ function EventCard({ event }) {
 }
 
 export default function Cronograma() {
+  const [searchQuery, setSearchQuery] = useState('')
   const [activeMonth, setActiveMonth] = useState('Todos')
-  const [filterDropdownOpen, setFilterDropdownOpen] = useState(false)
-  const filterDropdownRef = useRef(null)
-
-  // Close dropdown on click outside
-  useEffect(() => {
-    function handleClickOutside(event) {
-      if (filterDropdownRef.current && !filterDropdownRef.current.contains(event.target)) {
-        setFilterDropdownOpen(false)
-      }
-    }
-    document.addEventListener('mousedown', handleClickOutside)
-    return () => document.removeEventListener('mousedown', handleClickOutside)
-  }, [])
+  const [activeCategory, setActiveCategory] = useState('Todos')
+  const [activeStatus, setActiveStatus] = useState('Todos') // 'Todos', 'Próximos', 'Pasados'
+  const [activeCost, setActiveCost] = useState('Todos') // 'Todos', 'Gratuitos', 'De Pago'
+  
+  const [searchParams, setSearchParams] = useSearchParams()
+  const urlFiltro = searchParams.get('filtro')
 
   // Cargar eventos desde localStorage
   const dbEvents = db.getEvents()
@@ -435,19 +429,73 @@ export default function Cronograma() {
     return 'Otros'
   }
 
-  // Agrupar los eventos planos en un objeto por mes
-  const eventsByMonth = {}
-  dbEvents.forEach(ev => {
-    const month = getEventMonth(ev.date)
-    if (!eventsByMonth[month]) {
-      eventsByMonth[month] = []
+  // Efecto para leer parámetros de búsqueda de la URL
+  useEffect(() => {
+    if (urlFiltro) {
+      if (urlFiltro === 'conferencias') {
+        setSearchQuery('Conferencia')
+      } else if (urlFiltro === 'feria') {
+        setSearchQuery('Feria')
+      } else if (urlFiltro === 'culturales') {
+        setActiveCategory('Cultural')
+      }
     }
-    eventsByMonth[month].push(ev)
-  })
+  }, [urlFiltro])
 
-  const currentEvents = activeMonth === 'Todos'
-    ? dbEvents
-    : (eventsByMonth[activeMonth] || [])
+  const filteredEvents = dbEvents.filter(ev => {
+    // 1. Filtro por búsqueda de texto (Query)
+    if (searchQuery.trim() !== '') {
+      const q = searchQuery.toLowerCase()
+      const titleMatch = ev.title?.toLowerCase().includes(q)
+      const descMatch = ev.description?.toLowerCase().includes(q)
+      const orgMatch = ev.organizer?.toLowerCase().includes(q)
+      const locMatch = ev.location?.toLowerCase().includes(q)
+      const catMatch = ev.category?.toLowerCase().includes(q)
+      const tagsMatch = ev.tags?.some(tag => tag.toLowerCase().includes(q))
+      if (!titleMatch && !descMatch && !orgMatch && !locMatch && !catMatch && !tagsMatch) {
+        return false
+      }
+    }
+
+    // 2. Filtro por Mes
+    if (activeMonth !== 'Todos') {
+      const eventMonth = getEventMonth(ev.date)
+      if (eventMonth !== activeMonth) {
+        return false
+      }
+    }
+
+    // 3. Filtro por Categoría
+    if (activeCategory !== 'Todos') {
+      if (ev.category !== activeCategory) {
+        return false
+      }
+    }
+
+    // 4. Filtro por Estado (Próximos vs Pasados)
+    if (activeStatus !== 'Todos') {
+      const isPost = ev.status === 'post'
+      if (activeStatus === 'Próximos' && isPost) {
+        return false
+      }
+      if (activeStatus === 'Pasados' && !isPost) {
+        return false
+      }
+    }
+
+    // 5. Filtro por Costo (Gratuitos vs De Pago)
+    if (activeCost !== 'Todos') {
+      const isPaid = ev.isPaid === true
+      if (activeCost === 'Gratuitos' && isPaid) {
+        return false
+      }
+      if (activeCost === 'De Pago' && !isPaid) {
+        return false
+      }
+    }
+
+    return true
+  })
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -460,64 +508,152 @@ export default function Cronograma() {
       </div>
 
       {/* Filters bar */}
-      <div className="bg-white border-b border-gray-200 sticky top-16 z-40 py-3 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 flex justify-between items-center">
-          <span className="text-sm font-semibold text-gray-500">
-            Filtrar y explorar cronograma
-          </span>
-          <div className="relative" ref={filterDropdownRef}>
-            <button
-              onClick={() => setFilterDropdownOpen(!filterDropdownOpen)}
-              className="flex items-center gap-2 border border-gray-300 px-4 py-2 hover:border-gray-400 hover:bg-gray-50 transition-all cursor-pointer font-bold text-sm text-gray-700 bg-white rounded-none shadow-sm"
-            >
-              <Filter size={15} className="text-[#800404]" />
-              <span>Mes: {activeMonth}</span>
-              <ChevronDown size={14} className={`text-gray-400 transition-transform ${filterDropdownOpen ? 'rotate-180' : ''}`} />
-            </button>
-            
-            {filterDropdownOpen && (
-              <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-200 shadow-xl z-50 py-1 max-h-60 overflow-y-auto animate-in fade-in slide-in-from-top-1 duration-150">
-                {months.map(m => (
+      <div className="bg-white border-b border-gray-200 sticky top-16 z-40 py-4 shadow-sm">
+        <div className="max-w-7xl mx-auto px-4">
+          {/* Main search and selectors row */}
+          <div className="flex flex-col lg:flex-row gap-4 items-stretch lg:items-end justify-between">
+            {/* Search Input */}
+            <div className="flex flex-col flex-1">
+              <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Buscar</span>
+              <div className="relative">
+                <input
+                  type="text"
+                  placeholder="Buscar por título, organizador, palabra clave o etiquetas..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full border border-gray-300 pl-10 pr-4 py-2 focus:border-[#800404] focus:outline-none transition-colors text-sm text-gray-800 bg-gray-50/50 rounded-none"
+                />
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  </svg>
+                </span>
+                {searchQuery && (
                   <button
-                    key={m}
-                    onClick={() => {
-                      setActiveMonth(m)
-                      setFilterDropdownOpen(false)
-                    }}
-                    className={`w-full text-left px-4 py-2.5 text-sm hover:bg-red-50 hover:text-[#800404] transition-colors ${
-                      activeMonth === m ? 'font-bold text-[#800404] bg-red-50/50' : 'text-gray-700'
-                    }`}
+                    onClick={() => setSearchQuery('')}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 cursor-pointer"
                   >
-                    {m}
+                    <X size={16} />
                   </button>
-                ))}
+                )}
               </div>
-            )}
+            </div>
+
+            {/* Selectors grid */}
+            <div className="flex flex-wrap items-center gap-3">
+              {/* Selector de Mes */}
+              <div className="flex flex-col min-w-[120px]">
+                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Mes</span>
+                <select
+                  value={activeMonth}
+                  onChange={(e) => setActiveMonth(e.target.value)}
+                  className="border border-gray-300 px-3 py-2 text-sm text-gray-700 bg-white font-medium focus:border-[#800404] focus:outline-none cursor-pointer rounded-none"
+                >
+                  {months.map(m => (
+                    <option key={m} value={m}>{m}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Selector de Categoría */}
+              <div className="flex flex-col min-w-[140px]">
+                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Categoría</span>
+                <select
+                  value={activeCategory}
+                  onChange={(e) => setActiveCategory(e.target.value)}
+                  className="border border-gray-300 px-3 py-2 text-sm text-gray-700 bg-white font-medium focus:border-[#800404] focus:outline-none cursor-pointer rounded-none"
+                >
+                  <option value="Todos">Todas las Categorías</option>
+                  <option value="Académico">Académico</option>
+                  <option value="Cultural">Cultural</option>
+                  <option value="Egresados">Egresados</option>
+                  <option value="Tecnología">Tecnología</option>
+                  <option value="Laboral">Laboral</option>
+                </select>
+              </div>
+
+              {/* Selector de Estado */}
+              <div className="flex flex-col min-w-[120px]">
+                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Estado</span>
+                <select
+                  value={activeStatus}
+                  onChange={(e) => setActiveStatus(e.target.value)}
+                  className="border border-gray-300 px-3 py-2 text-sm text-gray-700 bg-white font-medium focus:border-[#800404] focus:outline-none cursor-pointer rounded-none"
+                >
+                  <option value="Todos">Todos los Estados</option>
+                  <option value="Próximos">Próximos</option>
+                  <option value="Pasados">Pasados</option>
+                </select>
+              </div>
+
+              {/* Selector de Costo */}
+              <div className="flex flex-col min-w-[110px]">
+                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Costo</span>
+                <select
+                  value={activeCost}
+                  onChange={(e) => setActiveCost(e.target.value)}
+                  className="border border-gray-300 px-3 py-2 text-sm text-gray-700 bg-white font-medium focus:border-[#800404] focus:outline-none cursor-pointer rounded-none"
+                >
+                  <option value="Todos">Todos los Costos</option>
+                  <option value="Gratuitos">Gratuitos</option>
+                  <option value="De Pago">De Pago</option>
+                </select>
+              </div>
+
+              {/* Botón Limpiar Filtros */}
+              {(searchQuery || activeMonth !== 'Todos' || activeCategory !== 'Todos' || activeStatus !== 'Todos' || activeCost !== 'Todos') && (
+                <button
+                  onClick={() => {
+                    setSearchQuery('')
+                    setActiveMonth('Todos')
+                    setActiveCategory('Todos')
+                    setActiveStatus('Todos')
+                    setActiveCost('Todos')
+                    setSearchParams({})
+                  }}
+                  className="self-end mt-auto flex items-center gap-1 text-xs font-black text-[#800404] hover:text-[#5a0303] border border-[#800404]/20 hover:bg-red-50/50 px-3 py-2 transition-colors uppercase tracking-wider rounded-none h-[38px] cursor-pointer"
+                >
+                  <X size={13} /> Limpiar
+                </button>
+              )}
+            </div>
           </div>
         </div>
       </div>
 
       {/* Events list */}
       <div className="max-w-7xl mx-auto px-4 py-10">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-black text-gray-900">
-            {activeMonth === 'Todos' ? 'Todos los Eventos' : `${activeMonth} 2026`}
-          </h2>
-          <span className="text-sm text-gray-400">
-            {currentEvents.length} evento(s)
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 border-b border-gray-200 pb-4">
+          <div>
+            <h2 className="text-2xl font-black text-gray-900 leading-tight">
+              {activeMonth === 'Todos' ? 'Todos los Eventos' : `${activeMonth} 2026`}
+            </h2>
+            {activeCategory !== 'Todos' || activeStatus !== 'Todos' || activeCost !== 'Todos' || searchQuery ? (
+              <p className="text-xs font-bold text-[#800404] mt-1 uppercase tracking-wider">
+                Filtros activos: {[
+                  activeCategory !== 'Todos' && `Categoría: ${activeCategory}`,
+                  activeStatus !== 'Todos' && `Estado: ${activeStatus}`,
+                  activeCost !== 'Todos' && `Costo: ${activeCost}`,
+                  searchQuery && `Búsqueda: "${searchQuery}"`
+                ].filter(Boolean).join(' | ')}
+              </p>
+            ) : null}
+          </div>
+          <span className="text-sm font-bold text-gray-400 shrink-0">
+            {filteredEvents.length} evento(s) encontrado(s)
           </span>
         </div>
 
-        {currentEvents.length === 0 ? (
+        {filteredEvents.length === 0 ? (
           <div className="text-center py-20 text-gray-300">
             <Calendar size={48} className="mx-auto mb-4 opacity-30" />
             <p className="text-lg text-gray-400">
-              {activeMonth === 'Todos' ? 'No hay eventos programados' : `No hay eventos programados para ${activeMonth}`}
+              No se encontraron eventos con los filtros seleccionados.
             </p>
           </div>
         ) : (
           <div className="space-y-3">
-            {currentEvents.map(ev => (
+            {filteredEvents.map(ev => (
               <EventCard key={ev.id} event={ev} />
             ))}
           </div>
