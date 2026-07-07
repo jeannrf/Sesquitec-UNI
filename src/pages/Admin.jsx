@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { db } from '../services/db'
+import { supabase } from '../services/supabaseClient'
 import { useAlert } from '../context/AlertContext'
 import { 
   LayoutDashboard, Calendar, Mic, Users, QrCode, Award, Settings, 
@@ -9,6 +10,15 @@ import {
   AlertTriangle, RefreshCw, UploadCloud, ChevronUp, ChevronDown, Check, X,
   Clock, MapPin, Eye, FileSpreadsheet, EyeOff, ShieldCheck
 } from 'lucide-react'
+
+const cleanNameFromFileName = (fileName, Dni) => {
+  let name = fileName.replace(/\.[^/.]+$/, ""); // remove extension
+  if (Dni) name = name.replace(Dni, ""); // remove Dni
+  name = name.replace(/[_\-\.]/g, " "); // replace delimiters
+  name = name.trim().replace(/\s+/g, " "); // collapse spaces
+  // Capitalize first letters
+  return name.split(" ").map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(" ") || "Participante";
+}
 
 export default function Admin() {
   const { user, logout, updateProfile, loading } = useAuth()
@@ -529,7 +539,7 @@ export default function Admin() {
   const [certSearch, setCertSearch] = useState('')
   const [uploadQueue, setUploadQueue] = useState([])
   const [selectedEventForCert, setSelectedEventForCert] = useState('')
-  const [certHours, setCertHours] = useState('4')
+  const [certHours, setCertHours] = useState('0')
   const [certType, setCertType] = useState('Participación')
   const [uploadProgress, setUploadProgress] = useState(0)
   const [isUploading, setIsUploading] = useState(false)
@@ -548,15 +558,18 @@ export default function Admin() {
   const handleFileSelect = (e) => {
     const files = Array.from(e.target.files)
     const list = files.map(file => {
-      // Find DNI in filename (8 consecutive digits)
-      const dniMatch = file.name.match(/\b\d{8}\b/)
+      // Find DNI in filename (8 consecutive digits anywhere)
+      const dniMatch = file.name.match(/\d{8}/)
       const dni = dniMatch ? dniMatch[0] : null
       const matchedUser = dni ? usersList.find(u => u.dni === dni) : null
+      const titular = matchedUser 
+        ? `${matchedUser.nombres} ${matchedUser.apellidos}` 
+        : (dni ? cleanNameFromFileName(file.name, dni) : 'No registrado')
       return {
         id: `uq-${Math.random().toString(36).substring(2, 9)}`,
         fileName: file.name,
         dni: dni || 'No encontrado',
-        titular: matchedUser ? `${matchedUser.nombres} ${matchedUser.apellidos}` : 'No registrado',
+        titular: titular,
         userFound: !!matchedUser,
         file: file
       }
@@ -568,7 +581,7 @@ export default function Admin() {
     setUploadQueue(prev => prev.filter(item => item.id !== id))
   }
 
-  const handleProcessUploads = () => {
+  const handleProcessUploads = async () => {
     if (uploadQueue.length === 0) return
     if (!selectedEventForCert) {
       showAlert('Por favor seleccione el evento asociado.', 'Evento Requerido', 'warning')
@@ -576,39 +589,99 @@ export default function Admin() {
     }
 
     setIsUploading(true)
-    setUploadProgress(10)
+    setUploadProgress(5)
     
-    // Simulate loading bars
-    const timer = setInterval(() => {
-      setUploadProgress(prev => {
-        if (prev >= 100) {
-          clearInterval(timer)
-          
-          // Actually create certificates in database
-          let count = 0
-          uploadQueue.forEach(item => {
-            if (item.userFound && item.dni !== 'No encontrado') {
-              db.createCertificate({
-                dni: item.dni,
-                titular: item.titular,
-                evento: selectedEventForCert,
-                horas: certHours,
-                tipo: certType,
-              })
-              count++
+    if (supabase) {
+      try {
+        let count = 0
+        const total = uploadQueue.length
+
+        for (let i = 0; i < total; i++) {
+          const item = uploadQueue[i]
+          if (item.dni !== 'No encontrado') {
+            const file = item.file
+            const fileExt = file.name.split('.').pop()
+            const fileName = `${item.dni}.${fileExt}`
+            const filePath = `${fileName}`
+
+            // Subir archivo al bucket 'certificados'
+            const { error: uploadError } = await supabase.storage
+              .from('certificados')
+              .upload(filePath, file, { cacheControl: '3600', upsert: true })
+
+            if (uploadError) {
+              console.error(`Error al subir archivo de DNI ${item.dni} a Storage:`, uploadError)
             }
-          })
-          
-          showAlert(`Carga masiva finalizada. Se procesaron y emitieron ${count} certificados con éxito.`, 'Carga Exitosa', 'success');
-          setUploadQueue([])
-          setIsUploading(false)
-          setUploadProgress(0)
-          refreshAllData()
-          return 100
+
+            // Obtener URL pública
+            const { data } = supabase.storage
+              .from('certificados')
+              .getPublicUrl(filePath)
+            
+            const publicUrl = data?.publicUrl || ''
+
+            // Registrar certificado en base de datos
+            db.createCertificate({
+              dni: item.dni,
+              titular: item.titular,
+              evento: selectedEventForCert,
+              horas: 0,
+              tipo: certType,
+              pdfUrl: publicUrl
+            })
+
+            count++
+          }
+
+          // Actualizar barra de progreso
+          setUploadProgress(Math.round(((i + 1) / total) * 100))
         }
-        return prev + 15
-      })
-    }, 200)
+
+        showAlert(`Carga masiva finalizada. Se procesaron y emitieron ${count} certificados con éxito.`, 'Carga Exitosa', 'success');
+        setUploadQueue([])
+        setIsUploading(false)
+        setUploadProgress(0)
+        refreshAllData()
+      } catch (err) {
+        console.error("Error en proceso de carga masiva Supabase:", err)
+        showAlert('Hubo un error al procesar las cargas masivas.', 'Error de Carga', 'error')
+        setIsUploading(false)
+        setUploadProgress(0)
+      }
+    } else {
+      // Fallback: Simulación local
+      setUploadProgress(10)
+      const timer = setInterval(() => {
+        setUploadProgress(prev => {
+          if (prev >= 100) {
+            clearInterval(timer)
+            
+            let count = 0
+            uploadQueue.forEach(item => {
+              if (item.dni !== 'No encontrado') {
+                db.createCertificate({
+                  dni: item.dni,
+                  titular: item.titular,
+                  evento: selectedEventForCert,
+                  horas: 0,
+                  tipo: certType,
+                  pdfUrl: ''
+                })
+                count++
+              }
+            })
+            
+            showAlert(`Carga masiva finalizada (Simulado). Se procesaron y emitieron ${count} certificados con éxito.`, 'Carga Exitosa', 'success');
+            setUploadQueue([])
+            setIsUploading(false)
+            setUploadProgress(0)
+            refreshAllData()
+            return 100
+          }
+          return prev + 15
+        })
+      }, 200)
+    }
   }
 
   const handleDeleteCertificate = (id) => {
@@ -1616,32 +1689,17 @@ export default function Admin() {
                     <h3 className="text-base font-black text-gray-900 mb-1">Carga Masiva de Certificados</h3>
                     <p className="text-xs text-gray-400 mb-4">Sube múltiples archivos PDF de certificados. El sistema extraerá el DNI del nombre de archivo y lo asociará al participante.</p>
 
-                    <div className="grid grid-cols-2 gap-3 mb-4">
-                      <div>
-                        <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Horas Curriculares</label>
-                        <select 
-                          value={certHours}
-                          onChange={e => setCertHours(e.target.value)}
-                          className="w-full border border-gray-300 px-3 py-2 text-xs focus:outline-none bg-white text-gray-800"
-                        >
-                          <option value="2">2 Horas</option>
-                          <option value="4">4 Horas</option>
-                          <option value="8">8 Horas</option>
-                          <option value="12">12 Horas</option>
-                        </select>
-                      </div>
-                      <div>
-                        <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Tipo de Certificado</label>
-                        <select 
-                          value={certType}
-                          onChange={e => setCertType(e.target.value)}
-                          className="w-full border border-gray-300 px-3 py-2 text-xs focus:outline-none bg-white text-gray-800"
-                        >
-                          <option value="Participación">Participación</option>
-                          <option value="Ponencia">Ponencia</option>
-                          <option value="Organización">Organización</option>
-                        </select>
-                      </div>
+                    <div className="mb-4">
+                      <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Tipo de Certificado</label>
+                      <select 
+                        value={certType}
+                        onChange={e => setCertType(e.target.value)}
+                        className="w-full border border-gray-300 px-3 py-2 text-xs focus:outline-none bg-white text-gray-800"
+                      >
+                        <option value="Participación">Participación</option>
+                        <option value="Ponencia">Ponencia</option>
+                        <option value="Organización">Organización</option>
+                      </select>
                     </div>
 
                     <div className="mb-4">
@@ -1985,16 +2043,17 @@ export default function Admin() {
       {/* MODAL: CREAR O EDITAR EVENTO */}
       {isEventModalOpen && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white w-full max-w-lg shadow-2xl border border-gray-200 overflow-hidden font-sans">
+          <div className="bg-white w-full max-w-lg shadow-2xl border border-gray-200 overflow-hidden font-sans flex flex-col max-h-[90vh]">
             
-            <div className="bg-[#800404] text-white p-5 flex items-center justify-between">
+            <div className="bg-[#800404] text-white p-5 flex items-center justify-between shrink-0">
               <h4 className="font-black text-base">{editingEvent ? 'Editar Evento' : 'Crear Nuevo Evento'}</h4>
               <button onClick={() => setIsEventModalOpen(false)} className="text-white/60 hover:text-white transition-colors cursor-pointer">
                 <X size={20} />
               </button>
             </div>
 
-            <form onSubmit={handleSaveEvent} className="p-6 space-y-4">
+            <form onSubmit={handleSaveEvent} className="flex flex-col flex-1 overflow-hidden">
+              <div className="p-6 space-y-4 overflow-y-auto flex-1">
               <div>
                 <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Título del Evento *</label>
                 <input
@@ -2183,11 +2242,13 @@ export default function Admin() {
                 </label>
               </div>
 
-              <div className="pt-4 border-t border-gray-100 flex gap-3 justify-end">
+              </div>
+
+              <div className="p-5 border-t border-gray-100 bg-gray-50 flex gap-3 justify-end shrink-0">
                 <button
                   type="button"
                   onClick={() => setIsEventModalOpen(false)}
-                  className="border border-gray-300 hover:bg-gray-50 text-gray-700 text-sm font-bold px-4 py-2 transition-colors cursor-pointer"
+                  className="border border-gray-300 bg-white hover:bg-gray-50 text-gray-700 text-sm font-bold px-4 py-2 transition-colors cursor-pointer"
                 >
                   Cancelar
                 </button>
@@ -2206,16 +2267,17 @@ export default function Admin() {
       {/* MODAL: CREAR O EDITAR PONENCIA */}
       {isConfModalOpen && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white w-full max-w-lg shadow-2xl border border-gray-200 overflow-hidden font-sans">
+          <div className="bg-white w-full max-w-lg shadow-2xl border border-gray-200 overflow-hidden font-sans flex flex-col max-h-[90vh]">
             
-            <div className="bg-[#800404] text-white p-5 flex items-center justify-between">
+            <div className="bg-[#800404] text-white p-5 flex items-center justify-between shrink-0">
               <h4 className="font-black text-base">{editingConf ? 'Editar Ponencia' : 'Crear Nueva Ponencia'}</h4>
               <button onClick={() => setIsConfModalOpen(false)} className="text-white/60 hover:text-white transition-colors cursor-pointer">
                 <X size={20} />
               </button>
             </div>
 
-            <form onSubmit={handleSaveConf} className="p-6 space-y-4">
+            <form onSubmit={handleSaveConf} className="flex flex-col flex-1 overflow-hidden">
+              <div className="p-6 space-y-4 overflow-y-auto flex-1">
               <div>
                 <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Título de la Ponencia *</label>
                 <input
@@ -2299,11 +2361,13 @@ export default function Admin() {
                 />
               </div>
 
-              <div className="pt-4 border-t border-gray-100 flex gap-3 justify-end">
+              </div>
+
+              <div className="p-5 border-t border-gray-100 bg-gray-50 flex gap-3 justify-end shrink-0">
                 <button
                   type="button"
                   onClick={() => setIsConfModalOpen(false)}
-                  className="border border-gray-300 hover:bg-gray-50 text-gray-700 text-sm font-bold px-4 py-2 transition-colors cursor-pointer"
+                  className="border border-gray-300 bg-white hover:bg-gray-50 text-gray-700 text-sm font-bold px-4 py-2 transition-colors cursor-pointer"
                 >
                   Cancelar
                 </button>

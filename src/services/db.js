@@ -1,5 +1,8 @@
 // Módulo de servicio de Base de Datos para Sesquitec-UNI
 // Maneja datos persistentes en localStorage para eventos, ponencias, certificados y logs de QR.
+// Fase 4: Sincronización asíncrona bidireccional con Supabase / PostgreSQL.
+
+import { supabase } from './supabaseClient'
 
 const EVENTS_KEY = 'uni_eventos_events'
 const CONFERENCES_KEY = 'uni_eventos_conferences'
@@ -23,6 +26,36 @@ const initialEvents = [
     imageUrl: 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?auto=format&fit=crop&q=80&w=800',
     category: 'Académico',
     tags: ['Investigación', 'Innovación', 'Tecnología']
+  },
+  {
+    id: 'may2',
+    status: 'post',
+    date: '05 May 2026',
+    time: '18:00 – 20:00',
+    title: 'Lanzamiento del Sesquicentenario UNI',
+    organizer: 'Comisión del Sesquicentenario',
+    location: 'Teatro UNI, Lima',
+    description: 'Ceremonia oficial del lanzamiento del programa oficial de los 150 años de la Universidad Nacional de Ingeniería.',
+    quota: 0,
+    registrationOpen: false,
+    imageUrl: 'https://images.unsplash.com/photo-1511578314322-379afb476865?auto=format&fit=crop&q=80&w=800',
+    category: 'Cultural',
+    tags: ['Aniversario', 'UNI', 'Cultural']
+  },
+  {
+    id: 'may3',
+    status: 'post',
+    date: '26 May 2026',
+    time: '14:30 – 17:30',
+    title: 'Taller: Metodologías de Investigación Científica',
+    organizer: 'Vicerrectorado Académico',
+    location: 'Auditorio del Pabellón Central, Lima',
+    description: 'Seminario práctico de metodologías de investigación avanzada y redacción de artículos científicos para ingeniería.',
+    quota: 0,
+    registrationOpen: false,
+    imageUrl: 'https://images.unsplash.com/photo-1434030216411-0b793f4b4173?auto=format&fit=crop&q=80&w=800',
+    category: 'Académico',
+    tags: ['Taller', 'Investigación', 'Académico']
   },
   {
     id: 'jun1',
@@ -55,11 +88,27 @@ const initialEvents = [
     tags: ['FIIS', 'Tecnología', 'Programación']
   },
   {
-    id: 'jul1', // También conocido como ID 1
+    id: 'jun3',
+    status: 'post',
+    date: '25 Jun 2026',
+    time: '15:00 – 19:00',
+    title: 'Taller de Robótica y Automatización Aplicada',
+    organizer: 'CTIC UNI',
+    location: 'Laboratorios del CTIC, Lima',
+    description: 'Taller práctico sobre microcontroladores y programación aplicados a sistemas de robótica e inteligencia artificial.',
+    quota: 0,
+    registrationOpen: false,
+    imageUrl: 'https://images.unsplash.com/photo-1485827404703-89b55fcc595e?auto=format&fit=crop&q=80&w=800',
+    category: 'Académico',
+    tags: ['Robótica', 'Automatización', 'Taller']
+  },
+  {
+    id: 'jul1',
     status: 'pre',
     date: '14 Jul 2026',
     time: '08:00 – 18:00',
-    title: 'Encuentro Internacional de Ingeniería UNI',
+    max_edit_date: '2026-07-10T23:59:59Z',
+    title: 'Encuentro Internacional de Ingeniería UNI - Fase I',
     organizer: 'Comisión del Sesquicentenario',
     location: 'Teatro UNI, Lima',
     description: 'Evento central del Sesquicentenario. Incluye 10 conferencias magistrales con ponentes nacionales e internacionales en áreas de Ingeniería Civil, Sistemas, Mecánica, Eléctrica y más.',
@@ -85,6 +134,21 @@ const initialEvents = [
     tags: ['UNI', 'Aniversario', 'Cultural']
   },
   {
+    id: 'jul3',
+    status: 'pre',
+    date: '28 Jul 2026',
+    time: '18:00 – 21:00',
+    title: 'Presentación del Libro de Oro del Sesquicentenario',
+    organizer: 'Rectorado y Centro Cultural UNI',
+    location: 'Cúpula UNI, Lima',
+    description: 'Ceremonia de presentación y entrega de la edición de gala del Libro de Oro de la Universidad Nacional de Ingeniería.',
+    registrationOpen: false,
+    quota: 0,
+    imageUrl: 'https://images.unsplash.com/photo-1512820790803-83ca734da794?auto=format&fit=crop&q=80&w=800',
+    category: 'Cultural',
+    tags: ['Libro de Oro', 'Historia', 'Cultura']
+  },
+  {
     id: 'ago1',
     status: 'pre',
     date: '08 Ago 2026',
@@ -100,10 +164,11 @@ const initialEvents = [
     tags: ['FIA', 'Ambiental', 'Sostenibilidad']
   },
   {
-    id: 'ago2', // También conocido como ID 2
+    id: 'ago2',
     status: 'pre',
     date: '22 Ago 2026',
     time: '19:00 – 23:00',
+    max_edit_date: '2026-08-15T23:59:59Z',
     title: 'Cena de Gala de Egresados',
     organizer: 'Comisión del Sesquicentenario',
     location: 'Gran Hotel Bolívar, Lima',
@@ -116,19 +181,53 @@ const initialEvents = [
     tags: ['Egresados', 'Gala', 'Social']
   },
   {
-    id: 'sep1', // También conocido como ID 4
+    id: 'sep1',
     status: 'pre',
-    date: '15 Sep 2026',
-    time: '09:00 – 13:00',
-    title: 'Feria de Empleo UNI 2026',
-    organizer: 'Oficina de Bienestar Universitario',
-    location: 'Pabellón Central, UNI, Lima',
-    description: 'Conecta con más de 50 empresas líderes en ingeniería y tecnología. Trae tu CV actualizado.',
+    date: '08 Sep 2026',
+    time: '09:00 – 18:00',
+    max_edit_date: '2026-09-01T23:59:59Z',
+    title: 'Encuentro Internacional de Ingeniería - Fase II',
+    organizer: 'Comisión del Sesquicentenario',
+    location: 'Teatro UNI, Lima',
+    description: 'Segunda fase de conferencias magistrales e integradoras de investigadores y líderes globales de la ingeniería.',
     registrationOpen: true,
-    quota: 1200,
-    imageUrl: 'https://images.unsplash.com/photo-1521791136368-1a8684c0286d?auto=format&fit=crop&q=80&w=800',
-    category: 'Laboral',
-    tags: ['Feria', 'Empleo', 'Empresas']
+    quota: 960,
+    imageUrl: 'https://images.unsplash.com/photo-1475721027785-f74eccf877e2?auto=format&fit=crop&q=80&w=800',
+    category: 'Académico',
+    tags: ['Internacional', 'Conferencias', 'Septiembre']
+  },
+  {
+    id: 'sep2',
+    status: 'pre',
+    date: '10 Sep 2026',
+    time: '10:00 – 20:00',
+    max_edit_date: '2026-09-01T23:59:59Z',
+    title: 'Feria Tecnológica Internacional UNI',
+    organizer: 'Sesquitec / OTI',
+    location: 'Explanada de la UNI, Lima',
+    description: 'La feria tecnológica internacional más grande del Sesquicentenario con exhibición de prototipos, stands empresariales y ponencias de innovación.',
+    registrationOpen: true,
+    quota: 1500,
+    imageUrl: 'https://images.unsplash.com/photo-1485827404703-89b55fcc595e?auto=format&fit=crop&q=80&w=800',
+    category: 'Tecnología',
+    tags: ['Feria', 'Tecnología', 'Innovación']
+  },
+  {
+    id: 'sep3',
+    status: 'pre',
+    date: '12 Sep 2026',
+    time: '20:00 – 23:59',
+    max_edit_date: '2026-09-05T23:59:59Z',
+    title: 'Cena de Reconocimiento del Sesquicentenario',
+    organizer: 'Comisión del Sesquicentenario',
+    location: 'Gran Hotel Bolívar, Lima',
+    description: 'Homenaje central y cena de honor del Sesquicentenario de la UNI para egresados, personalidades destacadas y autoridades nacionales.',
+    registrationOpen: true,
+    quota: 500,
+    isPaid: true,
+    imageUrl: 'https://images.unsplash.com/photo-1469371670807-013ccf25f16a?auto=format&fit=crop&q=80&w=800',
+    category: 'Egresados',
+    tags: ['Cena', 'Reconocimiento', 'Gala', 'Social']
   },
   {
     id: 'oct1',
@@ -244,14 +343,13 @@ const initialCertificates = [
 ]
 
 export const db = {
-  // Inicializar toda la base de datos
+  // Inicializar toda la base de datos localmente
   initializeDb() {
     const existingEvents = localStorage.getItem(EVENTS_KEY)
     if (existingEvents) {
       try {
         const parsed = JSON.parse(existingEvents)
-        // Limpiar si es la base de datos antigua (sin imágenes o con menos eventos)
-        if (parsed.length > 0 && (!parsed[0].imageUrl || parsed.length < 11)) {
+        if (parsed.length > 0 && (!parsed[0].imageUrl || parsed.length < 15)) {
           localStorage.removeItem(EVENTS_KEY)
           localStorage.removeItem(CONFERENCES_KEY)
           localStorage.removeItem(CERTIFICATES_KEY)
@@ -263,25 +361,6 @@ export const db = {
 
     if (!localStorage.getItem(EVENTS_KEY)) {
       localStorage.setItem(EVENTS_KEY, JSON.stringify(initialEvents))
-    } else {
-      // Auto-actualizar eventos existentes en localStorage para asegurar que tengan tags si faltan
-      try {
-        const currentEvents = JSON.parse(localStorage.getItem(EVENTS_KEY))
-        let updated = false
-        const updatedEvents = currentEvents.map(ev => {
-          if (!ev.tags) {
-            const seedEv = initialEvents.find(ie => ie.id === ev.id)
-            ev.tags = seedEv ? (seedEv.tags || []) : []
-            updated = true
-          }
-          return ev
-        })
-        if (updated) {
-          localStorage.setItem(EVENTS_KEY, JSON.stringify(updatedEvents))
-        }
-      } catch (e) {
-        console.error("Error auto-updating event tags in DB:", e)
-      }
     }
     if (!localStorage.getItem(CONFERENCES_KEY)) {
       localStorage.setItem(CONFERENCES_KEY, JSON.stringify(initialConferences))
@@ -291,6 +370,269 @@ export const db = {
     }
     if (!localStorage.getItem(QR_LOGS_KEY)) {
       localStorage.setItem(QR_LOGS_KEY, JSON.stringify([]))
+    }
+  },
+
+  // Sincronizar desde Supabase en la nube (PostgreSQL) y actualizar el cache de localStorage
+  async syncFromSupabase() {
+    if (!supabase) {
+      console.log("Supabase no configurado. Operando en modo local (localStorage).");
+      return false;
+    }
+    try {
+      console.log("Sincronizando datos desde Supabase...");
+
+      // 1. Obtener Eventos
+      const { data: eventos, error: evError } = await supabase
+        .from('eventos')
+        .select('*')
+      
+      if (evError) throw evError;
+
+      // Si Supabase está conectado pero vacío (primera ejecución), sembrar las tablas
+      if (!eventos || eventos.length === 0) {
+        console.log("Base de datos remota vacía. Sembrando datos iniciales en Supabase...");
+        await this.seedSupabase();
+        return this.syncFromSupabase(); // re-sincronizar después de sembrar
+      }
+
+      const mappedEvents = eventos.map(ev => ({
+        id: ev.id,
+        title: ev.title,
+        organizer: ev.organizer,
+        date: ev.date,
+        time: ev.time,
+        location: ev.location,
+        description: ev.description,
+        quota: ev.quota,
+        status: ev.status,
+        isPaid: ev.is_paid,
+        imageUrl: ev.image_url,
+        category: ev.category,
+        tags: ev.tags ? ev.tags.split(',') : [],
+        registrationOpen: ev.registration_open,
+        max_edit_date: ev.max_edit_date
+      }))
+      localStorage.setItem(EVENTS_KEY, JSON.stringify(mappedEvents))
+
+      // 2. Obtener Ponencias
+      const { data: ponencias, error: ponError } = await supabase
+        .from('ponencias')
+        .select('*')
+      if (!ponError && ponencias) {
+        const mappedConfs = ponencias.map(p => ({
+          id: p.id,
+          eventId: p.event_id,
+          title: p.title,
+          speaker: p.speaker,
+          room: p.room,
+          time: p.time,
+          duration: p.duration,
+          quota: p.quota
+        }))
+        localStorage.setItem(CONFERENCES_KEY, JSON.stringify(mappedConfs))
+      }
+
+      // 3. Obtener Certificados
+      const { data: certificados, error: certError } = await supabase
+        .from('certificados')
+        .select('*')
+      if (!certError && certificados) {
+        const mappedCerts = certificados.map(c => {
+          // Intentar resolver nombre de evento por event_id
+          const matchedEv = mappedEvents.find(e => e.id === c.event_id)
+          return {
+            id: c.id,
+            dni: c.dni,
+            titular: c.titular,
+            evento: matchedEv ? matchedEv.title : (c.event_id || 'Evento Oficial'),
+            fecha: c.fecha,
+            horas: c.horas,
+            emitido: c.emitido,
+            tipo: c.tipo,
+            codigoValidacion: c.codigo_validacion,
+            pdfUrl: c.pdf_url
+          }
+        })
+        localStorage.setItem(CERTIFICATES_KEY, JSON.stringify(mappedCerts))
+      }
+
+      // 4. Obtener Usuarios e Inscripciones
+      const { data: usuarios, error: userError } = await supabase
+        .from('usuarios')
+        .select('*')
+      if (userError) throw userError;
+
+      const { data: inscripciones, error: inscError } = await supabase
+        .from('inscripciones')
+        .select('*')
+
+      if (usuarios) {
+        const mappedUsers = usuarios.map(u => {
+          const userTickets = (inscripciones || [])
+            .filter(ins => ins.user_dni === u.dni)
+            .map(ins => {
+              const ev = mappedEvents.find(e => e.id === ins.event_id)
+              return {
+                id: `tkt-${ins.id}`,
+                eventId: ins.event_id,
+                eventTitle: ev ? ev.title : ins.event_id,
+                qrCode: ins.qr_code,
+                status: ins.status === 'Registrado' ? 'Por asistir' : (ins.status === 'Asistió' ? 'Asistió' : 'Cancelado'),
+                date: ev ? ev.date : '',
+                location: ev ? ev.location : '',
+                conferences: []
+              }
+            })
+
+          const userCerts = (certificados || [])
+            .filter(c => c.dni === u.dni)
+            .map(c => {
+              const ev = mappedEvents.find(e => e.id === c.event_id)
+              return {
+                id: c.id,
+                evento: ev ? ev.title : c.event_id,
+                fecha: c.fecha,
+                horas: c.horas,
+                emitido: c.emitido,
+                tipo: c.tipo,
+                codigoValidacion: c.codigo_validacion
+              }
+            })
+
+          const userRegEvents = userTickets.map(t => ({
+            id: t.eventId,
+            title: t.eventTitle,
+            date: t.date,
+            location: t.location,
+            status: t.status === 'Por asistir' ? 'Confirmado' : t.status,
+            conferences: []
+          }))
+
+          return {
+            nombres: u.nombres,
+            apellidos: u.apellidos,
+            email: u.email,
+            dni: u.dni,
+            telefono: u.telefono || '',
+            institucion: u.institucion || '',
+            password: u.password,
+            verified: u.verified,
+            role: u.role,
+            profilePic: u.profile_pic || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(u.nombres + ' ' + u.apellidos)}`,
+            registeredEvents: userRegEvents,
+            tickets: userTickets,
+            certificates: userCerts
+          }
+        })
+        localStorage.setItem(USERS_KEY, JSON.stringify(mappedUsers))
+      }
+
+      // 5. Obtener QR Logs
+      const { data: qrLogs, error: logError } = await supabase
+        .from('qr_logs')
+        .select('*')
+      if (!logError && qrLogs) {
+        const mappedLogs = qrLogs.map(l => ({
+          id: l.id,
+          timestamp: l.timestamp,
+          ticketId: l.ticket_id,
+          eventTitle: l.event_title,
+          userDni: l.user_dni,
+          userName: l.user_name,
+          status: l.status,
+          scannedBy: l.scanned_by,
+          tipo: l.tipo
+        }))
+        localStorage.setItem(QR_LOGS_KEY, JSON.stringify(mappedLogs))
+      }
+
+      console.log("Sincronización exitosa.");
+      return true;
+    } catch (e) {
+      console.error("Error al sincronizar datos de Supabase:", e)
+      return false
+    }
+  },
+
+  // Sembrar datos de prueba iniciales en Supabase
+  async seedSupabase() {
+    if (!supabase) return;
+    try {
+      // 1. Insertar Eventos
+      const mappedEvents = initialEvents.map(ev => ({
+        id: ev.id,
+        title: ev.title,
+        organizer: ev.organizer,
+        date: ev.date,
+        time: ev.time,
+        location: ev.location,
+        description: ev.description,
+        quota: ev.quota,
+        status: ev.status,
+        is_paid: ev.isPaid || false,
+        image_url: ev.imageUrl,
+        category: ev.category,
+        tags: ev.tags ? ev.tags.join(',') : '',
+        registration_open: ev.registrationOpen !== false,
+        max_edit_date: ev.max_edit_date || null
+      }))
+      await supabase.from('eventos').insert(mappedEvents)
+
+      // 2. Insertar Ponencias
+      const mappedConfs = initialConferences.map(c => ({
+        id: c.id,
+        event_id: c.eventId,
+        title: c.title,
+        speaker: c.speaker,
+        room: c.room,
+        time: c.time,
+        duration: c.duration,
+        quota: c.quota
+      }))
+      await supabase.from('ponencias').insert(mappedConfs)
+
+      // 3. Insertar Certificados
+      const mappedCerts = initialCertificates.map(c => ({
+        id: c.id,
+        dni: c.dni,
+        titular: c.titular,
+        event_id: c.evento.includes('Simposio') ? 'jun1' : (c.evento.includes('Foro') ? 'jun2' : null),
+        fecha: c.fecha,
+        horas: c.horas,
+        emitido: c.emitido,
+        tipo: c.tipo,
+        codigo_validacion: c.codigoValidacion,
+        pdf_url: ''
+      }))
+      await supabase.from('certificados').insert(mappedCerts)
+
+      console.log("Semilla sembrada con éxito en Supabase.");
+    } catch (e) {
+      console.error("Error al sembrar semillas en Supabase:", e);
+    }
+  },
+
+  // Sincronizar un usuario específico a Supabase
+  async syncUserToSupabase(user) {
+    if (!supabase) return;
+    try {
+      const dbUser = {
+        nombres: user.nombres,
+        apellidos: user.apellidos,
+        dni: user.dni,
+        email: user.email,
+        telefono: user.telefono || '',
+        institucion: user.institucion || '',
+        password: user.password,
+        role: user.role || 'USER',
+        verified: user.verified || false,
+        profile_pic: user.profilePic || ''
+      }
+      const { error } = await supabase.from('usuarios').upsert(dbUser, { onConflict: 'dni' })
+      if (error) throw error;
+    } catch (e) {
+      console.error("Error al sincronizar usuario a Supabase:", e);
     }
   },
 
@@ -312,6 +654,27 @@ export const db = {
     }
     events.push(newEvent)
     this.saveEvents(events)
+
+    if (supabase) {
+      supabase.from('eventos').insert({
+        id: newEvent.id,
+        title: newEvent.title,
+        organizer: newEvent.organizer,
+        date: newEvent.date,
+        time: newEvent.time,
+        location: newEvent.location,
+        description: newEvent.description,
+        quota: newEvent.quota,
+        status: newEvent.status,
+        is_paid: newEvent.isPaid || false,
+        image_url: newEvent.imageUrl,
+        category: newEvent.category,
+        tags: newEvent.tags ? newEvent.tags.split(',').map(t => t.trim()).join(',') : '',
+        registration_open: newEvent.registrationOpen,
+        max_edit_date: newEvent.max_edit_date || null
+      }).then(({ error }) => { if (error) console.error("Error al crear evento en Supabase:", error) })
+    }
+
     return newEvent
   },
   updateEvent(updatedEvent) {
@@ -324,6 +687,27 @@ export const db = {
         quota: parseInt(updatedEvent.quota) || 0
       }
       this.saveEvents(events)
+
+      if (supabase) {
+        supabase.from('eventos').update({
+          title: updatedEvent.title,
+          organizer: updatedEvent.organizer,
+          date: updatedEvent.date,
+          time: updatedEvent.time,
+          location: updatedEvent.location,
+          description: updatedEvent.description,
+          quota: parseInt(updatedEvent.quota) || 0,
+          status: updatedEvent.status,
+          is_paid: updatedEvent.isPaid,
+          image_url: updatedEvent.imageUrl,
+          category: updatedEvent.category,
+          tags: updatedEvent.tags ? updatedEvent.tags.split(',').map(t => t.trim()).join(',') : '',
+          registration_open: updatedEvent.registrationOpen,
+          max_edit_date: updatedEvent.max_edit_date || null
+        }).eq('id', updatedEvent.id)
+          .then(({ error }) => { if (error) console.error("Error al actualizar evento en Supabase:", error) })
+      }
+
       return true
     }
     return false
@@ -332,10 +716,16 @@ export const db = {
     const events = this.getEvents()
     const filtered = events.filter(e => e.id !== eventId)
     this.saveEvents(filtered)
-    // También borrar ponencias asociadas a este evento
+    
     const conferences = this.getConferences()
     const filteredConfs = conferences.filter(c => c.eventId !== eventId)
     this.saveConferences(filteredConfs)
+
+    if (supabase) {
+      supabase.from('eventos').delete().eq('id', eventId)
+        .then(({ error }) => { if (error) console.error("Error al eliminar evento en Supabase:", error) })
+    }
+
     return true
   },
 
@@ -357,6 +747,20 @@ export const db = {
     }
     conferences.push(newConf)
     this.saveConferences(conferences)
+
+    if (supabase) {
+      supabase.from('ponencias').insert({
+        id: newConf.id,
+        event_id: newConf.eventId,
+        title: newConf.title,
+        speaker: newConf.speaker,
+        room: newConf.room,
+        time: newConf.time,
+        duration: newConf.duration,
+        quota: newConf.quota
+      }).then(({ error }) => { if (error) console.error("Error al crear ponencia en Supabase:", error) })
+    }
+
     return newConf
   },
   updateConference(updatedConf) {
@@ -370,6 +774,20 @@ export const db = {
         quota: parseInt(updatedConf.quota) || 100
       }
       this.saveConferences(conferences)
+
+      if (supabase) {
+        supabase.from('ponencias').update({
+          event_id: updatedConf.eventId,
+          title: updatedConf.title,
+          speaker: updatedConf.speaker,
+          room: updatedConf.room,
+          time: updatedConf.time,
+          duration: parseInt(updatedConf.duration) || 60,
+          quota: parseInt(updatedConf.quota) || 100
+        }).eq('id', updatedConf.id)
+          .then(({ error }) => { if (error) console.error("Error al actualizar ponencia en Supabase:", error) })
+      }
+
       return true
     }
     return false
@@ -378,6 +796,12 @@ export const db = {
     const conferences = this.getConferences()
     const filtered = conferences.filter(c => c.id !== confId)
     this.saveConferences(filtered)
+
+    if (supabase) {
+      supabase.from('ponencias').delete().eq('id', confId)
+        .then(({ error }) => { if (error) console.error("Error al eliminar ponencia en Supabase:", error) })
+    }
+
     return true
   },
 
@@ -397,23 +821,23 @@ export const db = {
       titular: cert.titular,
       evento: cert.evento,
       fecha: cert.fecha || new Date().toLocaleDateString('es-PE', { day: '2-digit', month: 'short', year: 'numeric' }),
-      horas: parseInt(cert.horas) || 4,
+      horas: (typeof cert.horas !== 'undefined' && cert.horas !== null) ? parseInt(cert.horas) : 4,
       emitido: cert.emitido || new Date().toLocaleDateString('es-PE', { day: '2-digit', month: 'short', year: 'numeric' }),
       tipo: cert.tipo || 'Participación',
       codigoValidacion: cert.codigoValidacion || `CERT-UNI-2026-${cert.dni}-${Math.floor(100 + Math.random() * 900)}`,
-      rector: cert.rector || 'Dr. Alfonso Fujimori Morel'
+      rector: cert.rector || 'Dr. Alfonso Fujimori Morel',
+      pdfUrl: cert.pdfUrl || ''
     }
     certs.push(newCert)
     this.saveCertificates(certs)
 
-    // Sincronizar el certificado en el registro individual del usuario
+    // Sincronizar en caché individual del usuario
     const users = this.getUsers()
     const index = users.findIndex(u => u.dni === cert.dni)
     if (index !== -1) {
       if (!users[index].certificates) {
         users[index].certificates = []
       }
-      // Evitar duplicados en el registro del usuario
       if (!users[index].certificates.some(c => c.id === newCert.id)) {
         users[index].certificates.push({
           id: newCert.id,
@@ -422,17 +846,44 @@ export const db = {
           horas: newCert.horas,
           emitido: newCert.emitido,
           tipo: newCert.tipo,
-          codigoValidacion: newCert.codigoValidacion
+          codigoValidacion: newCert.codigoValidacion,
+          pdfUrl: newCert.pdfUrl
         })
         this.saveUsers(users)
       }
     }
+
+    if (supabase) {
+      const events = this.getEvents()
+      const matchedEvent = events.find(e => e.title === cert.evento)
+      const eventId = matchedEvent ? matchedEvent.id : null
+
+      supabase.from('certificados').insert({
+        id: newCert.id,
+        dni: newCert.dni,
+        titular: newCert.titular,
+        event_id: eventId,
+        fecha: newCert.fecha,
+        horas: newCert.horas,
+        emitido: newCert.emitido,
+        tipo: newCert.tipo,
+        codigo_validacion: newCert.codigoValidacion,
+        pdf_url: newCert.pdfUrl || ''
+      }).then(({ error }) => { if (error) console.error("Error al crear certificado en Supabase:", error) })
+    }
+
     return newCert
   },
   deleteCertificate(certId) {
     const certs = this.getCertificates()
     const filtered = certs.filter(c => c.id !== certId)
     this.saveCertificates(filtered)
+
+    if (supabase) {
+      supabase.from('certificados').delete().eq('id', certId)
+        .then(({ error }) => { if (error) console.error("Error al eliminar certificado en Supabase:", error) })
+    }
+
     return true
   },
 
@@ -451,8 +902,23 @@ export const db = {
       timestamp: new Date().toLocaleString('es-PE'),
       ...log
     }
-    logs.unshift(newLog) // Agregar al inicio para mostrar el más reciente primero
+    logs.unshift(newLog)
     this.saveQrLogs(logs)
+
+    if (supabase) {
+      supabase.from('qr_logs').insert({
+        id: newLog.id,
+        timestamp: newLog.timestamp,
+        ticket_id: newLog.ticketId || '',
+        event_title: newLog.eventTitle || '',
+        user_dni: newLog.userDni || '',
+        user_name: newLog.userName || '',
+        status: newLog.status || '',
+        scanned_by: newLog.scannedBy || '',
+        tipo: newLog.tipo || ''
+      }).then(({ error }) => { if (error) console.error("Error al registrar log QR en Supabase:", error) })
+    }
+
     return newLog
   },
 
@@ -470,7 +936,6 @@ export const db = {
     const updatedUsers = users.map(u => {
       if (u.dni === dni) {
         const updatedTickets = (u.tickets || []).map(t => {
-          // Compare loosely because eventId could be string or numeric
           if (String(t.eventId) === String(eventId)) {
             updated = true
             return { ...t, status: newStatus }
@@ -483,8 +948,121 @@ export const db = {
     })
     if (updated) {
       this.saveUsers(updatedUsers)
+
+      if (supabase) {
+        const dbStatus = newStatus === 'Por asistir' ? 'Registrado' : (newStatus === 'Asistió' ? 'Asistió' : 'Cancelado')
+        supabase.from('inscripciones').update({ status: dbStatus })
+          .eq('user_dni', dni)
+          .eq('event_id', eventId)
+          .then(({ error }) => { if (error) console.error("Error al actualizar estado del ticket en Supabase:", error) })
+      }
+
       return true
     }
     return false
+  },
+
+  // --- INSCRIPCIÓN A EVENTOS ---
+  getEventRegistrationCount(eventId) {
+    const users = this.getUsers()
+    let count = 0
+    users.forEach(u => {
+      if ((u.tickets || []).some(t => String(t.eventId) === String(eventId))) {
+        count++
+      }
+    })
+    return count
+  },
+  isUserRegistered(userEmail, eventId) {
+    const users = this.getUsers()
+    const user = users.find(u => u.email === userEmail)
+    if (!user) return false
+    return (user.tickets || []).some(t => String(t.eventId) === String(eventId))
+  },
+  registerUserToEvent(userEmail, eventId) {
+    const users = this.getUsers()
+    const userIdx = users.findIndex(u => u.email === userEmail)
+    if (userIdx === -1) {
+      return { success: false, message: 'Usuario no encontrado. Inicia sesión primero.' }
+    }
+
+    const events = this.getEvents()
+    const event = events.find(e => String(e.id) === String(eventId))
+    if (!event) {
+      return { success: false, message: 'Evento no encontrado.' }
+    }
+    if (!event.registrationOpen) {
+      return { success: false, message: 'Las inscripciones para este evento están cerradas.' }
+    }
+
+    const user = users[userIdx]
+    if ((user.tickets || []).some(t => String(t.eventId) === String(eventId))) {
+      return { success: false, message: 'Ya estás inscrito a este evento.' }
+    }
+
+    if (event.quota > 0) {
+      const currentCount = this.getEventRegistrationCount(eventId)
+      if (currentCount >= event.quota) {
+        return { success: false, message: 'El aforo de este evento está completo.' }
+      }
+    }
+
+    const ticket = {
+      id: `TKT-${Date.now()}-${Math.floor(Math.random() * 1005)}`,
+      eventId: event.id,
+      eventTitle: event.title,
+      date: event.date,
+      time: event.time,
+      location: event.location,
+      status: 'Vigente',
+      qrCode: `QR-${event.id}-${user.dni}-${Date.now()}`,
+      registeredAt: new Date().toISOString()
+    }
+
+    if (!user.tickets) user.tickets = []
+    user.tickets.push(ticket)
+    users[userIdx] = user
+    this.saveUsers(users)
+
+    if (supabase) {
+      supabase.from('inscripciones').insert({
+        user_dni: user.dni,
+        event_id: eventId,
+        status: 'Registrado',
+        qr_code: ticket.qrCode
+      }).then(({ error }) => { if (error) console.error("Error al registrar inscripción en Supabase:", error) })
+    }
+
+    return { success: true, message: '¡Inscripción exitosa!', ticket }
+  },
+  unregisterUserFromEvent(userEmail, eventId) {
+    const users = this.getUsers()
+    const userIdx = users.findIndex(u => u.email === userEmail)
+    if (userIdx === -1) return { success: false, message: 'Usuario no encontrado.' }
+
+    const user = users[userIdx]
+    const ticketIdx = (user.tickets || []).findIndex(t => String(t.eventId) === String(eventId))
+    if (ticketIdx === -1) return { success: false, message: 'No estás inscrito a este evento.' }
+
+    const events = this.getEvents()
+    const event = events.find(e => String(e.id) === String(eventId))
+    if (event && event.max_edit_date) {
+      if (new Date() > new Date(event.max_edit_date)) {
+        return { success: false, message: 'El plazo para cancelar la inscripción ha vencido.' }
+      }
+    }
+
+    user.tickets.splice(ticketIdx, 1)
+    users[userIdx] = user
+    this.saveUsers(users)
+
+    if (supabase) {
+      supabase.from('inscripciones').delete()
+        .eq('user_dni', user.dni)
+        .eq('event_id', eventId)
+        .then(({ error }) => { if (error) console.error("Error al eliminar inscripción en Supabase:", error) })
+    }
+
+    return { success: true, message: 'Inscripción cancelada correctamente.' }
   }
 }

@@ -7,25 +7,29 @@ import logo from '../../assets/logo.png'
 const navLinks = [
   { label: 'Inicio', path: '/' },
   { label: 'Eventos', path: '/cronograma' },
-  { label: 'Inscripción', path: '/inscripcion' },
+  { label: 'Encuentro Internacional', path: '/encuentro-internacional' },
   { label: 'Certificados', path: '/certificados' },
-  { label: 'Cena de Gala', path: '/cena-gala' },
-  { label: 'Validar Certificado', path: '/validar' },
 ]
 
 export default function Header() {
   const { user, logout } = useAuth()
   const [menuOpen, setMenuOpen] = useState(false)
   const [dropdownOpen, setDropdownOpen] = useState(false)
+  const [encuentroOpen, setEncuentroOpen] = useState(false)
+  const [mobileEncuentroOpen, setMobileEncuentroOpen] = useState(false)
   const location = useLocation()
   const navigate = useNavigate()
   const dropdownRef = useRef(null)
+  const encuentroRef = useRef(null)
 
   // Close dropdown on click outside
   useEffect(() => {
     function handleClickOutside(event) {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
         setDropdownOpen(false)
+      }
+      if (encuentroRef.current && !encuentroRef.current.contains(event.target)) {
+        setEncuentroOpen(false)
       }
     }
     document.addEventListener('mousedown', handleClickOutside)
@@ -35,6 +39,8 @@ export default function Header() {
   // Close dropdown and menu on path change
   useEffect(() => {
     setDropdownOpen(false)
+    setEncuentroOpen(false)
+    setMobileEncuentroOpen(false)
     setMenuOpen(false)
   }, [location])
 
@@ -63,19 +69,60 @@ export default function Header() {
 
         {/* Desktop nav */}
         <nav className="hidden lg:flex items-center gap-0">
-          {navLinks.map(link => (
-            <Link
-              key={link.path}
-              to={link.path}
-              className={`px-4 py-5 text-sm font-medium transition-colors relative border-b-2 ${
-                location.pathname === link.path
-                  ? 'text-[#800404] border-[#800404]'
-                  : 'text-gray-700 border-transparent hover:text-[#800404]'
-              }`}
-            >
-              {link.label}
-            </Link>
-          ))}
+          {navLinks.map(link => {
+            if (link.subLinks) {
+              return (
+                <div
+                  key={link.label}
+                  className="relative"
+                  ref={encuentroRef}
+                  onMouseEnter={() => setEncuentroOpen(true)}
+                  onMouseLeave={() => setEncuentroOpen(false)}
+                >
+                  <button
+                    className={`px-4 py-5 text-sm font-medium transition-colors relative border-b-2 flex items-center gap-1.5 cursor-pointer ${
+                      location.pathname === link.path || link.subLinks.some(s => location.pathname === s.path)
+                        ? 'text-[#800404] border-[#800404]'
+                        : 'text-gray-700 border-transparent hover:text-[#800404]'
+                    }`}
+                  >
+                    {link.label}
+                    <ChevronDown size={14} className={`transition-transform duration-200 ${encuentroOpen ? 'rotate-180' : ''}`} />
+                  </button>
+                  {encuentroOpen && (
+                    <div className="absolute left-0 mt-0 w-72 bg-white border border-gray-200 shadow-xl py-1 z-[60] animate-in fade-in slide-in-from-top-2 duration-200">
+                      {link.subLinks.map(subLink => (
+                        <Link
+                          key={subLink.path}
+                          to={subLink.path}
+                          className={`block px-4 py-2.5 text-sm transition-colors text-left font-semibold ${
+                            location.pathname === subLink.path
+                              ? 'bg-red-50 text-[#800404]'
+                              : 'text-gray-700 hover:bg-gray-50 hover:text-[#800404]'
+                          }`}
+                        >
+                          {subLink.label}
+                        </Link>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )
+            }
+            return (
+              <Link
+                key={link.path}
+                to={link.path}
+                className={`px-4 py-5 text-sm font-medium transition-colors relative border-b-2 ${
+                  location.pathname === link.path
+                    ? 'text-[#800404] border-[#800404]'
+                    : 'text-gray-700 border-transparent hover:text-[#800404]'
+                }`}
+              >
+                {link.label}
+              </Link>
+            )
+          })}
         </nav>
 
         {/* Action Buttons / Profile info */}
@@ -209,20 +256,56 @@ export default function Header() {
         <div className="lg:hidden border-t border-gray-200 bg-white shadow-inner max-h-[85vh] overflow-y-auto">
           {/* Main Links */}
           <div className="py-2">
-            {navLinks.map(link => (
-              <Link
-                key={link.path}
-                to={link.path}
-                onClick={() => setMenuOpen(false)}
-                className={`block px-6 py-3 text-sm font-medium border-b border-gray-100 ${
-                  location.pathname === link.path
-                    ? 'text-[#800404] bg-red-50 border-l-4 border-l-[#800404]'
-                    : 'text-gray-700 hover:bg-gray-50'
-                }`}
-              >
-                {link.label}
-              </Link>
-            ))}
+            {navLinks.map(link => {
+              if (link.subLinks) {
+                const isActive = link.subLinks.some(s => location.pathname === s.path)
+                return (
+                  <div key={link.label} className="border-b border-gray-100">
+                    <button
+                      onClick={() => setMobileEncuentroOpen(!mobileEncuentroOpen)}
+                      className={`w-full flex items-center justify-between px-6 py-3.5 text-sm font-bold cursor-pointer ${
+                        isActive ? 'text-[#800404] bg-red-50/50' : 'text-gray-750 hover:bg-gray-50'
+                      }`}
+                    >
+                      <span>{link.label}</span>
+                      <ChevronDown size={15} className={`text-gray-400 transition-transform duration-200 ${mobileEncuentroOpen ? 'rotate-180' : ''}`} />
+                    </button>
+                    {mobileEncuentroOpen && (
+                      <div className="bg-gray-50/40 border-t border-gray-100/50 py-1 pl-4 flex flex-col">
+                        {link.subLinks.map(subLink => (
+                          <Link
+                            key={subLink.path}
+                            to={subLink.path}
+                            onClick={() => setMenuOpen(false)}
+                            className={`block px-6 py-2.5 text-xs font-semibold ${
+                              location.pathname === subLink.path
+                                ? 'text-[#800404] border-l-2 border-[#800404] pl-5'
+                                : 'text-gray-650 hover:text-[#800404]'
+                            }`}
+                          >
+                            {subLink.label}
+                          </Link>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )
+              }
+              return (
+                <Link
+                  key={link.path}
+                  to={link.path}
+                  onClick={() => setMenuOpen(false)}
+                  className={`block px-6 py-3 text-sm font-medium border-b border-gray-100 ${
+                    location.pathname === link.path
+                      ? 'text-[#800404] bg-red-50 border-l-4 border-l-[#800404]'
+                      : 'text-gray-700 hover:bg-gray-50'
+                  }`}
+                >
+                  {link.label}
+                </Link>
+              )
+            })}
           </div>
 
           {/* User state links in Mobile */}
