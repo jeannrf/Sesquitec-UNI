@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Fragment } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Calendar, Award, CreditCard, ChevronRight, ChevronLeft, MapPin, Clock, Users, CheckCircle, Ticket, X } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
@@ -69,6 +69,29 @@ const programaGeneral = [
   { date: 'MIÉRCOLES 22 DE JULIO', time: '11:00 a.m.', title: 'Ceremonia central sesión solemne.', location: 'Gran Teatro.' },
   { date: 'LUNES 3 DE AGOSTO', time: '03:00 p.m.', title: 'Ceremonia solemne de distinción honorífica "Doctor Honoris Causa" al Ing. Jorge Rodríguez Rodríguez, presidente fundador del Grupo Gloria.', location: 'Sala de Consejo Universitario.' }
 ]
+
+const parseEventDate = (dateStr) => {
+  const months = {
+    'JULIO': 6,
+    'AGOSTO': 7
+  };
+  const upper = dateStr.toUpperCase();
+  const match = upper.match(/\b(\d+)\s+DE\s+(\w+)\b/);
+  if (!match) return null;
+  const day = parseInt(match[1], 10);
+  const monthStr = match[2];
+  const month = months[monthStr];
+  if (month === undefined) return null;
+  return new Date(2026, month, day);
+};
+
+const getCleanDate = (dateStr) => {
+  const parts = dateStr.split(/\s+/);
+  if (parts.length > 1) {
+    return parts.slice(1).join(' ').toLowerCase();
+  }
+  return dateStr.toLowerCase();
+};
 
 function EventCard({ ev, onInscribe }) {
   const bgImg = ev.imageUrl || 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?auto=format&fit=crop&q=80&w=800'
@@ -186,6 +209,27 @@ export default function Home() {
     const timer = setInterval(() => setCarouselIndex(i => (i + 1) % banners.length), 9000)
     return () => clearInterval(timer)
   }, [])
+
+  // Filtrar y ordenar actividades generales según la fecha actual
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const upcomingActivities = [];
+  const pastActivities = [];
+
+  programaGeneral.forEach(act => {
+    const eventDate = parseEventDate(act.date);
+    if (!eventDate || eventDate >= today) {
+      upcomingActivities.push(act);
+    } else {
+      pastActivities.push(act);
+    }
+  });
+
+  const showDynamicTimeline = upcomingActivities.length > 0;
+  const orderedActivities = showDynamicTimeline
+    ? [...upcomingActivities, ...pastActivities]
+    : programaGeneral;
 
   // Cargar eventos destacados desde localStorage de forma dinámica (los más próximos)
   const dbEvents = db.getEvents()
@@ -527,11 +571,17 @@ export default function Home() {
         <div className="max-w-4xl mx-auto px-4">
           <div className="text-center mb-12">
             <h2 className="text-3xl font-black text-gray-900 tracking-tight">Programa General de Actividades</h2>
-            <p className="text-sm text-[#800404] uppercase font-black tracking-widest mt-2">Del 2 de Julio al 3 de Agosto</p>
+            <p className="text-sm text-[#800404] uppercase font-black tracking-widest mt-2">
+              {showDynamicTimeline && upcomingActivities.length > 0 ? (
+                `Del ${getCleanDate(upcomingActivities[0].date)} al ${getCleanDate(upcomingActivities[upcomingActivities.length - 1].date)}`
+              ) : (
+                'Del 2 de Julio al 3 de Agosto'
+              )}
+            </p>
           </div>
 
           <div className="relative border-l border-red-250 ml-4 md:ml-32 space-y-8">
-            {(showAllActivities ? programaGeneral : programaGeneral.slice(0, 6)).map((act, i) => {
+            {(showAllActivities ? orderedActivities : orderedActivities.slice(0, 6)).map((act, i) => {
               // Extract date items
               const dateParts = act.date.split(' DE ');
               const dayStr = dateParts[0]; // e.g. "JUEVES 2" or "VIERNES 3"
@@ -539,48 +589,75 @@ export default function Home() {
               const dayNum = dayStr.match(/\d+/)?.[0] || '';
               const weekDay = dayStr.replace(dayNum, '').trim();
 
+              const eventDate = parseEventDate(act.date);
+              const isPast = showDynamicTimeline && eventDate && eventDate < today;
+              const isFirstPast = showDynamicTimeline && pastActivities.length > 0 && act === pastActivities[0];
+
               return (
-                <div key={i} className="relative pl-6 group">
-                  {/* Timeline node */}
-                  <div className="absolute -left-[6.5px] top-1.5 w-3 h-3 rounded-full bg-[#800404] border-2 border-white group-hover:scale-125 transition-transform duration-200 z-10" />
-
-                  {/* Left Date indicator for large screens */}
-                  <div className="md:absolute md:-left-32 md:top-0 md:w-24 md:text-right hidden md:block">
-                    <p className="text-xl font-black text-gray-900 leading-none">{dayNum}</p>
-                    <p className="text-[10px] text-[#800404] uppercase font-black mt-0.5">{monthStr?.slice(0, 3)}</p>
-                    <p className="text-[8px] text-gray-400 uppercase font-bold tracking-wider mt-0.5">{weekDay}</p>
-                  </div>
-
-                  {/* Main Card */}
-                  <div className="bg-white border border-gray-200 p-5 shadow-sm hover:border-[#800404] transition-all hover:shadow-md rounded-none">
-                    {/* Mobile Date Header */}
-                    <div className="md:hidden block mb-2 text-[#800404] text-xs font-black uppercase tracking-wider">
-                      {act.date}
+                <Fragment key={i}>
+                  {isFirstPast && (
+                    <div className="relative pl-6 py-2">
+                      {/* Gray node for separator */}
+                      <div className="absolute -left-[6.5px] top-1/2 -translate-y-1/2 w-3 h-3 rounded-full bg-gray-300 border-2 border-white z-10" />
+                      <div className="flex items-center gap-4">
+                        <span className="shrink-0 text-xs font-black text-gray-400 uppercase tracking-widest">
+                          Actividades Realizadas
+                        </span>
+                        <div className="flex-1 border-t border-dashed border-gray-300" />
+                      </div>
                     </div>
-                    
-                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-2.5 text-[10px] font-bold text-gray-400 uppercase tracking-wider">
-                      <span className="flex items-center gap-1.5"><Clock size={11} className="text-[#800404]" /> {act.time}</span>
-                      <span className="flex items-center gap-1.5 max-w-sm truncate" title={act.location}><MapPin size={11} className="text-[#800404]" /> {act.location}</span>
+                  )}
+
+                  <div className={`relative pl-6 group ${isPast ? 'opacity-65 hover:opacity-100 transition-opacity duration-200' : ''}`}>
+                    {/* Timeline node */}
+                    <div className={`absolute -left-[6.5px] top-1.5 w-3 h-3 rounded-full border-2 border-white group-hover:scale-125 transition-transform duration-200 z-10 ${
+                      isPast ? 'bg-gray-300' : 'bg-[#800404]'
+                    }`} />
+
+                    {/* Left Date indicator for large screens */}
+                    <div className="md:absolute md:-left-32 md:top-0 md:w-24 md:text-right hidden md:block">
+                      <p className={`text-xl font-black leading-none ${isPast ? 'text-gray-400' : 'text-gray-900'}`}>{dayNum}</p>
+                      <p className={`text-[10px] uppercase font-black mt-0.5 ${isPast ? 'text-gray-400' : 'text-[#800404]'}`}>{monthStr?.slice(0, 3)}</p>
+                      <p className="text-[8px] text-gray-400 uppercase font-bold tracking-wider mt-0.5">{weekDay}</p>
                     </div>
 
-                    <h4 className="font-bold text-gray-800 text-sm leading-relaxed group-hover:text-[#800404] transition-colors">
-                      {act.title}
-                    </h4>
+                    {/* Main Card */}
+                    <div className={`bg-white border p-5 shadow-sm transition-all hover:shadow-md rounded-none ${
+                      isPast ? 'border-gray-200 hover:border-gray-300' : 'border-gray-200 hover:border-[#800404]'
+                    }`}>
+                      {/* Mobile Date Header */}
+                      <div className={`md:hidden block mb-2 text-xs font-black uppercase tracking-wider ${isPast ? 'text-gray-400' : 'text-[#800404]'}`}>
+                        {act.date}
+                      </div>
+                      
+                      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-2.5 text-[10px] font-bold text-gray-400 uppercase tracking-wider">
+                        <span className="flex items-center gap-1.5"><Clock size={11} className={isPast ? 'text-gray-400' : 'text-[#800404]'} /> {act.time}</span>
+                        <span className="flex items-center gap-1.5 max-w-sm truncate" title={act.location}><MapPin size={11} className={isPast ? 'text-gray-400' : 'text-[#800404]'} /> {act.location}</span>
+                      </div>
+
+                      <h4 className={`font-bold text-sm leading-relaxed transition-colors ${
+                        isPast ? 'text-gray-500 group-hover:text-gray-700' : 'text-gray-800 group-hover:text-[#800404]'
+                      }`}>
+                        {act.title}
+                      </h4>
+                    </div>
                   </div>
-                </div>
+                </Fragment>
               );
             })}
           </div>
 
           {/* Toggle Button */}
-          <div className="text-center mt-12">
-            <button
-              onClick={() => setShowAllActivities(!showAllActivities)}
-              className="bg-[#800404] hover:bg-[#5a0303] text-white font-black text-xs px-6 py-3.5 transition-colors uppercase tracking-wider cursor-pointer inline-flex items-center gap-1.5 shadow-sm active:scale-95 rounded-none"
-            >
-              {showAllActivities ? 'Ver Menos Actividades' : 'Ver Todas las Actividades'}
-            </button>
-          </div>
+          {orderedActivities.length > 6 && (
+            <div className="text-center mt-12">
+              <button
+                onClick={() => setShowAllActivities(!showAllActivities)}
+                className="bg-[#800404] hover:bg-[#5a0303] text-white font-black text-xs px-6 py-3.5 transition-colors uppercase tracking-wider cursor-pointer inline-flex items-center gap-1.5 shadow-sm active:scale-95 rounded-none"
+              >
+                {showAllActivities ? 'Ver Menos Actividades' : 'Ver Todas las Actividades'}
+              </button>
+            </div>
+          )}
         </div>
       </section>
 
