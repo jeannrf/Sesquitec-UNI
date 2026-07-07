@@ -276,15 +276,10 @@ export default function IniciarSesion() {
   const handleGoogleCallback = (googleUser) => {
     const res = loginWithGoogle(googleUser)
     if (res.success) {
-      if (res.isNew) {
-        // Redirect to registration page with google data so they can finish filling it
-        navigate(`/registrarse?google=true&email=${encodeURIComponent(googleUser.email)}&nombres=${encodeURIComponent(googleUser.nombres)}&apellidos=${encodeURIComponent(googleUser.apellidos)}&pic=${encodeURIComponent(googleUser.picture)}`)
-      } else {
-        setSuccess('¡Inicio de sesión con Google exitoso!')
-        setTimeout(() => {
-          navigate(redirectPath)
-        }, 1000)
-      }
+      setSuccess('¡Inicio de sesión con Google exitoso!')
+      setTimeout(() => {
+        navigate(redirectPath)
+      }, 1000)
     } else {
       setError(res.error)
     }

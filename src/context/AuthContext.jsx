@@ -164,10 +164,12 @@ export function AuthProvider({ children }) {
   const register = (userData) => {
     // Check if user already exists
     const emailExists = users.some(u => u.email.toLowerCase() === userData.email.toLowerCase())
-    const dniExists = users.some(u => u.dni === userData.dni)
-
     if (emailExists) return { success: false, error: 'El correo electrónico ya está registrado.' }
-    if (dniExists) return { success: false, error: 'El número de DNI ya está registrado.' }
+
+    if (userData.dni) {
+      const dniExists = users.some(u => u.dni === userData.dni)
+      if (dniExists) return { success: false, error: 'El número de DNI ya está registrado.' }
+    }
 
     const verificationCode = generateCode()
 
@@ -175,9 +177,9 @@ export function AuthProvider({ children }) {
       nombres: userData.nombres,
       apellidos: userData.apellidos,
       email: userData.email,
-      dni: userData.dni,
+      dni: userData.dni || null,
       telefono: userData.telefono || '',
-      institucion: userData.institucion || 'Universidad Nacional de Ingeniería',
+      institucion: userData.institucion || '',
       password: userData.password,
       verified: false,
       role: 'USER',
@@ -194,7 +196,7 @@ export function AuthProvider({ children }) {
           horas: 2,
           emitido: '05 Jun 2026',
           tipo: 'Participación',
-          codigoValidacion: generateCertCode(userData.dni, 'welcome')
+          codigoValidacion: generateCertCode(userData.dni || null, 'welcome')
         }
       ]
     }
@@ -245,7 +247,7 @@ export function AuthProvider({ children }) {
     return { success: true }
   }
 
-  // Google OAuth flow simulation
+  // Google OAuth flow (automatic registration/login)
   const loginWithGoogle = (googleUserData) => {
     // Check if user already exists
     const foundUser = users.find(u => u.email.toLowerCase() === googleUserData.email.toLowerCase())
@@ -255,17 +257,66 @@ export function AuthProvider({ children }) {
       localStorage.setItem('uni_eventos_session', JSON.stringify({ email: foundUser.email }))
       return { success: true, isNew: false }
     } else {
-      // User needs to complete registration by providing DNI, Phone, etc.
-      // We return success: true but with a flag that they are incomplete, saving temp details
-      const tempUser = {
-        nombres: googleUserData.given_name || googleUserData.nombres,
-        apellidos: googleUserData.family_name || googleUserData.apellidos,
-        email: googleUserData.email,
-        profilePic: googleUserData.picture || `https://api.dicebear.com/7.x/initials/svg?seed=${googleUserData.email}`,
-        isGoogle: true,
-        verified: true // Google accounts are pre-verified
+      // 1. Parse Names and Surnames safely
+      let nombres = googleUserData.given_name || googleUserData.nombres || '';
+      let apellidos = googleUserData.family_name || googleUserData.apellidos || '';
+
+      if (!apellidos && googleUserData.name) {
+        const parts = googleUserData.name.trim().split(/\s+/);
+        if (parts.length > 1) {
+          nombres = parts[0];
+          apellidos = parts.slice(1).join(' ');
+        } else {
+          nombres = parts[0];
+          apellidos = '-';
+        }
       }
-      return { success: true, isNew: true, tempUser }
+
+      if (!nombres) {
+        nombres = googleUserData.email.split('@')[0];
+      }
+      if (!apellidos) {
+        apellidos = '-';
+      }
+
+      // 3. Create the user object
+      const newUser = {
+        nombres: nombres,
+        apellidos: apellidos,
+        email: googleUserData.email,
+        dni: null,
+        telefono: '',
+        institucion: '',
+        password: '', // Empty password for Google users
+        verified: true, // Pre-verified via Google
+        role: 'USER',
+        profilePic: googleUserData.picture || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(googleUserData.email)}`,
+        registeredEvents: [],
+        tickets: [],
+        certificates: [
+          {
+            id: 'cert-welcome',
+            evento: 'Seminario de Orientación Universitaria UNI 2026',
+            fecha: '02 Jun 2026',
+            horas: 2,
+            emitido: '05 Jun 2026',
+            tipo: 'Participación',
+            codigoValidacion: generateCertCode(null, 'welcome')
+          }
+        ]
+      }
+
+      // 4. Save to local storage and update state
+      const updatedUsers = [...users, newUser]
+      localStorage.setItem('uni_eventos_users', JSON.stringify(updatedUsers))
+      setUsers(updatedUsers)
+      setUser(newUser)
+      localStorage.setItem('uni_eventos_session', JSON.stringify({ email: newUser.email }))
+
+      // 5. Sync to Supabase
+      db.syncUserToSupabase(newUser)
+
+      return { success: true, isNew: false }
     }
   }
 
@@ -359,6 +410,10 @@ export function AuthProvider({ children }) {
   // Inscribe current user into an event
   const registerForEvent = (event, conferencesSelected = []) => {
     if (!user) return { success: false, error: 'Debes iniciar sesión para inscribirte.' }
+
+    if (!user.dni) {
+      return { success: false, error: 'Por favor, completa tu DNI en la sección de perfil de tu cuenta para inscribirte a los eventos.' }
+    }
 
     // Check if already registered
     const alreadyRegistered = user.registeredEvents.some(e => e.id === event.id)

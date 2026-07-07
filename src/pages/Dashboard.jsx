@@ -156,12 +156,12 @@ export default function Dashboard() {
     setProfileError('')
     setProfileSuccess('')
 
-    if (!profileForm.nombres.trim() || !profileForm.apellidos.trim() || !profileForm.email.trim() || !profileForm.dni.trim()) {
-      setProfileError('Los campos Nombres, Apellidos, DNI y Correo son obligatorios.')
+    if (!profileForm.nombres.trim() || !profileForm.apellidos.trim() || !profileForm.email.trim()) {
+      setProfileError('Los campos Nombres, Apellidos y Correo son obligatorios.')
       return
     }
 
-    if (!/^\d{8}$/.test(profileForm.dni)) {
+    if (profileForm.dni && !/^\d{8}$/.test(profileForm.dni)) {
       setProfileError('El DNI debe contener exactamente 8 números.')
       return
     }
@@ -471,7 +471,6 @@ export default function Dashboard() {
         <aside className="lg:col-span-1 space-y-1">
           {[
             { id: 'eventos', label: 'Mis Eventos', icon: <Calendar size={18} /> },
-            { id: 'entradas', label: 'Mis Entradas', icon: <CreditCard size={18} /> },
             { id: 'certificados', label: 'Certificados', icon: <Award size={18} /> },
             { id: 'perfil', label: 'Perfil Personal', icon: <User size={18} /> },
             { id: 'configuracion', label: 'Configuración', icon: <Settings size={18} /> },
@@ -499,28 +498,35 @@ export default function Dashboard() {
           
           {/* TAB: MIS EVENTOS */}
           {activeTab === 'eventos' && (() => {
-            // Merge registeredEvents and tickets for a unified view
             const allTickets = user.tickets || []
             const registeredEvents = user.registeredEvents || []
             
-            // Build combined list: tickets first (from new flow), then legacy registeredEvents
             const ticketEventIds = new Set(allTickets.map(t => String(t.eventId)))
             const legacyOnly = registeredEvents.filter(ev => !ticketEventIds.has(String(ev.id)))
             
-            const upcomingTickets = allTickets.filter(t => t.status === 'Vigente')
-            const attendedTickets = allTickets.filter(t => t.status === 'Asistido')
+            const allCatalogEvents = db.getEvents()
+            const getEventStatus = (eventId) => {
+              const found = allCatalogEvents.find(e => String(e.id) === String(eventId))
+              return found ? found.status : 'pre' // 'pre' = upcoming, 'post' = past
+            }
+
+            const upcomingTickets = allTickets.filter(t => getEventStatus(t.eventId) !== 'post')
+            const legacyUpcoming = legacyOnly.filter(ev => getEventStatus(ev.id) !== 'post')
             
-            // Check if user has certificates
+            const pastTickets = allTickets.filter(t => getEventStatus(t.eventId) === 'post')
+            const legacyPast = legacyOnly.filter(ev => getEventStatus(ev.id) === 'post')
+            
             const userCerts = db.getCertificates().filter(c => c.dni === user.dni)
-            
             const totalCount = allTickets.length + legacyOnly.length
+            const hasUpcoming = upcomingTickets.length > 0 || legacyUpcoming.length > 0
+            const hasPast = pastTickets.length > 0 || legacyPast.length > 0
 
             return (
               <div>
                 <div className="flex items-center justify-between border-b border-gray-100 pb-5 mb-6">
                   <div>
-                    <h2 className="text-xl font-black text-gray-900">Mis Eventos</h2>
-                    <p className="text-xs text-gray-400 mt-1">Historial de inscripciones, asistencia y certificados disponibles.</p>
+                    <h2 className="text-xl font-black text-gray-900">Mis Eventos y Accesos</h2>
+                    <p className="text-xs text-gray-400 mt-1">Administra tus entradas y revisa tu historial de eventos anteriores.</p>
                   </div>
                   <span className="text-xs bg-gray-100 text-gray-600 px-2.5 py-1 font-bold">
                     {totalCount} Inscripción(es)
@@ -529,81 +535,93 @@ export default function Dashboard() {
 
                 {totalCount > 0 ? (
                   <div className="space-y-8">
-                    {/* Upcoming */}
-                    {(upcomingTickets.length > 0 || legacyOnly.length > 0) && (
+                    {/* UPCOMING SECTION: ACTIVE TICKETS & ACCESS PASSES */}
+                    {hasUpcoming && (
                       <div>
-                        <h3 className="text-xs font-black text-[#800404] uppercase tracking-wider mb-3 flex items-center gap-1.5">
-                          <Calendar size={13} /> Próximos / Vigentes
+                        <h3 className="text-xs font-black text-[#800404] uppercase tracking-wider mb-4 flex items-center gap-1.5 border-b border-gray-100 pb-2">
+                          <Calendar size={14} /> Próximos Eventos y Entradas
                         </h3>
-                        <div className="grid sm:grid-cols-2 gap-4">
+                        <div className="space-y-4">
                           {upcomingTickets.map(ticket => (
-                            <div key={ticket.id} className="border border-gray-200 hover:border-[#800404] transition-all flex flex-col group">
-                              <div className="h-2 bg-gradient-to-r from-[#800404] to-[#b91c1c]" />
-                              <div className="p-5 flex-1 flex flex-col justify-between">
-                                <div>
-                                  <div className="flex items-center justify-between mb-2">
-                                    <span className="bg-emerald-50 text-emerald-700 text-[10px] font-black px-2 py-0.5 border border-emerald-200 flex items-center gap-1">
-                                      <CheckCircle size={10} /> Vigente
-                                    </span>
-                                    <span className="text-[10px] text-gray-400 font-bold">{ticket.date}</span>
-                                  </div>
-                                  <h4 className="font-black text-gray-900 text-base leading-snug group-hover:text-[#800404] transition-colors mb-3 line-clamp-2">
-                                    {ticket.eventTitle}
-                                  </h4>
-                                  <div className="space-y-1 text-xs text-gray-500">
-                                    <div className="flex items-center gap-1.5">
-                                      <Clock size={12} className="text-gray-400" />
-                                      <span>{ticket.time}</span>
-                                    </div>
-                                    <div className="flex items-center gap-1.5">
-                                      <MapPin size={12} className="text-gray-400" />
-                                      <span className="truncate">{ticket.location}</span>
-                                    </div>
-                                  </div>
+                            <div key={ticket.id} className="border border-gray-200 p-6 flex flex-col md:flex-row items-center justify-between gap-6 group hover:border-[#800404] transition-all">
+                              <div className="flex-1">
+                                <div className="flex items-center gap-2 mb-2">
+                                  <span className="bg-red-50 text-[#800404] text-[10px] font-black px-2.5 py-0.5 border border-[#800404]/20 uppercase">
+                                    {ticket.status}
+                                  </span>
+                                  <span className="text-[10px] text-gray-400 font-bold">ID: {ticket.id}</span>
                                 </div>
+                                <h4 className="font-black text-gray-900 text-lg leading-tight mb-2 group-hover:text-[#800404] transition-colors">{ticket.eventTitle}</h4>
+                                
+                                <div className="flex flex-wrap gap-4 text-xs text-gray-500 mt-3">
+                                  <span className="flex items-center gap-1"><Calendar size={13} /> {ticket.date}</span>
+                                  <span className="flex items-center gap-1"><MapPin size={13} /> {ticket.location}</span>
+                                  {ticket.time && <span className="flex items-center gap-1"><Clock size={13} /> {ticket.time}</span>}
+                                </div>
+                                
+                                {ticket.conferences && ticket.conferences.length > 0 && (
+                                  <div className="mt-3.5 bg-gray-50 p-3 border border-gray-100">
+                                    <p className="text-xs font-bold text-gray-600 mb-1">Ponencias seleccionadas ({ticket.conferences.length}):</p>
+                                    <ul className="text-[11px] text-gray-500 space-y-1">
+                                      {ticket.conferences.map(confId => {
+                                        const details = conferencesCatalog[confId]
+                                        return (
+                                          <li key={confId} className="flex items-center gap-1">
+                                            <span className="text-[#800404]">✓</span>
+                                            <span className="font-semibold text-gray-700">{details?.title || confId}</span>
+                                            <span className="text-gray-400">({details?.speaker})</span>
+                                          </li>
+                                        )
+                                      })}
+                                    </ul>
+                                  </div>
+                                )}
+                              </div>
+
+                              {/* QR Action panel */}
+                              <div className="flex flex-row md:flex-col items-center gap-3 shrink-0 w-full md:w-auto pt-4 md:pt-0 border-t md:border-t-0 md:border-l border-gray-200 pl-0 md:pl-6">
                                 <button
                                   onClick={() => setActiveQrModal(ticket)}
-                                  className="w-full mt-4 text-center border border-gray-200 group-hover:border-[#800404] text-gray-700 group-hover:text-white group-hover:bg-[#800404] py-2 text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5"
+                                  className="flex-1 md:w-40 flex items-center justify-center gap-2 border border-gray-300 hover:border-[#800404] text-gray-700 hover:text-[#800404] py-2 text-xs font-bold transition-all cursor-pointer bg-white"
                                 >
-                                  <QrCode size={13} /> Ver Entrada QR
+                                  <QrCode size={14} />
+                                  Mostrar QR
+                                </button>
+                                <button
+                                  onClick={() => downloadTicketSvg(ticket)}
+                                  className="flex-1 md:w-40 flex items-center justify-center gap-2 bg-[#800404] hover:bg-[#5a0303] text-white py-2 text-xs font-bold transition-all cursor-pointer"
+                                >
+                                  <Download size={14} />
+                                  Descargar PDF
                                 </button>
                               </div>
                             </div>
                           ))}
-                          {legacyOnly.map(ev => {
+
+                          {/* Legacy upcoming events */}
+                          {legacyUpcoming.map(ev => {
                             const fullInfo = eventsCatalog[ev.id] || ev
                             return (
-                              <div key={ev.id} className="border border-gray-200 hover:border-[#800404] transition-all flex flex-col group">
-                                <div className={`h-2 ${fullInfo.bg || 'bg-[#800404]'}`} />
-                                <div className="p-5 flex-1 flex flex-col justify-between">
-                                  <div>
-                                    <div className="flex items-center justify-between mb-2">
-                                      <span className="bg-green-50 text-green-700 text-[10px] font-black px-2 py-0.5 border border-green-200">
-                                        {ev.status || 'Confirmado'}
-                                      </span>
-                                      <span className="text-[10px] text-gray-400 font-bold">{ev.date}</span>
-                                    </div>
-                                    <h4 className="font-black text-gray-900 text-base leading-snug group-hover:text-[#800404] transition-colors mb-3 line-clamp-2">
-                                      {ev.title}
-                                    </h4>
-                                    <div className="space-y-1 text-xs text-gray-500">
-                                      <div className="flex items-center gap-1.5">
-                                        <Clock size={12} className="text-gray-400" />
-                                        <span>{ev.time}</span>
-                                      </div>
-                                      <div className="flex items-center gap-1.5">
-                                        <MapPin size={12} className="text-gray-400" />
-                                        <span className="truncate">{ev.location}</span>
-                                      </div>
-                                    </div>
+                              <div key={ev.id} className="border border-gray-200 hover:border-[#800404] transition-all p-5 flex items-center justify-between group">
+                                <div>
+                                  <div className="flex items-center gap-2 mb-2">
+                                    <span className="bg-green-50 text-green-700 text-[10px] font-black px-2 py-0.5 border border-green-200">
+                                      {ev.status || 'Confirmado'}
+                                    </span>
+                                    <span className="text-[10px] text-gray-400 font-bold">{ev.date}</span>
                                   </div>
-                                  <button
-                                    onClick={() => setSelectedEventDetails(ev)}
-                                    className="w-full mt-4 text-center border border-gray-200 group-hover:border-[#800404] text-gray-700 group-hover:text-white group-hover:bg-[#800404] py-2 text-xs font-bold transition-all cursor-pointer"
-                                  >
-                                    Ver Detalles
-                                  </button>
+                                  <h4 className="font-black text-gray-900 text-base leading-snug group-hover:text-[#800404] transition-colors">{ev.title}</h4>
+                                  <div className="flex gap-4 text-xs text-gray-500 mt-2">
+                                    <span className="flex items-center gap-1"><Clock size={12} /> {ev.time}</span>
+                                    <span className="flex items-center gap-1"><MapPin size={12} /> {ev.location}</span>
+                                  </div>
                                 </div>
+                                <button
+                                  onClick={() => setSelectedEventDetails(ev)}
+                                  className="border border-gray-200 group-hover:border-[#800404] text-gray-700 group-hover:text-white group-hover:bg-[#800404] px-4 py-2 text-xs font-bold transition-all cursor-pointer"
+                                >
+                                  Ver Detalles
+                                </button>
                               </div>
                             )
                           })}
@@ -611,27 +629,27 @@ export default function Dashboard() {
                       </div>
                     )}
 
-                    {/* Attended */}
-                    {attendedTickets.length > 0 && (
+                    {/* PAST SECTION: HISTORY OF COMPLETED EVENTS */}
+                    {hasPast && (
                       <div>
-                        <h3 className="text-xs font-black text-gray-500 uppercase tracking-wider mb-3 flex items-center gap-1.5">
-                          <CheckSquare size={13} /> Historial (Asistidos)
+                        <h3 className="text-xs font-black text-gray-500 uppercase tracking-wider mb-4 flex items-center gap-1.5 border-b border-gray-100 pb-2">
+                          <CheckSquare size={14} /> Eventos Anteriores (Historial)
                         </h3>
                         <div className="grid sm:grid-cols-2 gap-4">
-                          {attendedTickets.map(ticket => {
+                          {pastTickets.map(ticket => {
                             const hasCert = userCerts.some(c => c.evento === ticket.eventTitle)
                             return (
                               <div key={ticket.id} className="border border-gray-200 bg-gray-50/50 flex flex-col">
-                                <div className="h-2 bg-gray-300" />
+                                <div className="h-1 bg-gray-300" />
                                 <div className="p-5 flex-1 flex flex-col justify-between">
                                   <div>
                                     <div className="flex items-center justify-between mb-2">
-                                      <span className="bg-gray-100 text-gray-600 text-[10px] font-black px-2 py-0.5 border border-gray-200 flex items-center gap-1">
-                                        <CheckCircle size={10} /> Asistido
+                                      <span className="bg-gray-150 text-gray-600 text-[10px] font-black px-2 py-0.5 border border-gray-250 flex items-center gap-1">
+                                        <CheckCircle size={10} /> Concluido
                                       </span>
                                       <span className="text-[10px] text-gray-400 font-bold">{ticket.date}</span>
                                     </div>
-                                    <h4 className="font-black text-gray-700 text-base leading-snug mb-3 line-clamp-2">
+                                    <h4 className="font-black text-gray-700 text-base leading-tight mb-2 font-bold text-gray-700">
                                       {ticket.eventTitle}
                                     </h4>
                                     <div className="space-y-1 text-xs text-gray-400">
@@ -643,7 +661,49 @@ export default function Dashboard() {
                                   </div>
                                   {hasCert ? (
                                     <Link
-                                      to="/certificados"
+                                      to="/dashboard?tab=certificados"
+                                      onClick={() => handleTabChange('certificados')}
+                                      className="w-full mt-4 text-center bg-amber-50 border border-amber-200 text-amber-700 py-2 text-xs font-bold flex items-center justify-center gap-1.5 hover:bg-amber-100 transition-colors"
+                                    >
+                                      <Award size={13} /> Certificado Disponible
+                                    </Link>
+                                  ) : (
+                                    <span className="w-full mt-4 text-center text-gray-400 py-2 text-xs font-medium border border-gray-200">
+                                      Certificado pendiente
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            )
+                          })}
+
+                          {legacyPast.map(ev => {
+                            const hasCert = userCerts.some(c => c.evento === ev.title)
+                            return (
+                              <div key={ev.id} className="border border-gray-200 bg-gray-50/50 flex flex-col">
+                                <div className="h-1 bg-gray-300" />
+                                <div className="p-5 flex-1 flex flex-col justify-between">
+                                  <div>
+                                    <div className="flex items-center justify-between mb-2">
+                                      <span className="bg-gray-150 text-gray-600 text-[10px] font-black px-2 py-0.5 border border-gray-250 flex items-center gap-1">
+                                        <CheckCircle size={10} /> Concluido
+                                      </span>
+                                      <span className="text-[10px] text-gray-400 font-bold">{ev.date}</span>
+                                    </div>
+                                    <h4 className="font-black text-gray-700 text-base leading-tight mb-2 font-bold text-gray-700">
+                                      {ev.title}
+                                    </h4>
+                                    <div className="space-y-1 text-xs text-gray-400">
+                                      <div className="flex items-center gap-1.5">
+                                        <MapPin size={12} className="text-gray-300" />
+                                        <span className="truncate">{ev.location}</span>
+                                      </div>
+                                    </div>
+                                  </div>
+                                  {hasCert ? (
+                                    <Link
+                                      to="/dashboard?tab=certificados"
+                                      onClick={() => handleTabChange('certificados')}
                                       className="w-full mt-4 text-center bg-amber-50 border border-amber-200 text-amber-700 py-2 text-xs font-bold flex items-center justify-center gap-1.5 hover:bg-amber-100 transition-colors"
                                     >
                                       <Award size={13} /> Certificado Disponible
@@ -679,85 +739,6 @@ export default function Dashboard() {
               </div>
             )
           })()}
-
-          {/* TAB: MIS ENTRADAS */}
-          {activeTab === 'entradas' && (
-            <div>
-              <div className="flex items-center justify-between border-b border-gray-100 pb-5 mb-6">
-                <div>
-                  <h2 className="text-xl font-black text-gray-900">Mis Entradas</h2>
-                  <p className="text-xs text-gray-400 mt-1">Tus pases de acceso QR digitalizados vinculados a tu DNI.</p>
-                </div>
-              </div>
-
-              {user.tickets && user.tickets.length > 0 ? (
-                <div className="space-y-4">
-                  {user.tickets.map(ticket => (
-                    <div key={ticket.id} className="border border-gray-200 p-6 flex flex-col md:flex-row items-center justify-between gap-6 group hover:border-[#800404] transition-all">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-2">
-                          <span className="bg-red-50 text-[#800404] text-[10px] font-black px-2.5 py-0.5 border border-[#800404]/20 uppercase">
-                            {ticket.status}
-                          </span>
-                          <span className="text-[10px] text-gray-400">ID: {ticket.id}</span>
-                        </div>
-                        <h3 className="font-black text-gray-900 text-lg leading-tight mb-2">{ticket.eventTitle}</h3>
-                        
-                        <div className="flex flex-wrap gap-4 text-xs text-gray-500 mt-3">
-                          <span className="flex items-center gap-1"><Calendar size={13} /> {ticket.date}</span>
-                          <span className="flex items-center gap-1"><MapPin size={13} /> {ticket.location}</span>
-                        </div>
-                        
-                        {ticket.conferences && ticket.conferences.length > 0 && (
-                          <div className="mt-3.5 bg-gray-50 p-3 border border-gray-100">
-                            <p className="text-xs font-bold text-gray-600 mb-1">Ponencias seleccionadas ({ticket.conferences.length}):</p>
-                            <ul className="text-[11px] text-gray-500 space-y-1">
-                              {ticket.conferences.map(confId => {
-                                const details = conferencesCatalog[confId]
-                                return (
-                                  <li key={confId} className="flex items-center gap-1">
-                                    <span className="text-[#800404]">✓</span>
-                                    <span className="font-semibold text-gray-700">{details?.title || confId}</span>
-                                    <span className="text-gray-400">({details?.speaker})</span>
-                                  </li>
-                                )
-                              })}
-                            </ul>
-                          </div>
-                        )}
-                      </div>
-
-                      {/* QR Action panel */}
-                      <div className="flex flex-row md:flex-col items-center gap-3 shrink-0 w-full md:w-auto pt-4 md:pt-0 border-t md:border-t-0 md:border-l border-gray-200 pl-0 md:pl-6">
-                        <button
-                          onClick={() => setActiveQrModal(ticket)}
-                          className="flex-1 md:w-40 flex items-center justify-center gap-2 border border-gray-300 hover:border-[#800404] text-gray-700 hover:text-[#800404] py-2 text-xs font-bold transition-all cursor-pointer bg-white"
-                        >
-                          <QrCode size={14} />
-                          Mostrar QR
-                        </button>
-                        <button
-                          onClick={() => downloadTicketSvg(ticket)}
-                          className="flex-1 md:w-40 flex items-center justify-center gap-2 bg-[#800404] hover:bg-[#5a0303] text-white py-2 text-xs font-bold transition-all cursor-pointer"
-                        >
-                          <Download size={14} />
-                          Descargar PDF
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-16 border-2 border-dashed border-gray-200">
-                  <CreditCard className="mx-auto text-gray-200 mb-4" size={48} />
-                  <h3 className="font-bold text-gray-700 mb-1">No posees entradas activas</h3>
-                  <p className="text-xs text-gray-400 max-w-xs mx-auto">
-                    Inscríbete a los eventos para generar tus códigos de acceso institucionales.
-                  </p>
-                </div>
-              )}
-            </div>
-          )}
 
           {/* TAB: CERTIFICADOS */}
           {activeTab === 'certificados' && (
@@ -894,7 +875,7 @@ export default function Dashboard() {
 
                 <div className="grid sm:grid-cols-2 gap-5">
                   <div>
-                    <label className="block text-xs font-bold text-gray-700 uppercase mb-1">DNI *</label>
+                    <label className="block text-xs font-bold text-gray-700 uppercase mb-1">DNI</label>
                     <input
                       type="text"
                       name="dni"
@@ -902,7 +883,6 @@ export default function Dashboard() {
                       value={profileForm.dni}
                       onChange={e => setProfileForm(f => ({ ...f, dni: e.target.value.replace(/\D/g, '').slice(0, 8) }))}
                       className="w-full border border-gray-300 px-4 py-2.5 text-sm focus:outline-none focus:border-[#800404]"
-                      required
                     />
                   </div>
                   <div>
@@ -919,14 +899,13 @@ export default function Dashboard() {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-gray-700 uppercase mb-1">Universidad o Institución *</label>
+                  <label className="block text-xs font-bold text-gray-700 uppercase mb-1">Universidad o Institución</label>
                   <input
                     type="text"
                     name="institucion"
                     value={profileForm.institucion}
                     onChange={handleInputChange}
                     className="w-full border border-gray-300 px-4 py-2.5 text-sm focus:outline-none focus:border-[#800404]"
-                    required
                   />
                 </div>
 

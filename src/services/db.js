@@ -629,7 +629,7 @@ export const db = {
         verified: user.verified || false,
         profile_pic: user.profilePic || ''
       }
-      const { error } = await supabase.from('usuarios').upsert(dbUser, { onConflict: 'dni' })
+      const { error } = await supabase.from('usuarios').upsert(dbUser, { onConflict: 'email' })
       if (error) throw error;
     } catch (e) {
       console.error("Error al sincronizar usuario a Supabase:", e);

@@ -830,8 +830,6 @@ export default function Admin() {
           {[
             { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
             { id: 'eventos', label: 'Eventos', icon: Calendar },
-            { id: 'ponencias', label: 'Ponencias', icon: Mic },
-            { id: 'cronograma', label: 'Cronograma', icon: Clock },
             { id: 'participantes', label: 'Participantes', icon: Users },
             { id: 'asistencia-qr', label: 'Asistencia QR', icon: QrCode },
             { id: 'certificados', label: 'Certificados', icon: Award },
@@ -1014,8 +1012,7 @@ export default function Admin() {
                     className="border border-gray-300 px-3 py-2 text-sm focus:outline-none bg-white text-gray-700"
                   >
                     <option value="all">Todos los estados</option>
-                    <option value="pre">Pre-Evento</option>
-                    <option value="active">Activo/Publicado</option>
+                    <option value="active">Publicado</option>
                     <option value="post">Post-Evento/Finalizado</option>
                   </select>
                   <button
@@ -1046,8 +1043,7 @@ export default function Admin() {
                         const titleMatch = e.title.toLowerCase().includes(eventSearch.toLowerCase()) ||
                                            e.organizer.toLowerCase().includes(eventSearch.toLowerCase())
                         const statusMatch = eventFilterStatus === 'all' || 
-                                            (eventFilterStatus === 'pre' && e.status === 'pre') ||
-                                            (eventFilterStatus === 'active' && e.status !== 'post' && e.status !== 'pre') ||
+                                            (eventFilterStatus === 'active' && e.status !== 'post') ||
                                             (eventFilterStatus === 'post' && e.status === 'post')
                         return titleMatch && statusMatch
                       })
@@ -1090,11 +1086,9 @@ export default function Admin() {
                               <span className={`inline-block text-[10px] font-black px-2.5 py-1 uppercase border rounded-none ${
                                 ev.status === 'post' 
                                   ? 'bg-gray-50 border-gray-200 text-gray-500'
-                                  : ev.status === 'pre'
-                                    ? 'bg-amber-50 border-amber-200 text-amber-700'
-                                    : 'bg-emerald-50 border-emerald-200 text-emerald-700'
+                                  : 'bg-emerald-50 border-emerald-200 text-emerald-700'
                               }`}>
-                                {ev.status === 'post' ? 'Post-Evento' : ev.status === 'pre' ? 'Pre-Evento' : 'Publicado'}
+                                {ev.status === 'post' ? 'Post-Evento' : 'Publicado'}
                               </span>
                             </td>
                             <td className="px-6 py-4 text-right whitespace-nowrap">
@@ -1109,18 +1103,6 @@ export default function Admin() {
                                     className="border border-gray-200 hover:border-gray-400 hover:bg-gray-50 text-gray-600 text-xs px-2 py-1 transition-all rounded-none cursor-pointer"
                                   >
                                     Finalizar
-                                  </button>
-                                )}
-                                {ev.status === 'pre' && (
-                                  <button
-                                    onClick={() => {
-                                      db.updateEvent({ ...ev, status: 'published' })
-                                      refreshAllData()
-                                    }}
-                                    title="Publicar evento"
-                                    className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs px-2.5 py-1 transition-all font-black rounded-none cursor-pointer"
-                                  >
-                                    Publicar
                                   </button>
                                 )}
                                 <button
@@ -2043,7 +2025,7 @@ export default function Admin() {
       {/* MODAL: CREAR O EDITAR EVENTO */}
       {isEventModalOpen && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white w-full max-w-lg shadow-2xl border border-gray-200 overflow-hidden font-sans flex flex-col max-h-[90vh]">
+          <div className="bg-white w-full max-w-4xl shadow-2xl border border-gray-200 overflow-hidden font-sans flex flex-col max-h-[90vh]">
             
             <div className="bg-[#800404] text-white p-5 flex items-center justify-between shrink-0">
               <h4 className="font-black text-base">{editingEvent ? 'Editar Evento' : 'Crear Nuevo Evento'}</h4>
@@ -2054,194 +2036,200 @@ export default function Admin() {
 
             <form onSubmit={handleSaveEvent} className="flex flex-col flex-1 overflow-hidden">
               <div className="p-6 space-y-4 overflow-y-auto flex-1">
-              <div>
-                <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Título del Evento *</label>
-                <input
-                  type="text"
-                  required
-                  value={eventForm.title}
-                  onChange={e => setEventForm(prev => ({ ...prev, title: e.target.value }))}
-                  className="w-full border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:border-[#800404] text-gray-850"
-                  placeholder="Ej: Congreso de Inteligencia Artificial"
-                />
-              </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
+                  {/* Left Column */}
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Título del Evento *</label>
+                      <input
+                        type="text"
+                        required
+                        value={eventForm.title}
+                        onChange={e => setEventForm(prev => ({ ...prev, title: e.target.value }))}
+                        className="w-full border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:border-[#800404] text-gray-850"
+                        placeholder="Ej: Congreso de Inteligencia Artificial"
+                      />
+                    </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Categoría del Evento *</label>
-                  <select
-                    value={eventForm.category}
-                    onChange={e => setEventForm(prev => ({ ...prev, category: e.target.value }))}
-                    className="w-full border border-gray-300 px-3 py-2 text-xs focus:outline-none focus:border-[#800404] bg-white text-gray-800"
-                  >
-                    <option value="Académico">Académico</option>
-                    <option value="Egresados">Egresados</option>
-                    <option value="Cultural">Cultural</option>
-                    <option value="Laboral">Laboral</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-gray-500 uppercase mb-1">URL de la Portada</label>
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      value={eventForm.imageUrl}
-                      onChange={e => setEventForm(prev => ({ ...prev, imageUrl: e.target.value }))}
-                      className="flex-1 border border-gray-300 px-3 py-1.5 text-xs focus:outline-none focus:border-[#800404] text-gray-850"
-                      placeholder="https://..."
-                    />
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const randoms = [
-                          'https://images.unsplash.com/photo-1540575467063-178a50c2df87?auto=format&fit=crop&q=80&w=800',
-                          'https://images.unsplash.com/photo-1519671482749-fd09be7ccebf?auto=format&fit=crop&q=80&w=800',
-                          'https://images.unsplash.com/photo-1507679799987-c73779587ccf?auto=format&fit=crop&q=80&w=800',
-                          'https://images.unsplash.com/photo-1531482615713-2afd69097998?auto=format&fit=crop&q=80&w=800',
-                          'https://images.unsplash.com/photo-1523050854058-8df90110c9f1?auto=format&fit=crop&q=80&w=800',
-                          'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&q=80&w=800',
-                          'https://images.unsplash.com/photo-1521791136368-1a8684c0286d?auto=format&fit=crop&q=80&w=800',
-                          'https://images.unsplash.com/photo-1504384308090-c894fdcc538d?auto=format&fit=crop&q=80&w=800',
-                          'https://images.unsplash.com/photo-1511578314322-379afb476865?auto=format&fit=crop&q=80&w=800'
-                        ];
-                        const idx = Math.floor(Math.random() * randoms.length);
-                        setEventForm(prev => ({ ...prev, imageUrl: randoms[idx] }));
-                      }}
-                      className="bg-gray-200 hover:bg-gray-300 text-gray-700 text-[10px] font-bold px-2 py-1 cursor-pointer transition-colors shrink-0"
-                      title="Usar imagen de prueba aleatoria"
-                    >
-                      Azar
-                    </button>
+                    <div>
+                      <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Categoría del Evento *</label>
+                      <select
+                        value={eventForm.category}
+                        onChange={e => setEventForm(prev => ({ ...prev, category: e.target.value }))}
+                        className="w-full border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:border-[#800404] bg-white text-gray-805"
+                      >
+                        <option value="Académico">Académico</option>
+                        <option value="Egresados">Egresados</option>
+                        <option value="Cultural">Cultural</option>
+                        <option value="Laboral">Laboral</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Organizador</label>
+                      <input
+                        type="text"
+                        value={eventForm.organizer}
+                        onChange={e => setEventForm(prev => ({ ...prev, organizer: e.target.value }))}
+                        className="w-full border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:border-[#800404] text-gray-850"
+                        placeholder="Ej: Rectorado / UNICODE"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Ubicación *</label>
+                      <input
+                        type="text"
+                        required
+                        value={eventForm.location}
+                        onChange={e => setEventForm(prev => ({ ...prev, location: e.target.value }))}
+                        className="w-full border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:border-[#800404] text-gray-850"
+                        placeholder="Ej: Teatro UNI, Lima"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Right Column */}
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-xs font-bold text-gray-500 uppercase mb-1">URL de la Portada</label>
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          value={eventForm.imageUrl}
+                          onChange={e => setEventForm(prev => ({ ...prev, imageUrl: e.target.value }))}
+                          className="flex-1 border border-gray-300 px-3 py-1.5 text-sm focus:outline-none focus:border-[#800404] text-gray-850"
+                          placeholder="https://..."
+                        />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const randoms = [
+                              'https://images.unsplash.com/photo-1540575467063-178a50c2df87?auto=format&fit=crop&q=80&w=800',
+                              'https://images.unsplash.com/photo-1519671482749-fd09be7ccebf?auto=format&fit=crop&q=80&w=800',
+                              'https://images.unsplash.com/photo-1507679799987-c73779587ccf?auto=format&fit=crop&q=80&w=800',
+                              'https://images.unsplash.com/photo-1531482615713-2afd69097998?auto=format&fit=crop&q=80&w=800',
+                              'https://images.unsplash.com/photo-1523050854058-8df90110c9f1?auto=format&fit=crop&q=80&w=800',
+                              'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&q=80&w=800',
+                              'https://images.unsplash.com/photo-1521791136368-1a8684c0286d?auto=format&fit=crop&q=80&w=800',
+                              'https://images.unsplash.com/photo-1504384308090-c894fdcc538d?auto=format&fit=crop&q=80&w=800',
+                              'https://images.unsplash.com/photo-1511578314322-379afb476865?auto=format&fit=crop&q=80&w=800'
+                            ];
+                            const idx = Math.floor(Math.random() * randoms.length);
+                            setEventForm(prev => ({ ...prev, imageUrl: randoms[idx] }));
+                          }}
+                          className="bg-gray-200 hover:bg-gray-300 text-gray-700 text-xs font-bold px-3 py-1 cursor-pointer transition-colors shrink-0"
+                          title="Usar imagen de prueba aleatoria"
+                        >
+                          Azar
+                        </button>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Fecha *</label>
+                      <input
+                        type="text"
+                        required
+                        value={eventForm.date}
+                        onChange={e => setEventForm(prev => ({ ...prev, date: e.target.value }))}
+                        className="w-full border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:border-[#800404] text-gray-850"
+                        placeholder="Ej: 14 Jul 2026"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Horario</label>
+                      <input
+                        type="text"
+                        value={eventForm.time}
+                        onChange={e => setEventForm(prev => ({ ...prev, time: e.target.value }))}
+                        className="w-full border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:border-[#800404] text-gray-850"
+                        placeholder="Ej: 08:00 – 18:00"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Aforo Máximo (Cupos) *</label>
+                      <input
+                        type="number"
+                        required
+                        value={eventForm.quota}
+                        onChange={e => setEventForm(prev => ({ ...prev, quota: e.target.value }))}
+                        className="w-full border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:border-[#800404] text-gray-850"
+                        placeholder="Ej: 300"
+                      />
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Organizador</label>
-                  <input
-                    type="text"
-                    value={eventForm.organizer}
-                    onChange={e => setEventForm(prev => ({ ...prev, organizer: e.target.value }))}
-                    className="w-full border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:border-[#800404] text-gray-850"
-                    placeholder="Ej: Rectorado / UNICODE"
-                  />
+                <div className="grid grid-cols-1 gap-4 pt-2">
+                  <div className="flex items-center gap-4 bg-gray-50 p-3 border border-gray-150">
+                    <label className="flex items-center gap-2 text-xs font-bold text-gray-700 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={eventForm.isPaid}
+                        onChange={e => setEventForm(prev => ({ ...prev, isPaid: e.target.checked }))}
+                        className="border-gray-300"
+                      />
+                      ¿Es un evento de pago? (Cena de Gala, etc.)
+                    </label>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Descripción del Evento</label>
+                    <textarea
+                      value={eventForm.description}
+                      onChange={e => setEventForm(prev => ({ ...prev, description: e.target.value }))}
+                      rows="3"
+                      className="w-full border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:border-[#800404] text-gray-850"
+                      placeholder="Resumen del evento..."
+                    ></textarea>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Etiquetas / Badges (Separadas por comas)</label>
+                    <input
+                      type="text"
+                      value={eventForm.tags || ''}
+                      onChange={e => setEventForm(prev => ({ ...prev, tags: e.target.value }))}
+                      className="w-full border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:border-[#800404] text-gray-850 rounded-none"
+                      placeholder="Ej: FIC, FIIS, FIM, Tecnología, Innovación"
+                    />
+                    <div className="flex flex-wrap gap-1 mt-1.5 items-center">
+                      <span className="text-[10px] text-gray-400 font-bold uppercase mr-1">Sugerencias:</span>
+                      {[
+                        'FC', 'FIC', 'FIIS', 'FIM', 'FIA', 'FIEE', 'FIGMM', 'FAUA', 
+                        'Tecnología', 'Innovación', 'Investigación', 'Egresados', 'Cultural'
+                      ].map(sug => {
+                        const currentTags = eventForm.tags
+                          ? eventForm.tags.split(',').map(t => t.trim()).filter(Boolean)
+                          : [];
+                        const isAlreadyAdded = currentTags.includes(sug);
+                        return (
+                          <button
+                            key={sug}
+                            type="button"
+                            onClick={() => {
+                              if (!isAlreadyAdded) {
+                                const newTags = [...currentTags, sug].join(', ');
+                                setEventForm(prev => ({ ...prev, tags: newTags }));
+                              }
+                            }}
+                            className={`text-[9px] font-bold px-1.5 py-0.5 uppercase border transition-all ${
+                              isAlreadyAdded
+                                ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed'
+                                : 'bg-white hover:bg-red-50 text-[#800404] border-red-200 cursor-pointer active:scale-95'
+                            }`}
+                            disabled={isAlreadyAdded}
+                          >
+                            + {sug}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
                 </div>
-                <div>
-                  <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Fecha *</label>
-                  <input
-                    type="text"
-                    required
-                    value={eventForm.date}
-                    onChange={e => setEventForm(prev => ({ ...prev, date: e.target.value }))}
-                    className="w-full border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:border-[#800404] text-gray-850"
-                    placeholder="Ej: 14 Jul 2026"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Horario</label>
-                  <input
-                    type="text"
-                    value={eventForm.time}
-                    onChange={e => setEventForm(prev => ({ ...prev, time: e.target.value }))}
-                    className="w-full border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:border-[#800404] text-gray-850"
-                    placeholder="Ej: 08:00 – 18:00"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Aforo Máximo (Cupos) *</label>
-                  <input
-                    type="number"
-                    required
-                    value={eventForm.quota}
-                    onChange={e => setEventForm(prev => ({ ...prev, quota: e.target.value }))}
-                    className="w-full border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:border-[#800404] text-gray-850"
-                    placeholder="Ej: 300"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Ubicación *</label>
-                <input
-                  type="text"
-                  required
-                  value={eventForm.location}
-                  onChange={e => setEventForm(prev => ({ ...prev, location: e.target.value }))}
-                  className="w-full border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:border-[#800404] text-gray-850"
-                  placeholder="Ej: Teatro UNI, Lima"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Descripción del Evento</label>
-                <textarea
-                  value={eventForm.description}
-                  onChange={e => setEventForm(prev => ({ ...prev, description: e.target.value }))}
-                  rows="3"
-                  className="w-full border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:border-[#800404] text-gray-850"
-                  placeholder="Resumen del evento..."
-                ></textarea>
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Etiquetas / Badges (Separadas por comas)</label>
-                <input
-                  type="text"
-                  value={eventForm.tags || ''}
-                  onChange={e => setEventForm(prev => ({ ...prev, tags: e.target.value }))}
-                  className="w-full border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:border-[#800404] text-gray-850 rounded-none"
-                  placeholder="Ej: FIC, FIIS, FIM, Tecnología, Innovación"
-                />
-                <div className="flex flex-wrap gap-1 mt-1.5 items-center">
-                  <span className="text-[10px] text-gray-400 font-bold uppercase mr-1">Sugerencias:</span>
-                  {[
-                    'FC', 'FIC', 'FIIS', 'FIM', 'FIA', 'FIEE', 'FIGMM', 'FAUA', 
-                    'Tecnología', 'Innovación', 'Investigación', 'Egresados', 'Cultural'
-                  ].map(sug => {
-                    const currentTags = eventForm.tags
-                      ? eventForm.tags.split(',').map(t => t.trim()).filter(Boolean)
-                      : [];
-                    const isAlreadyAdded = currentTags.includes(sug);
-                    return (
-                      <button
-                        key={sug}
-                        type="button"
-                        onClick={() => {
-                          if (!isAlreadyAdded) {
-                            const newTags = [...currentTags, sug].join(', ');
-                            setEventForm(prev => ({ ...prev, tags: newTags }));
-                          }
-                        }}
-                        className={`text-[9px] font-bold px-1.5 py-0.5 uppercase border transition-all ${
-                          isAlreadyAdded
-                            ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed'
-                            : 'bg-white hover:bg-red-50 text-[#800404] border-red-200 cursor-pointer active:scale-95'
-                        }`}
-                        disabled={isAlreadyAdded}
-                      >
-                        + {sug}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              <div className="flex items-center gap-4 bg-gray-50 p-3 border border-gray-150">
-                <label className="flex items-center gap-2 text-xs font-bold text-gray-700 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={eventForm.isPaid}
-                    onChange={e => setEventForm(prev => ({ ...prev, isPaid: e.target.checked }))}
-                    className="border-gray-300"
-                  />
-                  ¿Es un evento de pago? (Cena de Gala, etc.)
-                </label>
-              </div>
-
               </div>
 
               <div className="p-5 border-t border-gray-100 bg-gray-50 flex gap-3 justify-end shrink-0">
