@@ -141,9 +141,34 @@ function PhaseActionSection({ phase }) {
   )
 }
 
+const getPhaseIcon = (id) => {
+  switch (id) {
+    case 'sep1': return <Globe size={24} />;
+    case 'sep2': return <Cpu size={24} />;
+    case 'sep3': return <Utensils size={24} />;
+    default: return <Globe size={24} />;
+  }
+}
+
 export default function EncuentroInternacional() {
   const [activePhaseId, setActivePhaseId] = useState('sep1')
-  const activePhase = phases.find(p => p.id === activePhaseId)
+  const [dynamicSpeakers, setDynamicSpeakers] = useState(() => {
+    const val = db.getCmsValue('meet_speakers', speakers)
+    return Array.isArray(val) ? val : speakers
+  })
+  const [dynamicPhases, setDynamicPhases] = useState(() => {
+    const val = db.getCmsValue('meet_phases', phases)
+    return Array.isArray(val) ? val : phases
+  })
+
+  useEffect(() => {
+    const sp = db.getCmsValue('meet_speakers', speakers)
+    setDynamicSpeakers(Array.isArray(sp) ? sp : speakers)
+    const ph = db.getCmsValue('meet_phases', phases)
+    setDynamicPhases(Array.isArray(ph) ? ph : phases)
+  }, [])
+
+  const activePhase = (Array.isArray(dynamicPhases) ? dynamicPhases : phases).find(p => p.id === activePhaseId) || phases[0]
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -181,7 +206,7 @@ export default function EncuentroInternacional() {
       {/* Timeline strip (Tabs) */}
       <div className="bg-white border-b border-gray-200 sticky top-16 z-40 shadow-sm">
         <div className="max-w-4xl mx-auto px-4 flex items-center justify-between overflow-x-auto">
-          {phases.map((p, i) => {
+          {dynamicPhases.map((p, i) => {
             const isActive = p.id === activePhaseId
             return (
               <button
@@ -230,7 +255,7 @@ export default function EncuentroInternacional() {
                   <h3 className="text-2xl font-black text-gray-900 mt-0.5 leading-tight">{activePhase.title}</h3>
                 </div>
                 <div className={`p-3 bg-gradient-to-br ${activePhase.color} text-white rounded-md shrink-0`}>
-                  {activePhase.icon}
+                  {getPhaseIcon(activePhase.id)}
                 </div>
               </div>
 
@@ -286,7 +311,7 @@ export default function EncuentroInternacional() {
           </div>
 
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {speakers.map((s, i) => (
+            {dynamicSpeakers.map((s, i) => (
               <div key={i} className="border border-gray-200 p-5 hover:border-[#800404]/20 hover:shadow-sm transition-all group">
                 <div className="flex items-start gap-4">
                   <div className="w-12 h-12 bg-gradient-to-br from-[#800404] to-[#b91c1c] text-white flex items-center justify-center font-black text-sm shrink-0">

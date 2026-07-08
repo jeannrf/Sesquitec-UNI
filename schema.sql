@@ -83,6 +83,13 @@ CREATE TABLE qr_logs (
     tipo VARCHAR(50)
 );
 
+-- 7. Tabla de Páginas CMS
+CREATE TABLE cms_paginas (
+    key VARCHAR(100) PRIMARY KEY,
+    value JSONB NOT NULL,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
 -- Índices recomendados para optimización de consultas recurrentes
 CREATE INDEX idx_certificados_dni ON certificados(dni);
 CREATE INDEX idx_inscripciones_user_dni ON inscripciones(user_dni);
@@ -90,3 +97,4 @@ CREATE INDEX idx_inscripciones_event_id ON inscripciones(event_id);
 CREATE INDEX idx_ponencias_event_id ON ponencias(event_id);
 CREATE INDEX idx_qr_logs_ticket_id ON qr_logs(ticket_id);
 CREATE INDEX idx_qr_logs_user_dni ON qr_logs(user_dni);
+

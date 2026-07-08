@@ -1,6 +1,7 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
 import Header from './components/layout/Header'
 import Footer from './components/layout/Footer'
+import ScrollToTop from './components/layout/ScrollToTop'
 import Home from './pages/Home'
 import Cronograma from './pages/Cronograma'
 import Certificados from './pages/Certificados'
@@ -18,6 +19,7 @@ export default function App() {
 
   return (
     <div className="min-h-screen flex flex-col bg-white">
+      <ScrollToTop />
       <Header />
       <main className="flex-1">
         <Routes>

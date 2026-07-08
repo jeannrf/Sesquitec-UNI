@@ -81,7 +81,7 @@ function EventCard({ event }) {
             <span className="bg-red-50 text-[#800404] text-[10px] font-bold px-2 py-0.5 uppercase border border-red-200/30 rounded-none">
               {event.category}
             </span>
-            {event.tags && event.tags.map(tag => (
+            {Array.isArray(event.tags) && event.tags.map(tag => (
               <span key={tag} className="bg-red-50 text-[#800404] text-[10px] font-bold px-2 py-0.5 uppercase border border-red-200/30 rounded-none">
                 {tag}
               </span>
@@ -417,6 +417,21 @@ function EventCard({ event }) {
 
 export default function Cronograma() {
   const [searchQuery, setSearchQuery] = useState('')
+  const [pageTitle, setPageTitle] = useState(() => {
+    const val = db.getCmsValue('events_title', 'Eventos')
+    return typeof val === 'string' ? val : 'Eventos'
+  })
+  const [pageSubtitle, setPageSubtitle] = useState(() => {
+    const val = db.getCmsValue('events_subtitle', 'Todos los eventos del Sesquicentenario UNI 2026')
+    return typeof val === 'string' ? val : 'Todos los eventos del Sesquicentenario UNI 2026'
+  })
+
+  useEffect(() => {
+    const title = db.getCmsValue('events_title', 'Eventos')
+    setPageTitle(typeof title === 'string' ? title : 'Eventos')
+    const subtitle = db.getCmsValue('events_subtitle', 'Todos los eventos del Sesquicentenario UNI 2026')
+    setPageSubtitle(typeof subtitle === 'string' ? subtitle : 'Todos los eventos del Sesquicentenario UNI 2026')
+  }, [])
   const [activeMonth, setActiveMonth] = useState(() => {
     const spanishMonths = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre']
     const currentMonthName = spanishMonths[new Date().getMonth()]
@@ -431,7 +446,8 @@ export default function Cronograma() {
   const urlFiltro = searchParams.get('filtro')
 
   // Cargar eventos desde localStorage
-  const dbEvents = db.getEvents()
+  const rawEvents = db.getEvents()
+  const dbEvents = Array.isArray(rawEvents) ? rawEvents : []
 
   // Helper para extraer el mes en español a partir del string de fecha del evento
   const getEventMonth = (dateStr) => {
@@ -474,7 +490,7 @@ export default function Cronograma() {
       const orgMatch = ev.organizer?.toLowerCase().includes(q)
       const locMatch = ev.location?.toLowerCase().includes(q)
       const catMatch = ev.category?.toLowerCase().includes(q)
-      const tagsMatch = ev.tags?.some(tag => tag.toLowerCase().includes(q))
+      const tagsMatch = Array.isArray(ev.tags) ? ev.tags.some(tag => tag.toLowerCase().includes(q)) : false
       if (!titleMatch && !descMatch && !orgMatch && !locMatch && !catMatch && !tagsMatch) {
         return false
       }
@@ -525,8 +541,8 @@ export default function Cronograma() {
       {/* Header */}
       <div className="bg-[#800404] text-white py-6">
         <div className="max-w-7xl mx-auto px-4">
-          <h1 className="text-2xl font-black">Eventos</h1>
-          <p className="text-white/70 text-xs sm:text-sm mt-0.5">Todos los eventos del Sesquicentenario UNI 2026</p>
+          <h1 className="text-2xl font-black">{pageTitle}</h1>
+          <p className="text-white/70 text-xs sm:text-sm mt-0.5">{pageSubtitle}</p>
         </div>
       </div>
 
