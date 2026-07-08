@@ -98,10 +98,10 @@ startxref
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <div className="bg-[#800404] text-white py-12">
+      <div className="bg-[#800404] text-white py-6">
         <div className="max-w-4xl mx-auto px-4">
-          <h1 className="text-4xl font-black mb-2">Mis Certificados</h1>
-          <p className="text-white/70">Busca y descarga los certificados de tu participación en eventos del Sesquicentenario</p>
+          <h1 className="text-2xl font-black">Mis Certificados</h1>
+          <p className="text-white/70 text-xs sm:text-sm mt-0.5">Busca y descarga los certificados de tu participación en eventos del Sesquicentenario</p>
         </div>
       </div>
 

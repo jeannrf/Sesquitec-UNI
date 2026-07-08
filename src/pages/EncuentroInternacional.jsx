@@ -27,6 +27,7 @@ const phases = [
     description: 'Dos días de conferencias magistrales con ponentes internacionales líderes en sus campos. Incluye paneles de discusión, networking y coffee breaks.',
     color: 'from-[#800404] to-[#b91c1c]',
     badge: 'Académico',
+    imageUrl: 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?auto=format&fit=crop&q=80&w=800'
   },
   {
     id: 'sep2',
@@ -40,6 +41,7 @@ const phases = [
     description: 'La feria tecnológica más grande del Sesquicentenario. Exhibición de prototipos, stands empresariales, demostraciones en vivo y ponencias de innovación.',
     color: 'from-gray-800 to-gray-600',
     badge: 'Tecnología',
+    imageUrl: 'https://images.unsplash.com/photo-1485827404703-89b55fcc595e?auto=format&fit=crop&q=80&w=800'
   },
   {
     id: 'sep3',
@@ -55,10 +57,11 @@ const phases = [
     badge: 'Gala',
     isPaid: true,
     price: 'S/ 180',
+    imageUrl: 'https://images.unsplash.com/photo-1519671482749-fd09be7ccebf?auto=format&fit=crop&q=80&w=800'
   }
 ]
 
-function PhaseCard({ phase }) {
+function PhaseActionSection({ phase }) {
   const { user, openAuth } = useAuth()
   const { showAlert } = useAlert()
   const [isRegistering, setIsRegistering] = useState(false)
@@ -85,86 +88,40 @@ function PhaseCard({ phase }) {
   }
 
   return (
-    <div className="bg-white border border-gray-200 overflow-hidden group hover:shadow-lg transition-shadow duration-300 flex flex-col h-full">
-      {/* Top gradient bar */}
-      <div className={`h-1.5 shrink-0 bg-gradient-to-r ${phase.color}`} />
-
-      <div className="p-6 md:p-8 flex flex-col flex-grow">
-        {/* Header */}
-        <div className="flex items-start justify-between mb-4">
-          <div>
-            <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest">{phase.label}</span>
-            <h3 className="text-xl font-black text-gray-900 mt-1 leading-tight">{phase.title}</h3>
+    <div className="w-full flex flex-col md:flex-row items-stretch md:items-center justify-between gap-6">
+      {/* Aforo bar */}
+      {phase.quota > 0 && (
+        <div className="flex-grow max-w-md">
+          <div className="flex justify-between items-center mb-1">
+            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wide">Aforo</span>
+            <span className="text-[10px] font-black text-gray-600">{registrationCount} / {phase.quota}</span>
           </div>
-          <div className={`p-3 bg-gradient-to-br ${phase.color} text-white rounded-sm`}>
-            {phase.icon}
-          </div>
-        </div>
-
-        {/* Badge */}
-        <div className="flex flex-wrap gap-2 mb-4">
-          <span className="text-[10px] font-bold text-[#800404] bg-red-50 border border-red-200/30 px-2 py-0.5 uppercase">
-            {phase.badge}
-          </span>
-          {phase.isPaid && (
-            <span className="text-[10px] font-bold text-white bg-[#800404] px-2 py-0.5 uppercase">
-              PAGO · {phase.price}
-            </span>
-          )}
-        </div>
-
-        {/* Description */}
-        <p className="text-sm text-gray-500 leading-relaxed mb-5">{phase.description}</p>
-
-        {/* Metadata */}
-        <div className="space-y-2 text-sm text-gray-600 font-medium mb-5">
-          <div className="flex items-center gap-2">
-            <Calendar size={14} className="text-[#800404] shrink-0" />
-            <span>{phase.date}</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <Clock size={14} className="text-[#800404] shrink-0" />
-            <span>{phase.time}</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <MapPin size={14} className="text-[#800404] shrink-0" />
-            <span>{phase.location}</span>
+          <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
+            <div
+              className={`h-full transition-all duration-500 rounded-full ${
+                isFull ? 'bg-red-500' : registrationCount / phase.quota > 0.8 ? 'bg-amber-500' : 'bg-emerald-500'
+              }`}
+              style={{ width: `${Math.min((registrationCount / phase.quota) * 100, 100)}%` }}
+            />
           </div>
         </div>
+      )}
 
-        <div className="mt-auto w-full">
-          {/* Aforo bar */}
-          {phase.quota > 0 && (
-          <div className="mb-5">
-            <div className="flex justify-between items-center mb-1">
-              <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wide">Aforo</span>
-              <span className="text-[10px] font-black text-gray-600">{registrationCount} / {phase.quota}</span>
-            </div>
-            <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
-              <div
-                className={`h-full transition-all duration-500 rounded-full ${
-                  isFull ? 'bg-red-500' : registrationCount / phase.quota > 0.8 ? 'bg-amber-500' : 'bg-emerald-500'
-                }`}
-                style={{ width: `${Math.min((registrationCount / phase.quota) * 100, 100)}%` }}
-              />
-            </div>
-          </div>
-        )}
-
-        {/* Action button */}
+      {/* Button */}
+      <div className="shrink-0 min-w-[220px]">
         {isRegistered ? (
-          <button disabled className="w-full bg-emerald-50 text-emerald-700 font-black py-3 text-sm border border-emerald-200 flex items-center justify-center gap-2 cursor-default">
+          <button disabled className="w-full bg-emerald-50 text-emerald-700 font-black py-3 px-6 text-sm border border-emerald-200 flex items-center justify-center gap-2 cursor-default rounded-none">
             <CheckCircle size={16} /> Ya estás inscrito
           </button>
         ) : isFull ? (
-          <button disabled className="w-full bg-gray-100 text-gray-400 font-bold py-3 text-sm border border-gray-200 cursor-not-allowed">
+          <button disabled className="w-full bg-gray-100 text-gray-400 font-bold py-3 px-6 text-sm border border-gray-200 cursor-not-allowed rounded-none">
             Aforo Completo
           </button>
         ) : (
           <button
             onClick={handleRegister}
             disabled={isRegistering}
-            className={`w-full font-black py-3 text-sm transition-all cursor-pointer flex items-center justify-center gap-2 disabled:opacity-60 ${
+            className={`w-full font-black py-3 px-6 text-sm transition-all cursor-pointer flex items-center justify-center gap-2 disabled:opacity-60 rounded-none ${
               phase.isPaid
                 ? 'bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-700 hover:to-amber-600 text-white'
                 : 'bg-[#800404] hover:bg-[#5a0303] text-white'
@@ -179,25 +136,24 @@ function PhaseCard({ phase }) {
             )}
           </button>
         )}
-        </div>
       </div>
     </div>
   )
 }
 
 export default function EncuentroInternacional() {
+  const [activePhaseId, setActivePhaseId] = useState('sep1')
+  const activePhase = phases.find(p => p.id === activePhaseId)
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Hero */}
       <div className="relative bg-[#800404] text-white overflow-hidden">
-        <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1540575467063-178a50c2df87?auto=format&fit=crop&q=80&w=1600')] bg-cover bg-center opacity-15" />
+        <div className="absolute inset-0 bg-[url('/encuentro-internacional/sesquitec-imagen.png')] bg-cover bg-center opacity-60" />
         <div className="absolute inset-0 bg-gradient-to-b from-[#800404]/80 to-[#3a0202]" />
 
         <div className="relative max-w-7xl mx-auto px-4 py-16 md:py-24">
           <div className="max-w-3xl">
-            <span className="inline-block text-[10px] font-black uppercase tracking-widest bg-white/10 border border-white/20 px-3 py-1 mb-4 backdrop-blur-sm">
-              Septiembre 2026 · Evento Central
-            </span>
             <h1 className="text-4xl md:text-5xl font-black leading-tight mb-4">
               Encuentro Internacional
               <br />
@@ -217,53 +173,104 @@ export default function EncuentroInternacional() {
                 <MapPin size={16} className="text-white/50" />
                 <span className="text-sm font-bold">Campus UNI, Lima</span>
               </div>
-              <div className="flex items-center gap-2 text-white/80">
-                <Users size={16} className="text-white/50" />
-                <span className="text-sm font-bold">+2,900 participantes</span>
-              </div>
-              <div className="flex items-center gap-2 text-white/80">
-                <Globe size={16} className="text-white/50" />
-                <span className="text-sm font-bold">6+ países invitados</span>
-              </div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Timeline strip */}
-      <div className="bg-white border-b border-gray-200 sticky top-16 z-40">
-        <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between overflow-x-auto gap-4">
-          {phases.map((p, i) => (
-            <a
-              key={p.id}
-              href={`#${p.id}`}
-              className="flex items-center gap-3 text-sm text-gray-500 hover:text-[#800404] transition-colors whitespace-nowrap group"
-            >
-              <span className="w-7 h-7 flex items-center justify-center bg-gray-100 group-hover:bg-red-50 text-xs font-black text-gray-500 group-hover:text-[#800404] transition-colors rounded-full">
-                {i + 1}
-              </span>
-              <span className="font-bold">{p.title}</span>
-              {i < phases.length - 1 && <ChevronRight size={14} className="text-gray-300 ml-2" />}
-            </a>
-          ))}
+      {/* Timeline strip (Tabs) */}
+      <div className="bg-white border-b border-gray-200 sticky top-16 z-40 shadow-sm">
+        <div className="max-w-4xl mx-auto px-4 flex items-center justify-between overflow-x-auto">
+          {phases.map((p, i) => {
+            const isActive = p.id === activePhaseId
+            return (
+              <button
+                key={p.id}
+                onClick={() => setActivePhaseId(p.id)}
+                className={`py-4 px-3 flex items-center gap-2.5 text-sm font-bold transition-all whitespace-nowrap border-b-2 cursor-pointer focus:outline-none ${
+                  isActive
+                    ? 'text-[#800404] border-[#800404]'
+                    : 'text-gray-500 border-transparent hover:text-[#800404]'
+                }`}
+              >
+                <span className={`w-6 h-6 flex items-center justify-center text-xs font-black transition-colors rounded-full ${
+                  isActive ? 'bg-[#800404] text-white' : 'bg-gray-100 text-gray-500'
+                }`}>
+                  {i + 1}
+                </span>
+                <span>{p.title}</span>
+              </button>
+            )
+          })}
         </div>
       </div>
 
-      {/* Phases grid */}
-      <div className="max-w-7xl mx-auto px-4 py-12">
-        <div className="text-center mb-10">
-          <h2 className="text-2xl md:text-3xl font-black text-gray-900 mb-2">Tres Fases, Un Gran Evento</h2>
-          <p className="text-gray-400 text-sm max-w-xl mx-auto">
-            Selecciona la fase a la que deseas asistir. La inscripción es gratuita para conferencias y feria; la Cena de Reconocimiento requiere entrada.
-          </p>
-        </div>
+      {/* Main Single Large Card */}
+      <div className="max-w-5xl mx-auto px-4 py-8">
+        {/* Large Card Container */}
+        <div className="bg-white border border-gray-200 shadow-xl overflow-hidden md:grid md:grid-cols-12 rounded-xl transition-all duration-300">
+          {/* Left Column: Image */}
+          <div className="md:col-span-5 relative min-h-[260px] md:min-h-[400px]">
+            <img 
+              src={activePhase.imageUrl} 
+              alt={activePhase.title} 
+              className="absolute inset-0 w-full h-full object-cover"
+            />
+            {/* Top color bar indicating status/phase color */}
+            <div className={`absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r ${activePhase.color}`} />
+          </div>
 
-        <div className="grid md:grid-cols-3 gap-6" id="phases">
-          {phases.map(phase => (
-            <div key={phase.id} id={phase.id}>
-              <PhaseCard phase={phase} />
+          {/* Right Column: Content */}
+          <div className="md:col-span-7 p-6 md:p-10 flex flex-col justify-between">
+            <div>
+              {/* Header */}
+              <div className="flex items-start justify-between gap-4 mb-4">
+                <div>
+                  <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{activePhase.label}</span>
+                  <h3 className="text-2xl font-black text-gray-900 mt-0.5 leading-tight">{activePhase.title}</h3>
+                </div>
+                <div className={`p-3 bg-gradient-to-br ${activePhase.color} text-white rounded-md shrink-0`}>
+                  {activePhase.icon}
+                </div>
+              </div>
+
+              {/* Badges */}
+              <div className="flex flex-wrap gap-2 mb-6">
+                <span className="text-[10px] font-bold text-[#800404] bg-red-50 border border-red-200/30 px-2.5 py-0.5 uppercase">
+                  {activePhase.badge}
+                </span>
+                {activePhase.isPaid && (
+                  <span className="text-[10px] font-bold text-white bg-[#800404] px-2.5 py-0.5 uppercase">
+                    PAGO · {activePhase.price}
+                  </span>
+                )}
+              </div>
+
+              {/* Description */}
+              <p className="text-sm text-gray-500 leading-relaxed mb-6">{activePhase.description}</p>
+
+              {/* Metadata details */}
+              <div className="grid sm:grid-cols-2 gap-4 text-sm text-gray-600 font-medium mb-8">
+                <div className="flex items-center gap-2.5">
+                  <Calendar size={15} className="text-[#800404] shrink-0" />
+                  <span>{activePhase.date}</span>
+                </div>
+                <div className="flex items-center gap-2.5">
+                  <Clock size={15} className="text-[#800404] shrink-0" />
+                  <span>{activePhase.time}</span>
+                </div>
+                <div className="flex items-center gap-2.5 sm:col-span-2">
+                  <MapPin size={15} className="text-[#800404] shrink-0" />
+                  <span>{activePhase.location}</span>
+                </div>
+              </div>
             </div>
-          ))}
+
+            {/* Action Section */}
+            <div className="border-t border-gray-100 pt-6">
+              <PhaseActionSection phase={activePhase} />
+            </div>
+          </div>
         </div>
       </div>
 
