@@ -207,6 +207,34 @@ export default function Home() {
   const banners = [brochure1, brochure2, brochure3]
   const slides = [banners[banners.length - 1], ...banners, banners[0]]
 
+  const [heroTitle, setHeroTitle] = useState(() => {
+    const val = db.getCmsValue('home_hero_title', '¿Qué significa 150 años de la UNI?')
+    return typeof val === 'string' ? val : '¿Qué significa 150 años de la UNI?'
+  })
+  const [heroSubtitle, setHeroSubtitle] = useState(() => {
+    const val = db.getCmsValue('home_hero_subtitle', 'Un siglo y medio de excelencia al servicio de la ciencia, la ingeniería, la arquitectura y el desarrollo del Perú.')
+    return typeof val === 'string' ? val : 'Un siglo y medio de excelencia al servicio de la ciencia, la ingeniería, la arquitectura y el desarrollo del Perú.'
+  })
+  const [dynamicStats, setDynamicStats] = useState(() => {
+    const val = db.getCmsValue('home_stats', stats)
+    return Array.isArray(val) ? val : stats
+  })
+  const [dynamicPrograma, setDynamicPrograma] = useState(() => {
+    const val = db.getCmsValue('home_programa_general', programaGeneral)
+    return Array.isArray(val) ? val : programaGeneral
+  })
+
+  useEffect(() => {
+    const hTitle = db.getCmsValue('home_hero_title', '¿Qué significa 150 años de la UNI?')
+    setHeroTitle(typeof hTitle === 'string' ? hTitle : '¿Qué significa 150 años de la UNI?')
+    const hSub = db.getCmsValue('home_hero_subtitle', 'Un siglo y medio de excelencia al servicio de la ciencia, la ingeniería, la arquitectura y el desarrollo del Perú.')
+    setHeroSubtitle(typeof hSub === 'string' ? hSub : 'Un siglo y medio de excelencia al servicio de la ciencia, la ingeniería, la arquitectura y el desarrollo del Perú.')
+    const dStats = db.getCmsValue('home_stats', stats)
+    setDynamicStats(Array.isArray(dStats) ? dStats : stats)
+    const dProg = db.getCmsValue('home_programa_general', programaGeneral)
+    setDynamicPrograma(Array.isArray(dProg) ? dProg : programaGeneral)
+  }, [])
+
   const handleNext = () => {
     if (isTransitioning) return
     setIsTransitioning(true)
@@ -248,7 +276,7 @@ export default function Home() {
   const upcomingActivities = [];
   const pastActivities = [];
 
-  programaGeneral.forEach(act => {
+  dynamicPrograma.forEach(act => {
     const eventDate = parseEventDate(act.date);
     if (!eventDate || eventDate >= today) {
       upcomingActivities.push(act);
@@ -260,7 +288,7 @@ export default function Home() {
   const showDynamicTimeline = upcomingActivities.length > 0;
   const orderedActivities = showDynamicTimeline
     ? [...upcomingActivities, ...pastActivities]
-    : programaGeneral;
+    : dynamicPrograma;
 
   // Cargar eventos destacados desde localStorage de forma dinámica (los más próximos)
   const dbEvents = db.getEvents()
@@ -432,7 +460,7 @@ export default function Home() {
       {/* Stats bar */}
       <section className="bg-white border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 py-6 grid grid-cols-2 lg:grid-cols-4 gap-6">
-          {stats.map(s => (
+          {dynamicStats.map(s => (
             <div key={s.label} className="text-center">
               <p className="text-4xl font-black text-[#800404]">{s.value}</p>
               <p className="text-sm text-gray-500 mt-1">{s.label}</p>
@@ -464,11 +492,11 @@ export default function Home() {
           {/* Left Text */}
           <div className="md:col-span-7 space-y-6">
             <h2 className="text-3xl font-black text-gray-900 tracking-tight leading-none">
-              ¿Qué significa 150 años de la UNI?
+              {heroTitle}
             </h2>
             <div className="text-sm text-gray-605 space-y-4 leading-relaxed font-sans font-medium">
               <p>
-                Un siglo y medio de excelencia al servicio de la ciencia, la ingeniería, la arquitectura y el desarrollo del Perú.
+                {heroSubtitle}
               </p>
               <p>
                 <strong>Desde 1876, la Universidad Nacional de Ingeniería (UNI)</strong> ha sido un referente en la formación de profesionales, la Investigación y la Innovación, contribuyendo de manera decisiva al progreso del país. Durante estos 150 años, la ciencia ha impulsado la generación de conocimiento, la ingeniería ha transformado desafíos en soluciones para la industria, la infraestructura y la tecnología, y la arquitectura ha promovido el diseño de espacios sostenibles que mejoran la calidad de vida.

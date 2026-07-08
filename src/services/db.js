@@ -9,6 +9,8 @@ const CONFERENCES_KEY = 'uni_eventos_conferences'
 const CERTIFICATES_KEY = 'uni_eventos_certificates'
 const QR_LOGS_KEY = 'uni_eventos_qr_logs'
 const USERS_KEY = 'uni_eventos_users'
+const CMS_KEY = 'uni_eventos_cms'
+
 
 // Semilla de Eventos Iniciales (extraídos de Cronograma y Dashboard)
 const initialEvents = [
@@ -547,6 +549,16 @@ export const db = {
         localStorage.setItem(QR_LOGS_KEY, JSON.stringify(mappedLogs))
       }
 
+      // 6. Obtener Páginas CMS
+      const { data: cmsRows, error: cmsError } = await supabase
+        .from('cms_paginas')
+        .select('*')
+      if (!cmsError && cmsRows) {
+        cmsRows.forEach(row => {
+          localStorage.setItem(`${CMS_KEY}_${row.key}`, JSON.stringify(row.value))
+        })
+      }
+
       console.log("Sincronización exitosa.");
       return true;
     } catch (e) {
@@ -959,6 +971,27 @@ export const db = {
 
       return true
     }
+    return false;
+  },
+
+  updateUserRole(dni, newRole) {
+    const users = this.getUsers()
+    let updated = false
+    const updatedUsers = users.map(u => {
+      if (u.dni === dni) {
+        updated = true
+        return { ...u, role: newRole }
+      }
+      return u
+    })
+    if (updated) {
+      this.saveUsers(updatedUsers)
+      if (supabase) {
+        supabase.from('usuarios').update({ role: newRole }).eq('dni', dni)
+          .then(({ error }) => { if (error) console.error("Error al actualizar rol del usuario en Supabase:", error) })
+      }
+      return true
+    }
     return false
   },
 
@@ -1064,5 +1097,31 @@ export const db = {
     }
 
     return { success: true, message: 'Inscripción cancelada correctamente.' }
+  },
+
+  // --- CMS ---
+  getCmsValue(key, defaultValue) {
+    const stored = localStorage.getItem(`${CMS_KEY}_${key}`)
+    if (stored) {
+      try {
+        return JSON.parse(stored)
+      } catch (err) {
+        return defaultValue
+      }
+    }
+    return defaultValue
+  },
+
+  updateCmsValue(key, value) {
+    localStorage.setItem(`${CMS_KEY}_${key}`, JSON.stringify(value))
+    if (supabase) {
+      supabase.from('cms_paginas')
+        .upsert({ key, value })
+        .then(({ error }) => {
+          if (error) console.error(`Error al actualizar CMS para ${key} en Supabase:`, error)
+        })
+    }
+    return true
   }
 }
+

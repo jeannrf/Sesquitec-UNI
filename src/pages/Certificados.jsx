@@ -1,9 +1,24 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Search, Download, Award, FileText, AlertCircle, X, ShieldCheck } from 'lucide-react'
 import { db } from '../services/db'
 
 export default function Certificados() {
   const [dni, setDni] = useState('')
+  const [pageTitle, setPageTitle] = useState(() => {
+    const val = db.getCmsValue('certs_title', 'Mis Certificados')
+    return typeof val === 'string' ? val : 'Mis Certificados'
+  })
+  const [pageSubtitle, setPageSubtitle] = useState(() => {
+    const val = db.getCmsValue('certs_subtitle', 'Busca y descarga los certificados de tu participación en eventos del Sesquicentenario')
+    return typeof val === 'string' ? val : 'Busca y descarga los certificados de tu participación en eventos del Sesquicentenario'
+  })
+
+  useEffect(() => {
+    const title = db.getCmsValue('certs_title', 'Mis Certificados')
+    setPageTitle(typeof title === 'string' ? title : 'Mis Certificados')
+    const subtitle = db.getCmsValue('certs_subtitle', 'Busca y descarga los certificados de tu participación en eventos del Sesquicentenario')
+    setPageSubtitle(typeof subtitle === 'string' ? subtitle : 'Busca y descarga los certificados de tu participación en eventos del Sesquicentenario')
+  }, [])
   const [searched, setSearched] = useState(false)
   const [results, setResults] = useState(null)
   const [error, setError] = useState('')
@@ -100,8 +115,8 @@ startxref
       {/* Header */}
       <div className="bg-[#800404] text-white py-6">
         <div className="max-w-4xl mx-auto px-4">
-          <h1 className="text-2xl font-black">Mis Certificados</h1>
-          <p className="text-white/70 text-xs sm:text-sm mt-0.5">Busca y descarga los certificados de tu participación en eventos del Sesquicentenario</p>
+          <h1 className="text-2xl font-black">{pageTitle}</h1>
+          <p className="text-white/70 text-xs sm:text-sm mt-0.5">{pageSubtitle}</p>
         </div>
       </div>
 
