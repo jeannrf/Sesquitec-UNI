@@ -5,7 +5,7 @@ import { db } from '../services/db'
 import { supabase } from '../services/supabaseClient'
 import { useAlert } from '../context/AlertContext'
 import { 
-  LayoutDashboard, Calendar, Mic, Users, QrCode, Award, Settings, 
+  LayoutDashboard, Calendar, Mic, Users, QrCode, Award, 
   LogOut, Search, Plus, Trash2, Edit2, ShieldAlert, CheckCircle, 
   AlertTriangle, RefreshCw, UploadCloud, ChevronUp, ChevronDown, Check, X,
   Clock, MapPin, Eye, FileSpreadsheet, EyeOff, ShieldCheck, ChevronRight
@@ -21,7 +21,7 @@ const cleanNameFromFileName = (fileName, Dni) => {
 }
 
 export default function Admin() {
-  const { user, logout, updateProfile, loading } = useAuth()
+  const { user, logout, loading } = useAuth()
   const { showAlert, showConfirm } = useAlert()
   const navigate = useNavigate()
   const [activeTab, setActiveTab] = useState('dashboard')
@@ -949,82 +949,7 @@ export default function Admin() {
     setTestValidationResult(found ? { valid: true, ...found } : { valid: false })
   }
 
-  // --- CONFIGURACION STATE & LOGIC ---
-  const [profileForm, setProfileForm] = useState({
-    nombres: '',
-    apellidos: '',
-    email: '',
-    dni: '',
-    currentPassword: '',
-    newPassword: '',
-    confirmPassword: ''
-  })
-  const [profileError, setProfileError] = useState('')
-  const [profileSuccess, setProfileSuccess] = useState('')
 
-  useEffect(() => {
-    if (user) {
-      setProfileForm({
-        nombres: user.nombres || '',
-        apellidos: user.apellidos || '',
-        email: user.email || '',
-        dni: user.dni || '',
-        currentPassword: '',
-        newPassword: '',
-        confirmPassword: ''
-      })
-      setProfileError('')
-      setProfileSuccess('')
-    }
-  }, [user, activeTab])
-
-  const handleProfileSubmit = (e) => {
-    e.preventDefault()
-    setProfileError('')
-    setProfileSuccess('')
-
-    if (!profileForm.nombres.trim() || !profileForm.apellidos.trim() || !profileForm.email.trim()) {
-      setProfileError('Todos los campos son obligatorios.')
-      return
-    }
-
-    let passwordUpdates = {}
-    if (profileForm.newPassword) {
-      if (user.password && user.password !== profileForm.currentPassword) {
-        setProfileError('La contraseña actual es incorrecta.')
-        return
-      }
-      if (profileForm.newPassword.length < 6) {
-        setProfileError('La nueva contraseña debe tener al menos 6 caracteres.')
-        return
-      }
-      if (profileForm.newPassword !== profileForm.confirmPassword) {
-        setProfileError('Las nuevas contraseñas no coinciden.')
-        return
-      }
-      passwordUpdates = { password: profileForm.newPassword }
-    }
-
-    const res = updateProfile({
-      nombres: profileForm.nombres,
-      apellidos: profileForm.apellidos,
-      email: profileForm.email,
-      dni: profileForm.dni,
-      ...passwordUpdates
-    })
-
-    if (res.success) {
-      setProfileSuccess('Perfil administrativo actualizado con éxito.')
-      setProfileForm(prev => ({
-        ...prev,
-        currentPassword: '',
-        newPassword: '',
-        confirmPassword: ''
-      }))
-    } else {
-      setProfileError(res.error || 'Ocurrió un error al actualizar el perfil.')
-    }
-  }
 
   // --- GENERAL STATS FOR METRIC CARDS ---
   const statTotalUsers = usersList.filter(u => u.role !== 'ADMIN').length
@@ -1084,7 +1009,7 @@ export default function Admin() {
             { id: 'asistencia-qr', label: 'Asistencia QR', icon: QrCode },
             { id: 'certificados', label: 'Certificados', icon: Award },
             { id: 'cms', label: 'Editar Páginas', icon: Edit2 },
-            { id: 'configuracion', label: 'Configuración', icon: Settings },
+
           ].map(tab => {
             const IconComponent = tab.icon
             const isActive = activeTab === tab.id
@@ -2801,113 +2726,6 @@ export default function Admin() {
             </div>
           )}
 
-          {/* TAB 8: CONFIGURACION DE PERFIL */}
-          {activeTab === 'configuracion' && (
-            <div className="max-w-xl bg-white border border-gray-200 p-8 shadow-sm">
-              <h3 className="text-lg font-black text-gray-900 border-b border-gray-150 pb-3 mb-6">
-                Perfil del Administrador
-              </h3>
-
-              {profileError && (
-                <div className="bg-red-50 border-l-4 border-l-red-600 p-4 mb-4 text-xs font-bold text-red-800 leading-normal">
-                  {profileError}
-                </div>
-              )}
-              {profileSuccess && (
-                <div className="bg-emerald-50 border-l-4 border-l-emerald-600 p-4 mb-4 text-xs font-bold text-emerald-800 leading-normal">
-                  {profileSuccess}
-                </div>
-              )}
-
-              <form onSubmit={handleProfileSubmit} className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1">Nombres</label>
-                    <input
-                      type="text"
-                      value={profileForm.nombres}
-                      onChange={e => setProfileForm(prev => ({ ...prev, nombres: e.target.value }))}
-                      className="w-full border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:border-[#800404] text-gray-800"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1">Apellidos</label>
-                    <input
-                      type="text"
-                      value={profileForm.apellidos}
-                      onChange={e => setProfileForm(prev => ({ ...prev, apellidos: e.target.value }))}
-                      className="w-full border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:border-[#800404] text-gray-800"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1">Correo Electrónico</label>
-                  <input
-                    type="email"
-                    value={profileForm.email}
-                    onChange={e => setProfileForm(prev => ({ ...prev, email: e.target.value }))}
-                    className="w-full border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:border-[#800404] text-gray-800"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1">DNI (Identificación)</label>
-                  <input
-                    type="text"
-                    disabled
-                    value={profileForm.dni}
-                    className="w-full border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-400 font-mono cursor-not-allowed"
-                  />
-                </div>
-
-                <div className="border-t border-gray-150 pt-4 mt-6">
-                  <h4 className="text-sm font-black text-gray-800 mb-3">Cambiar Contraseña (Opcional)</h4>
-                  <div className="space-y-3">
-                    <div>
-                      <label className="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1">Contraseña Actual</label>
-                      <input
-                        type="password"
-                        placeholder="Contraseña administrativa actual"
-                        value={profileForm.currentPassword}
-                        onChange={e => setProfileForm(prev => ({ ...prev, currentPassword: e.target.value }))}
-                        className="w-full border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:border-[#800404] text-gray-800"
-                      />
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1">Nueva Contraseña</label>
-                        <input
-                          type="password"
-                          placeholder="Mínimo 6 caracteres"
-                          value={profileForm.newPassword}
-                          onChange={e => setProfileForm(prev => ({ ...prev, newPassword: e.target.value }))}
-                          className="w-full border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:border-[#800404] text-gray-800"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-1">Confirmar Nueva Contraseña</label>
-                        <input
-                          type="password"
-                          placeholder="Coincidencia exacta"
-                          value={profileForm.confirmPassword}
-                          onChange={e => setProfileForm(prev => ({ ...prev, confirmPassword: e.target.value }))}
-                          className="w-full border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:border-[#800404] text-gray-800"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <button
-                  type="submit"
-                  className="w-full bg-[#800404] hover:bg-[#5a0303] text-white font-black py-3 text-sm transition-colors mt-6 rounded-none cursor-pointer"
-                >
-                  Guardar Cambios de Perfil
-                </button>
-              </form>
-            </div>
-          )}
 
         </div>
 
