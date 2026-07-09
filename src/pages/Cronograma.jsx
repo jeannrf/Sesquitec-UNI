@@ -54,7 +54,7 @@ function EventCard({ event }) {
     <>
       <div className={`border-l-4 ${isPost ? 'border-l-gray-300 bg-white border border-gray-200' : 'border-l-[#800404] bg-white border border-gray-200'}`}>
       <div
-        className="flex items-start gap-4 p-5 cursor-pointer hover:bg-red-50 transition-colors"
+        className="flex flex-col sm:flex-row items-start gap-3 sm:gap-4 p-4 sm:p-5 cursor-pointer hover:bg-red-50 transition-colors"
         onClick={() => setOpen(!open)}
       >
         <div className="shrink-0 pt-0.5">
@@ -76,7 +76,7 @@ function EventCard({ event }) {
               <span className="bg-[#800404] text-white text-xs font-bold px-2 py-0.5">PAGO · S/ 180</span>
             )}
           </div>
-          <h3 className="font-black text-gray-900 text-lg leading-tight">{event.title}</h3>
+          <h3 className="font-black text-gray-900 text-base sm:text-lg leading-tight">{event.title}</h3>
           <div className="flex flex-wrap gap-1.5 mt-1.5">
             <span className="bg-red-50 text-[#800404] text-[10px] font-bold px-2 py-0.5 uppercase border border-red-200/30 rounded-none">
               {event.category}
@@ -541,7 +541,7 @@ export default function Cronograma() {
       {/* Header */}
       <div className="bg-[#800404] text-white py-6">
         <div className="max-w-7xl mx-auto px-4">
-          <h1 className="text-2xl font-black">{pageTitle}</h1>
+          <h1 className="text-xl sm:text-2xl font-black">{pageTitle}</h1>
           <p className="text-white/70 text-xs sm:text-sm mt-0.5">{pageSubtitle}</p>
         </div>
       </div>
@@ -579,9 +579,9 @@ export default function Cronograma() {
             </div>
 
             {/* Selectors grid */}
-            <div className="flex flex-wrap items-center gap-3">
+            <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-end gap-3">
               {/* Selector de Mes */}
-              <div className="flex flex-col min-w-[120px]">
+              <div className="flex flex-col min-w-0">
                 <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Mes</span>
                 <select
                   value={activeMonth}
@@ -595,7 +595,7 @@ export default function Cronograma() {
               </div>
 
               {/* Selector de Categoría */}
-              <div className="flex flex-col min-w-[140px]">
+              <div className="flex flex-col min-w-0">
                 <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Categoría</span>
                 <select
                   value={activeCategory}
@@ -612,7 +612,7 @@ export default function Cronograma() {
               </div>
 
               {/* Selector de Estado */}
-              <div className="flex flex-col min-w-[120px]">
+              <div className="flex flex-col min-w-0">
                 <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Estado</span>
                 <select
                   value={activeStatus}
@@ -626,7 +626,7 @@ export default function Cronograma() {
               </div>
 
               {/* Selector de Costo */}
-              <div className="flex flex-col min-w-[110px]">
+              <div className="flex flex-col min-w-0">
                 <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Costo</span>
                 <select
                   value={activeCost}
@@ -650,7 +650,7 @@ export default function Cronograma() {
                     setActiveCost('Todos')
                     setSearchParams({})
                   }}
-                  className="self-end mt-auto flex items-center gap-1 text-xs font-black text-[#800404] hover:text-[#5a0303] border border-[#800404]/20 hover:bg-red-50/50 px-3 py-2 transition-colors uppercase tracking-wider rounded-none h-[38px] cursor-pointer"
+                  className="col-span-2 sm:col-span-1 self-end mt-auto flex items-center gap-1 text-xs font-black text-[#800404] hover:text-[#5a0303] border border-[#800404]/20 hover:bg-red-50/50 px-3 py-2 transition-colors uppercase tracking-wider rounded-none h-[38px] cursor-pointer"
                 >
                   <X size={13} /> Limpiar
                 </button>
@@ -664,7 +664,7 @@ export default function Cronograma() {
       <div className="max-w-7xl mx-auto px-4 py-10">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 border-b border-gray-200 pb-4">
           <div>
-            <h2 className="text-2xl font-black text-gray-900 leading-tight">
+            <h2 className="text-xl sm:text-2xl font-black text-gray-900 leading-tight">
               {activeMonth === 'Todos' ? 'Todos los Eventos' : `${activeMonth} 2026`}
             </h2>
             {activeCategory !== 'Todos' || activeStatus !== 'Todos' || activeCost !== 'Todos' || searchQuery ? (

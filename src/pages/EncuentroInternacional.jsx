@@ -179,12 +179,12 @@ export default function EncuentroInternacional() {
 
         <div className="relative max-w-7xl mx-auto px-4 py-16 md:py-24">
           <div className="max-w-3xl">
-            <h1 className="text-4xl md:text-5xl font-black leading-tight mb-4">
+            <h1 className="text-3xl sm:text-4xl md:text-5xl font-black leading-tight mb-4">
               Encuentro Internacional
               <br />
               <span className="text-white/70">del Sesquicentenario</span>
             </h1>
-            <p className="text-lg text-white/60 leading-relaxed max-w-2xl mb-8">
+            <p className="text-sm sm:text-base md:text-lg text-white/60 leading-relaxed max-w-2xl mb-8">
               Tres días de conferencias magistrales, tecnología de vanguardia y celebración. El evento académico más importante del Sesquicentenario de la Universidad Nacional de Ingeniería.
             </p>
 
@@ -205,14 +205,14 @@ export default function EncuentroInternacional() {
 
       {/* Timeline strip (Tabs) */}
       <div className="bg-white border-b border-gray-200 sticky top-16 z-40 shadow-sm">
-        <div className="max-w-4xl mx-auto px-4 flex items-center justify-between overflow-x-auto">
+        <div className="max-w-4xl mx-auto px-4 flex items-center gap-1 overflow-x-auto scrollbar-hide">
           {dynamicPhases.map((p, i) => {
             const isActive = p.id === activePhaseId
             return (
               <button
                 key={p.id}
                 onClick={() => setActivePhaseId(p.id)}
-                className={`py-4 px-3 flex items-center gap-2.5 text-sm font-bold transition-all whitespace-nowrap border-b-2 cursor-pointer focus:outline-none ${
+                className={`py-3 sm:py-4 px-2 sm:px-3 flex items-center gap-1.5 sm:gap-2.5 text-xs sm:text-sm font-bold transition-all whitespace-nowrap border-b-2 cursor-pointer focus:outline-none shrink-0 ${
                   isActive
                     ? 'text-[#800404] border-[#800404]'
                     : 'text-gray-500 border-transparent hover:text-[#800404]'
@@ -235,7 +235,7 @@ export default function EncuentroInternacional() {
         {/* Large Card Container */}
         <div className="bg-white border border-gray-200 shadow-xl overflow-hidden md:grid md:grid-cols-12 rounded-xl transition-all duration-300">
           {/* Left Column: Image */}
-          <div className="md:col-span-5 relative min-h-[260px] md:min-h-[400px]">
+          <div className="md:col-span-5 relative min-h-[200px] sm:min-h-[260px] md:min-h-[400px]">
             <img 
               src={activePhase.imageUrl} 
               alt={activePhase.title} 
@@ -246,13 +246,13 @@ export default function EncuentroInternacional() {
           </div>
 
           {/* Right Column: Content */}
-          <div className="md:col-span-7 p-6 md:p-10 flex flex-col justify-between">
+          <div className="md:col-span-7 p-5 sm:p-6 md:p-10 flex flex-col justify-between">
             <div>
               {/* Header */}
               <div className="flex items-start justify-between gap-4 mb-4">
                 <div>
                   <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{activePhase.label}</span>
-                  <h3 className="text-2xl font-black text-gray-900 mt-0.5 leading-tight">{activePhase.title}</h3>
+                  <h3 className="text-xl sm:text-2xl font-black text-gray-900 mt-0.5 leading-tight">{activePhase.title}</h3>
                 </div>
                 <div className={`p-3 bg-gradient-to-br ${activePhase.color} text-white rounded-md shrink-0`}>
                   {getPhaseIcon(activePhase.id)}
@@ -304,7 +304,7 @@ export default function EncuentroInternacional() {
         <div className="max-w-7xl mx-auto px-4 py-14">
           <div className="text-center mb-10">
             <span className="text-[10px] font-black text-[#800404] uppercase tracking-widest">Ponentes Confirmados</span>
-            <h2 className="text-2xl md:text-3xl font-black text-gray-900 mt-2 mb-2">Líderes Globales en Ingeniería</h2>
+            <h2 className="text-xl sm:text-2xl md:text-3xl font-black text-gray-900 mt-2 mb-2">Líderes Globales en Ingeniería</h2>
             <p className="text-gray-400 text-sm max-w-lg mx-auto">
               Investigadores y expertos de las mejores universidades del mundo se dan cita en la UNI.
             </p>
@@ -340,7 +340,7 @@ export default function EncuentroInternacional() {
         <div className="grid md:grid-cols-2 gap-8 items-center">
           <div>
             <span className="text-[10px] font-black text-[#800404] uppercase tracking-widest">Información General</span>
-            <h2 className="text-2xl font-black text-gray-900 mt-2 mb-4">¿Cómo participar?</h2>
+            <h2 className="text-xl sm:text-2xl font-black text-gray-900 mt-2 mb-4">¿Cómo participar?</h2>
             <div className="space-y-4 text-sm text-gray-500 leading-relaxed">
               <div className="flex gap-3 items-start">
                 <div className="w-6 h-6 bg-[#800404] text-white flex items-center justify-center text-xs font-black shrink-0 mt-0.5">1</div>

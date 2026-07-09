@@ -25,4 +25,25 @@
   .event-card:hover .event-card-title {
     opacity: 0;
   }
+
+  /* Hide scrollbar for horizontal scroll areas on mobile */
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* Prevent horizontal overflow on mobile */
+html, body {
+  overflow-x: hidden;
+}
+
+/* Ensure touch targets are at least 44px on mobile */
+@media (max-width: 640px) {
+  select, button:not(.min-h-0), a:not(.min-h-0) {
+    min-height: 38px;
+  }
 }

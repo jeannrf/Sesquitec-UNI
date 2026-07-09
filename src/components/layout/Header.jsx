@@ -15,11 +15,13 @@ export default function Header() {
   const { user, logout } = useAuth()
   const [menuOpen, setMenuOpen] = useState(false)
   const [dropdownOpen, setDropdownOpen] = useState(false)
+  const [mobileProfileOpen, setMobileProfileOpen] = useState(false)
   const [encuentroOpen, setEncuentroOpen] = useState(false)
   const [mobileEncuentroOpen, setMobileEncuentroOpen] = useState(false)
   const location = useLocation()
   const navigate = useNavigate()
   const dropdownRef = useRef(null)
+  const mobileProfileRef = useRef(null)
   const encuentroRef = useRef(null)
 
   // Close dropdown on click outside
@@ -27,6 +29,9 @@ export default function Header() {
     function handleClickOutside(event) {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
         setDropdownOpen(false)
+      }
+      if (mobileProfileRef.current && !mobileProfileRef.current.contains(event.target)) {
+        setMobileProfileOpen(false)
       }
       if (encuentroRef.current && !encuentroRef.current.contains(event.target)) {
         setEncuentroOpen(false)
@@ -39,6 +44,7 @@ export default function Header() {
   // Close dropdown and menu on path change
   useEffect(() => {
     setDropdownOpen(false)
+    setMobileProfileOpen(false)
     setEncuentroOpen(false)
     setMobileEncuentroOpen(false)
     setMenuOpen(false)
@@ -126,12 +132,12 @@ export default function Header() {
         </nav>
 
         {/* Action Buttons / Profile info */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3">
           
-          {/* User state buttons */}
+          {/* Desktop: User state buttons */}
           {user ? (
-            /* Logged in: Dropdown profile menu */
-            <div className="relative hidden sm:block" ref={dropdownRef}>
+            /* Logged in: Desktop Dropdown profile menu */
+            <div className="relative hidden lg:block" ref={dropdownRef}>
               <button
                 onClick={() => setDropdownOpen(!dropdownOpen)}
                 className="flex items-center gap-2 border border-gray-200 px-3 py-1.5 hover:border-gray-400 hover:bg-gray-50 transition-all cursor-pointer rounded-none"
@@ -145,10 +151,9 @@ export default function Header() {
                 <ChevronDown size={14} className={`text-gray-400 transition-transform ${dropdownOpen ? 'rotate-180' : ''}`} />
               </button>
 
-              {/* Dropdown Card */}
+              {/* Desktop Dropdown Card */}
               {dropdownOpen && (
                 <div className="absolute right-0 mt-2.5 w-60 bg-white border border-gray-200 shadow-xl overflow-hidden z-[60] animate-in fade-in slide-in-from-top-2 duration-200">
-                  {/* Dropdown User header */}
                   <div className="p-4 bg-gray-50 border-b border-gray-100">
                     <p className="text-sm font-black text-gray-800 truncate">{user.nombres} {user.apellidos}</p>
                     <p className="text-xs text-gray-400 truncate mt-0.5">{user.email}</p>
@@ -158,65 +163,41 @@ export default function Header() {
                       </span>
                     )}
                   </div>
-                  
-                  {/* Dropdown Options */}
                   <div className="py-1">
                     {user.role === 'ADMIN' && (
                       <Link
                         to="/admin"
                         onClick={() => setDropdownOpen(false)}
-                        className="w-full flex items-center gap-2.5 px-4 py-2 text-left text-sm font-black text-[#800404] hover:bg-red-50 transition-colors flex"
+                        className="w-full flex items-center gap-2.5 px-4 py-2 text-left text-sm font-black text-[#800404] hover:bg-red-50 transition-colors"
                       >
                         <Shield size={15} />
                         Panel Admin
                       </Link>
                     )}
-                    <button
-                      onClick={() => navigateToTab('perfil')}
-                      className="w-full flex items-center gap-2.5 px-4 py-2 text-left text-sm text-gray-700 hover:bg-red-50 hover:text-[#800404] transition-colors cursor-pointer"
-                    >
-                      <User size={15} />
-                      Mi Perfil
+                    <button onClick={() => navigateToTab('perfil')} className="w-full flex items-center gap-2.5 px-4 py-2 text-left text-sm text-gray-700 hover:bg-red-50 hover:text-[#800404] transition-colors cursor-pointer">
+                      <User size={15} /> Mi Perfil
                     </button>
-                    <button
-                      onClick={() => navigateToTab('eventos')}
-                      className="w-full flex items-center gap-2.5 px-4 py-2 text-left text-sm text-gray-700 hover:bg-red-50 hover:text-[#800404] transition-colors cursor-pointer"
-                    >
-                      <Calendar size={15} />
-                      Mis Eventos
+                    <button onClick={() => navigateToTab('eventos')} className="w-full flex items-center gap-2.5 px-4 py-2 text-left text-sm text-gray-700 hover:bg-red-50 hover:text-[#800404] transition-colors cursor-pointer">
+                      <Calendar size={15} /> Mis Eventos
                     </button>
-
-                    <button
-                      onClick={() => navigateToTab('certificados')}
-                      className="w-full flex items-center gap-2.5 px-4 py-2 text-left text-sm text-gray-700 hover:bg-red-50 hover:text-[#800404] transition-colors cursor-pointer"
-                    >
-                      <Award size={15} />
-                      Certificados
+                    <button onClick={() => navigateToTab('certificados')} className="w-full flex items-center gap-2.5 px-4 py-2 text-left text-sm text-gray-700 hover:bg-red-50 hover:text-[#800404] transition-colors cursor-pointer">
+                      <Award size={15} /> Certificados
                     </button>
-                    <button
-                      onClick={() => navigateToTab('configuracion')}
-                      className="w-full flex items-center gap-2.5 px-4 py-2 text-left text-sm text-gray-700 hover:bg-red-50 hover:text-[#800404] transition-colors cursor-pointer"
-                    >
-                      <Settings size={15} />
-                      Configuración
+                    <button onClick={() => navigateToTab('configuracion')} className="w-full flex items-center gap-2.5 px-4 py-2 text-left text-sm text-gray-700 hover:bg-red-50 hover:text-[#800404] transition-colors cursor-pointer">
+                      <Settings size={15} /> Configuración
                     </button>
                   </div>
-
                   <div className="border-t border-gray-100 py-1 bg-gray-50">
-                    <button
-                      onClick={handleLogout}
-                      className="w-full flex items-center gap-2.5 px-4 py-2.5 text-left text-sm font-semibold text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
-                    >
-                      <LogOut size={15} />
-                      Cerrar Sesión
+                    <button onClick={handleLogout} className="w-full flex items-center gap-2.5 px-4 py-2.5 text-left text-sm font-semibold text-red-600 hover:bg-red-50 transition-colors cursor-pointer">
+                      <LogOut size={15} /> Cerrar Sesión
                     </button>
                   </div>
                 </div>
               )}
             </div>
           ) : (
-            /* Logged out: Login and Register buttons styled dynamically */
-            <div className="hidden sm:flex items-center gap-3">
+            /* Logged out: Desktop Login and Register buttons */
+            <div className="hidden lg:flex items-center gap-3">
               <Link
                 to="/iniciar-sesion"
                 className="bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold text-sm px-5 py-2 transition-colors flex items-center justify-center rounded-none shadow-sm"
@@ -232,10 +213,73 @@ export default function Header() {
             </div>
           )}
 
-          {/* Hamburger (Mobile nav toggle) */}
+          {/* Mobile/Tablet: Profile button (separate from hamburger) */}
+          {user ? (
+            <div className="relative lg:hidden" ref={mobileProfileRef}>
+              <button
+                onClick={() => { setMobileProfileOpen(!mobileProfileOpen); setMenuOpen(false) }}
+                className="p-1.5 border border-gray-200 hover:border-gray-400 hover:bg-gray-50 transition-all cursor-pointer rounded-full"
+              >
+                <img 
+                  src={user.profilePic} 
+                  alt="Mi Perfil" 
+                  className="w-7 h-7 rounded-full object-cover" 
+                />
+              </button>
+
+              {/* Mobile Profile Dropdown */}
+              {mobileProfileOpen && (
+                <div className="absolute right-0 mt-2.5 w-56 bg-white border border-gray-200 shadow-xl overflow-hidden z-[60] animate-in fade-in slide-in-from-top-2 duration-200">
+                  <div className="p-3.5 bg-gray-50 border-b border-gray-100">
+                    <p className="text-sm font-black text-gray-800 truncate">{user.nombres} {user.apellidos}</p>
+                    <p className="text-[11px] text-gray-400 truncate mt-0.5">{user.email}</p>
+                  </div>
+                  <div className="py-1">
+                    {user.role === 'ADMIN' && (
+                      <Link
+                        to="/admin"
+                        onClick={() => setMobileProfileOpen(false)}
+                        className="w-full flex items-center gap-2.5 px-4 py-2.5 text-left text-sm font-black text-[#800404] hover:bg-red-50 transition-colors"
+                      >
+                        <Shield size={15} /> Panel Admin
+                      </Link>
+                    )}
+                    <button onClick={() => { setMobileProfileOpen(false); navigate('/dashboard?tab=perfil') }} className="w-full flex items-center gap-2.5 px-4 py-2.5 text-left text-sm text-gray-700 hover:bg-red-50 hover:text-[#800404] transition-colors cursor-pointer">
+                      <User size={15} /> Mi Perfil
+                    </button>
+                    <button onClick={() => { setMobileProfileOpen(false); navigate('/dashboard?tab=eventos') }} className="w-full flex items-center gap-2.5 px-4 py-2.5 text-left text-sm text-gray-700 hover:bg-red-50 hover:text-[#800404] transition-colors cursor-pointer">
+                      <Calendar size={15} /> Mis Eventos
+                    </button>
+                    <button onClick={() => { setMobileProfileOpen(false); navigate('/dashboard?tab=certificados') }} className="w-full flex items-center gap-2.5 px-4 py-2.5 text-left text-sm text-gray-700 hover:bg-red-50 hover:text-[#800404] transition-colors cursor-pointer">
+                      <Award size={15} /> Certificados
+                    </button>
+                    <button onClick={() => { setMobileProfileOpen(false); navigate('/dashboard?tab=configuracion') }} className="w-full flex items-center gap-2.5 px-4 py-2.5 text-left text-sm text-gray-700 hover:bg-red-50 hover:text-[#800404] transition-colors cursor-pointer">
+                      <Settings size={15} /> Configuración
+                    </button>
+                  </div>
+                  <div className="border-t border-gray-100 py-1 bg-gray-50">
+                    <button onClick={() => { setMobileProfileOpen(false); handleLogout() }} className="w-full flex items-center gap-2.5 px-4 py-2.5 text-left text-sm font-semibold text-red-600 hover:bg-red-50 transition-colors cursor-pointer">
+                      <LogOut size={15} /> Cerrar Sesión
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : (
+            /* Mobile/Tablet: Login button when logged out */
+            <Link
+              to="/iniciar-sesion"
+              className="lg:hidden flex items-center gap-1.5 text-sm font-bold text-gray-700 border border-gray-200 px-3 py-1.5 hover:bg-gray-50 transition-colors rounded-none"
+            >
+              <User size={16} />
+              <span className="hidden sm:inline">Ingresar</span>
+            </Link>
+          )}
+
+          {/* Hamburger (Mobile/Tablet nav toggle) */}
           <button
             className="lg:hidden p-2 bg-[#800404] text-white hover:bg-[#5a0303] transition-colors cursor-pointer"
-            onClick={() => setMenuOpen(!menuOpen)}
+            onClick={() => { setMenuOpen(!menuOpen); setMobileProfileOpen(false) }}
           >
             {menuOpen ? <X size={20} /> : <Menu size={20} />}
           </button>
@@ -299,57 +343,9 @@ export default function Header() {
             })}
           </div>
 
-          {/* User state links in Mobile */}
-          <div className="bg-gray-50 p-6 border-t border-gray-200 space-y-4">
-            {user ? (
-              <>
-                <div className="flex items-center gap-3 mb-2">
-                  <img src={user.profilePic} className="w-10 h-10 rounded-full border border-gray-200 object-cover" />
-                  <div>
-                    <p className="text-sm font-black text-gray-800">{user.nombres} {user.apellidos}</p>
-                    <p className="text-xs text-gray-400">{user.email}</p>
-                  </div>
-                </div>
-                
-                <div className="grid grid-cols-2 gap-2 text-center text-xs pt-2">
-                  <button
-                    onClick={() => { setMenuOpen(false); navigate('/dashboard?tab=perfil') }}
-                    className="border border-gray-200 bg-white p-2.5 font-bold text-gray-700 hover:bg-gray-150 cursor-pointer"
-                  >
-                    Mi Perfil
-                  </button>
-                  <button
-                    onClick={() => { setMenuOpen(false); navigate('/dashboard?tab=eventos') }}
-                    className="border border-gray-200 bg-white p-2.5 font-bold text-gray-700 hover:bg-gray-150 cursor-pointer"
-                  >
-                    Mis Eventos
-                  </button>
-
-                  <button
-                    onClick={() => { setMenuOpen(false); navigate('/dashboard?tab=certificados') }}
-                    className="border border-gray-200 bg-white p-2.5 font-bold text-gray-700 hover:bg-gray-150 cursor-pointer"
-                  >
-                    Certificados
-                  </button>
-                </div>
-
-                {user.role === 'ADMIN' && (
-                  <button
-                    onClick={() => { setMenuOpen(false); navigate('/admin') }}
-                    className="w-full bg-[#800404] text-white py-2 font-black text-xs hover:bg-[#5a0303] transition-colors cursor-pointer mt-2"
-                  >
-                    Panel de Administración
-                  </button>
-                )}
-
-                <button
-                  onClick={handleLogout}
-                  className="w-full bg-white border border-red-200 hover:bg-red-50 text-red-600 font-bold py-2.5 text-sm transition-colors text-center block mt-3 cursor-pointer"
-                >
-                  Cerrar Sesión
-                </button>
-              </>
-            ) : (
+          {/* Auth buttons for non-logged-in users in mobile menu */}
+          {!user && (
+            <div className="bg-gray-50 p-6 border-t border-gray-200">
               <div className="flex flex-col gap-2">
                 <Link
                   to="/iniciar-sesion"
@@ -366,8 +362,8 @@ export default function Header() {
                   Registrarse
                 </Link>
               </div>
-            )}
-          </div>
+            </div>
+          )}
         </div>
       )}
     </header>

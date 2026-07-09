@@ -382,7 +382,7 @@ export default function Home() {
                   <button
                     key={i}
                     onClick={() => handleDotClick(i)}
-                    className={`w-2.5 h-2.5 rounded-full transition-colors cursor-pointer border-0 ${i === activeDotIndex ? 'bg-white' : 'bg-white/40'}`}
+                    className={`w-2.5 h-2.5 min-h-0 rounded-full transition-colors cursor-pointer border-0 ${i === activeDotIndex ? 'bg-white' : 'bg-white/40'}`}
                   />
                 )
               })}
@@ -459,11 +459,11 @@ export default function Home() {
 
       {/* Stats bar */}
       <section className="bg-white border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 py-6 grid grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="max-w-7xl mx-auto px-4 py-6 grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
           {dynamicStats.map(s => (
             <div key={s.label} className="text-center">
-              <p className="text-4xl font-black text-[#800404]">{s.value}</p>
-              <p className="text-sm text-gray-500 mt-1">{s.label}</p>
+              <p className="text-2xl sm:text-4xl font-black text-[#800404]">{s.value}</p>
+              <p className="text-xs sm:text-sm text-gray-500 mt-1">{s.label}</p>
             </div>
           ))}
         </div>
@@ -472,9 +472,9 @@ export default function Home() {
       {/* Featured events */}
       <section className="py-16 bg-gray-950">
         <div className="max-w-7xl mx-auto px-4">
-          <div className="flex items-center justify-between mb-8">
-            <h2 className="text-3xl font-black text-white">Eventos Destacados</h2>
-            <Link to="/cronograma" className="text-[#800404] text-sm font-bold flex items-center gap-1 hover:underline bg-white px-3 py-1.5">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-8">
+            <h2 className="text-2xl sm:text-3xl font-black text-white">Eventos Destacados</h2>
+            <Link to="/cronograma" className="text-[#800404] text-sm font-bold flex items-center gap-1 hover:underline bg-white px-3 py-1.5 shrink-0">
               Ver todos <ChevronRight size={16} />
             </Link>
           </div>
@@ -491,7 +491,7 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-4 grid md:grid-cols-12 gap-10 items-center">
           {/* Left Text */}
           <div className="md:col-span-7 space-y-6">
-            <h2 className="text-3xl font-black text-gray-900 tracking-tight leading-none">
+            <h2 className="text-2xl sm:text-3xl font-black text-gray-900 tracking-tight leading-none">
               {heroTitle}
             </h2>
             <div className="text-sm text-gray-605 space-y-4 leading-relaxed font-sans font-medium">
@@ -536,7 +536,7 @@ export default function Home() {
           {/* Header area of Propuesta */}
           <div className="grid md:grid-cols-12 gap-8 items-start mb-16">
             <div className="md:col-span-6">
-              <h2 className="text-3xl font-black text-gray-900 tracking-tight leading-tight">
+              <h2 className="text-2xl sm:text-3xl font-black text-gray-900 tracking-tight leading-tight">
                 Propuesta de la UNI para el Futuro del Perú 2026-2050 –
               </h2>
               <h3 className="text-lg font-black text-[#800404] uppercase tracking-wider mt-2">
@@ -551,7 +551,7 @@ export default function Home() {
           </div>
 
           {/* Grid of Books */}
-          <div className="grid sm:grid-cols-3 gap-12 max-w-5xl mx-auto">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-8 sm:gap-12 max-w-5xl mx-auto">
             {/* Book 1: Primera Versión */}
             <div className="flex flex-col items-center group">
               <div className="relative overflow-hidden rounded-xl shadow-md hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 mb-5 max-w-[280px]">
@@ -622,7 +622,7 @@ export default function Home() {
       <section className="py-20 bg-white">
         <div className="max-w-4xl mx-auto px-4">
           <div className="text-center mb-12">
-            <h2 className="text-3xl font-black text-gray-900 tracking-tight">Programa General de Actividades</h2>
+            <h2 className="text-2xl sm:text-3xl font-black text-gray-900 tracking-tight">Programa General de Actividades</h2>
             <p className="text-sm text-[#800404] uppercase font-black tracking-widest mt-2">
               {showDynamicTimeline && upcomingActivities.length > 0 ? (
                 `Del ${getCleanDate(upcomingActivities[0].date)} al ${getCleanDate(upcomingActivities[upcomingActivities.length - 1].date)}`
@@ -684,7 +684,7 @@ export default function Home() {
                       
                       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-2.5 text-[10px] font-bold text-gray-400 uppercase tracking-wider">
                         <span className="flex items-center gap-1.5"><Clock size={11} className={isPast ? 'text-gray-400' : 'text-[#800404]'} /> {act.time}</span>
-                        <span className="flex items-center gap-1.5 max-w-sm truncate" title={act.location}><MapPin size={11} className={isPast ? 'text-gray-400' : 'text-[#800404]'} /> {act.location}</span>
+                        <span className="flex items-start gap-1.5 max-w-full sm:max-w-sm" title={act.location}><MapPin size={11} className={`shrink-0 mt-0.5 ${isPast ? 'text-gray-400' : 'text-[#800404]'}`} /> <span className="break-words">{act.location}</span></span>
                       </div>
 
                       <h4 className={`font-bold text-sm leading-relaxed transition-colors ${
