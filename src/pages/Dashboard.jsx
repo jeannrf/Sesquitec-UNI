@@ -444,8 +444,8 @@ export default function Dashboard() {
               <span className="bg-white/25 text-white text-[9px] font-black tracking-widest px-2 py-0.5 uppercase">
                 Panel Universitario
               </span>
-              <h1 className="text-3xl font-black mt-1 leading-tight">{user.nombres} {user.apellidos}</h1>
-              <p className="text-xs text-white/70 mt-0.5">{user.email} · DNI: {user.dni}</p>
+              <h1 className="text-xl sm:text-2xl md:text-3xl font-black mt-1 leading-tight">{user.nombres} {user.apellidos}</h1>
+              <p className="text-[10px] sm:text-xs text-white/70 mt-0.5 break-all sm:break-normal">{user.email} · DNI: {user.dni}</p>
             </div>
           </div>
           
@@ -465,10 +465,11 @@ export default function Dashboard() {
       </div>
 
       {/* Main Grid content */}
-      <div className="max-w-7xl mx-auto px-4 py-10 w-full flex-1 grid grid-cols-1 lg:grid-cols-4 gap-8">
+      <div className="max-w-7xl mx-auto px-4 py-6 sm:py-10 w-full flex-1 grid grid-cols-1 lg:grid-cols-4 gap-6 sm:gap-8">
         
         {/* Sidebar Nav (Desktop) */}
-        <aside className="lg:col-span-1 space-y-1">
+        <aside className="lg:col-span-1">
+          <div className="flex lg:flex-col gap-1 overflow-x-auto scrollbar-hide pb-2 lg:pb-0">
           {[
             { id: 'eventos', label: 'Mis Eventos', icon: <Calendar size={18} /> },
             { id: 'certificados', label: 'Certificados', icon: <Award size={18} /> },
@@ -481,7 +482,7 @@ export default function Dashboard() {
             <button
               key={tab.id}
               onClick={() => handleTabChange(tab.id)}
-              className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-bold transition-all border-l-4 cursor-pointer ${
+              className={`flex items-center gap-2 lg:gap-3 px-3 lg:px-4 py-2.5 lg:py-3 text-xs lg:text-sm font-bold transition-all border-b-2 lg:border-b-0 lg:border-l-4 cursor-pointer whitespace-nowrap shrink-0 lg:shrink lg:w-full ${
                 activeTab === tab.id
                   ? 'bg-white border-[#800404] text-[#800404] shadow-sm'
                   : 'border-transparent text-gray-500 hover:bg-gray-100 hover:text-gray-900'
@@ -491,10 +492,11 @@ export default function Dashboard() {
               {tab.label}
             </button>
           ))}
+          </div>
         </aside>
 
         {/* Dynamic Panels */}
-        <main className="lg:col-span-3 bg-white border border-gray-200 p-8 shadow-sm">
+        <main className="lg:col-span-3 bg-white border border-gray-200 p-4 sm:p-6 md:p-8 shadow-sm">
           
           {/* TAB: MIS EVENTOS */}
           {activeTab === 'eventos' && (() => {
@@ -523,7 +525,7 @@ export default function Dashboard() {
 
             return (
               <div>
-                <div className="flex items-center justify-between border-b border-gray-100 pb-5 mb-6">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between border-b border-gray-100 pb-5 mb-6 gap-3">
                   <div>
                     <h2 className="text-xl font-black text-gray-900">Mis Eventos y Accesos</h2>
                     <p className="text-xs text-gray-400 mt-1">Administra tus entradas y revisa tu historial de eventos anteriores.</p>
@@ -929,7 +931,7 @@ export default function Dashboard() {
                   </h3>
                   <p className="text-[11px] text-gray-400 mb-4">Dejar en blanco si no deseas cambiar tu contraseña.</p>
                   
-                  <div className="grid sm:grid-cols-3 gap-5">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
                     <div>
                       <label className="block text-xs font-bold text-gray-700 uppercase mb-1">Clave Actual</label>
                       <input
@@ -1329,7 +1331,7 @@ function EscanerQrTab({ user, showAlert }) {
         <p className="text-xs text-gray-400 mt-1">Panel de STAFF / VOLUNTARIOS para control de ingresos y egresos del Sesquicentenario.</p>
       </div>
 
-      <div className="grid md:grid-cols-12 gap-8 items-start">
+      <div className="grid grid-cols-1 md:grid-cols-12 gap-6 md:gap-8 items-start">
         {/* Left column: Simulated camera scanner */}
         <div className="md:col-span-5 bg-white border border-gray-200 p-6 flex flex-col items-center">
           
@@ -1362,7 +1364,7 @@ function EscanerQrTab({ user, showAlert }) {
           <p className="text-xs font-black text-gray-700 uppercase mb-4 tracking-wider">Lector de Cámara</p>
           
           {/* Box simulation */}
-          <div className="relative w-56 h-56 bg-stone-955 border-4 border-gray-800 flex items-center justify-center overflow-hidden mb-4 rounded-sm">
+          <div className="relative w-44 h-44 sm:w-56 sm:h-56 bg-stone-955 border-4 border-gray-800 flex items-center justify-center overflow-hidden mb-4 rounded-sm">
             {/* Red laser line */}
             <div className="absolute left-0 right-0 h-0.5 bg-red-600 shadow-[0_0_8px_#ef4444] top-1/2" />
             {/* Brackets mockup */}

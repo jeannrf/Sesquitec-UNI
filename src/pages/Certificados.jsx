@@ -115,7 +115,7 @@ startxref
       {/* Header */}
       <div className="bg-[#800404] text-white py-6">
         <div className="max-w-4xl mx-auto px-4">
-          <h1 className="text-2xl font-black">{pageTitle}</h1>
+          <h1 className="text-xl sm:text-2xl font-black">{pageTitle}</h1>
           <p className="text-white/70 text-xs sm:text-sm mt-0.5">{pageSubtitle}</p>
         </div>
       </div>
@@ -127,7 +127,7 @@ startxref
           <p className="text-sm text-gray-505 mb-6">
             Ingresa tu número de DNI de 8 dígitos para ver todos los certificados emitidos a tu nombre.
           </p>
-          <form onSubmit={handleSearch} className="flex gap-3 max-w-md">
+          <form onSubmit={handleSearch} className="flex flex-col sm:flex-row gap-3 max-w-md">
             <div className="flex-1">
               <input
                 type="text"
@@ -217,7 +217,7 @@ startxref
         )}
 
         {/* Info */}
-        <div className="mt-12 grid sm:grid-cols-3 gap-6">
+        <div className="mt-12 grid grid-cols-1 sm:grid-cols-3 gap-6">
           {[
             { icon: <Search size={24} className="text-[#800404]" />, title: '1. Busca por DNI', desc: 'Ingresa tu número de DNI de 8 dígitos para ver todos tus certificados.' },
             { icon: <FileText size={24} className="text-[#800404]" />, title: '2. Visualiza y Descarga', desc: 'Descarga el PDF firmado digitalmente por el Rector de la UNI.' },
@@ -247,8 +247,8 @@ startxref
             </button>
 
             {/* Certificate Landscape frame */}
-            <div className="p-10">
-              <div className="border-[12px] border-[#800404] p-8 bg-[#fdfbf7] relative flex flex-col justify-between text-center min-h-[460px] overflow-hidden select-none">
+            <div className="p-4 sm:p-6 md:p-10">
+              <div className="border-[6px] sm:border-[12px] border-[#800404] p-4 sm:p-8 bg-[#fdfbf7] relative flex flex-col justify-between text-center min-h-[320px] sm:min-h-[460px] overflow-hidden select-none">
                 
                 {/* Thin inner gold border */}
                 <div className="absolute inset-2 border border-[#d4af37]/65 pointer-events-none" />
@@ -261,14 +261,14 @@ startxref
 
                 {/* Header */}
                 <div className="space-y-1 z-10">
-                  <h2 className="text-xl font-bold tracking-widest text-[#800404] uppercase font-serif">Universidad Nacional de Ingeniería</h2>
+                  <h2 className="text-base sm:text-xl font-bold tracking-widest text-[#800404] uppercase font-serif">Universidad Nacional de Ingeniería</h2>
                   <p className="text-[9px] uppercase tracking-widest text-stone-500 font-bold font-sans">Sesquicentenario de Fundación Institucional · 1876 - 2026</p>
                 </div>
 
                 {/* Middle Title */}
                 <div className="my-6 space-y-4 z-10">
                   <p className="text-xs italic text-stone-550">Otorga el presente certificado a:</p>
-                  <h3 className="text-2xl font-black text-stone-900 uppercase font-serif tracking-tight border-b-2 border-stone-200 pb-2 max-w-xl mx-auto">
+                  <h3 className="text-lg sm:text-2xl font-black text-stone-900 uppercase font-serif tracking-tight border-b-2 border-stone-200 pb-2 max-w-xl mx-auto">
                     {activeCertPreview.titular}
                   </h3>
                   <p className="text-xs text-stone-600 max-w-lg mx-auto leading-relaxed">
@@ -279,9 +279,9 @@ startxref
                 </div>
 
                 {/* Footer Signatures / QR Verification */}
-                <div className="grid grid-cols-12 gap-4 items-end mt-4 pt-4 border-t border-stone-200/50 z-10">
+                <div className="grid grid-cols-1 sm:grid-cols-12 gap-4 items-end mt-4 pt-4 border-t border-stone-200/50 z-10">
                   {/* Left: Rector signature details */}
-                  <div className="col-span-5 text-center flex flex-col items-center">
+                  <div className="sm:col-span-5 text-center flex flex-col items-center">
                     <div className="h-10 flex items-center justify-center font-serif italic text-stone-400 text-xs select-none">
                       Alfonso Fujimori M.
                     </div>
@@ -291,7 +291,7 @@ startxref
                   </div>
 
                   {/* Middle: Security shield stamp */}
-                  <div className="col-span-3 text-center flex flex-col items-center justify-center">
+                  <div className="hidden sm:flex sm:col-span-3 text-center flex-col items-center justify-center">
                     <div className="w-12 h-12 rounded-full border border-[#d4af37]/30 bg-[#ffd700]/5 flex items-center justify-center text-[#d4af37]">
                       <ShieldCheck size={26} />
                     </div>
@@ -299,7 +299,7 @@ startxref
                   </div>
 
                   {/* Right: Validation QR code and code text */}
-                  <div className="col-span-4 flex flex-col items-center text-center">
+                  <div className="sm:col-span-4 flex flex-col items-center text-center">
                     {/* Visual QR simulation */}
                     <div className="w-16 h-16 bg-white border border-gray-250 p-1 mb-1.5 flex items-center justify-center shrink-0">
                       <div className="grid grid-cols-6 gap-0.5 w-full h-full opacity-80">

@@ -788,9 +788,7 @@ export default function Admin() {
   // --- CERTIFICADOS STATE & LOGIC ---
   const [certSearch, setCertSearch] = useState('')
   const [uploadQueue, setUploadQueue] = useState([])
-  const [selectedEventForCert, setSelectedEventForCert] = useState('')
-  const [certHours, setCertHours] = useState('0')
-  const [certType, setCertType] = useState('Participación')
+  const [isDragActive, setIsDragActive] = useState(false)
   const [uploadProgress, setUploadProgress] = useState(0)
   const [isUploading, setIsUploading] = useState(false)
   const fileInputRef = useRef(null)
@@ -798,33 +796,135 @@ export default function Admin() {
   // Validation Test State inside admin
   const [testValidationCode, setTestValidationCode] = useState('')
   const [testValidationResult, setTestValidationResult] = useState(null)
-  
-  useEffect(() => {
-    if (events.length > 0 && !selectedEventForCert) {
-      setSelectedEventForCert(events[0].title)
+
+  const processFiles = async (files) => {
+    const list = []
+    
+    for (const file of files) {
+      if (file.name.endsWith('.zip')) {
+        try {
+          const JSZip = (await import('jszip')).default
+          const zip = new JSZip()
+          const zipContent = await zip.loadAsync(file)
+          
+          const zipPromises = []
+          zipContent.forEach((relativePath, zipEntry) => {
+            if (!zipEntry.dir && zipEntry.name.toLowerCase().endsWith('.pdf')) {
+              zipPromises.push((async () => {
+                const blob = await zipEntry.async('blob')
+                const fileName = zipEntry.name.split('/').pop()
+                return new File([blob], fileName, { type: 'application/pdf' })
+              })())
+            }
+          })
+          
+          const extractedFiles = await Promise.all(zipPromises)
+          await processFiles(extractedFiles)
+        } catch (zipErr) {
+          console.error("Error al procesar archivo ZIP:", zipErr)
+          showAlert("Error al procesar el archivo ZIP. Asegúrese de que no esté corrupto.", "Error", "error")
+        }
+      } else if (file.name.toLowerCase().endsWith('.pdf')) {
+        const dniMatch = file.name.match(/\d{8}/)
+        const dni = dniMatch ? dniMatch[0] : null
+        const matchedUser = dni ? usersList.find(u => u.dni === dni) : null
+        const titular = matchedUser 
+          ? `${matchedUser.nombres} ${matchedUser.apellidos}` 
+          : (dni ? cleanNameFromFileName(file.name, dni) : 'No registrado')
+        
+        let evento = 'Conferencias Magistrales - Sesquicentenario UNI'
+        let tipo = 'Participación'
+        if (matchedUser && matchedUser.tickets && matchedUser.tickets.length > 0) {
+          evento = matchedUser.tickets[0].eventTitle
+        }
+        
+        list.push({
+          id: `uq-${Math.random().toString(36).substring(2, 9)}`,
+          fileName: file.name,
+          dni: dni || 'No encontrado',
+          titular: titular,
+          evento: evento,
+          tipo: tipo,
+          userFound: !!matchedUser,
+          file: file
+        })
+      }
     }
-  }, [events])
+    
+    if (list.length > 0) {
+      setUploadQueue(prev => [...prev, ...list])
+    }
+  }
 
   const handleFileSelect = (e) => {
     const files = Array.from(e.target.files)
-    const list = files.map(file => {
-      // Find DNI in filename (8 consecutive digits anywhere)
-      const dniMatch = file.name.match(/\d{8}/)
-      const dni = dniMatch ? dniMatch[0] : null
-      const matchedUser = dni ? usersList.find(u => u.dni === dni) : null
-      const titular = matchedUser 
-        ? `${matchedUser.nombres} ${matchedUser.apellidos}` 
-        : (dni ? cleanNameFromFileName(file.name, dni) : 'No registrado')
-      return {
-        id: `uq-${Math.random().toString(36).substring(2, 9)}`,
-        fileName: file.name,
-        dni: dni || 'No encontrado',
-        titular: titular,
-        userFound: !!matchedUser,
-        file: file
+    processFiles(files)
+  }
+
+  const handleDragOver = (e) => {
+    e.preventDefault()
+    setIsDragActive(true)
+  }
+
+  const handleDragLeave = () => {
+    setIsDragActive(false)
+  }
+
+  const handleDrop = async (e) => {
+    e.preventDefault()
+    setIsDragActive(false)
+    
+    const items = e.dataTransfer.items
+    if (!items) return
+
+    const traverseFileTree = (entry) => {
+      return new Promise((resolve) => {
+        if (entry.isFile) {
+          entry.file((file) => {
+            resolve([file])
+          })
+        } else if (entry.isDirectory) {
+          const dirReader = entry.createReader()
+          const allFiles = []
+          
+          const readEntries = () => {
+            dirReader.readEntries(async (entries) => {
+              if (entries.length === 0) {
+                resolve(allFiles)
+              } else {
+                for (const subEntry of entries) {
+                  const files = await traverseFileTree(subEntry)
+                  allFiles.push(...files)
+                }
+                readEntries()
+              }
+            }, (err) => {
+              console.error("Error reading directory entries:", err)
+              resolve(allFiles)
+            })
+          }
+          readEntries()
+        } else {
+          resolve([])
+        }
+      })
+    }
+
+    const promises = []
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i]
+      if (item.kind === 'file') {
+        const entry = item.webkitGetAsEntry()
+        if (entry) {
+          promises.push(traverseFileTree(entry))
+        }
       }
-    })
-    setUploadQueue(prev => [...prev, ...list])
+    }
+
+    const results = await Promise.all(promises)
+    const files = results.flat()
+    
+    await processFiles(files)
   }
 
   const handleRemoveFromQueue = (id) => {
@@ -833,10 +933,6 @@ export default function Admin() {
 
   const handleProcessUploads = async () => {
     if (uploadQueue.length === 0) return
-    if (!selectedEventForCert) {
-      showAlert('Por favor seleccione el evento asociado.', 'Evento Requerido', 'warning')
-      return
-    }
 
     setIsUploading(true)
     setUploadProgress(5)
@@ -874,9 +970,9 @@ export default function Admin() {
             db.createCertificate({
               dni: item.dni,
               titular: item.titular,
-              evento: selectedEventForCert,
+              evento: item.evento,
               horas: 0,
-              tipo: certType,
+              tipo: item.tipo,
               pdfUrl: publicUrl
             })
 
@@ -912,9 +1008,9 @@ export default function Admin() {
                 db.createCertificate({
                   dni: item.dni,
                   titular: item.titular,
-                  evento: selectedEventForCert,
+                  evento: item.evento,
                   horas: 0,
-                  tipo: certType,
+                  tipo: item.tipo,
                   pdfUrl: ''
                 })
                 count++
@@ -1007,7 +1103,7 @@ export default function Admin() {
             { id: 'eventos', label: 'Eventos', icon: Calendar },
             { id: 'participantes', label: 'Usuarios Registrados', icon: Users },
             { id: 'asistencia-qr', label: 'Asistencia QR', icon: QrCode },
-            { id: 'certificados', label: 'Certificados', icon: Award },
+            { id: 'certificados', label: 'Carga Certificados', icon: Award },
             { id: 'cms', label: 'Editar Páginas', icon: Edit2 },
 
           ].map(tab => {
@@ -2010,252 +2106,91 @@ export default function Admin() {
           {/* TAB 7: CERTIFICADOS */}
           {activeTab === 'certificados' && (
             <div className="space-y-6">
-              
-              {/* Massive upload & internal validation side by side */}
-              <div className="grid lg:grid-cols-2 gap-6">
-                
-                {/* Bulk upload block */}
-                <div className="bg-white border border-gray-200 p-6 shadow-sm flex flex-col justify-between">
-                  <div>
-                    <h3 className="text-base font-black text-gray-900 mb-1">Carga Masiva de Certificados</h3>
-                    <p className="text-xs text-gray-400 mb-4">Sube múltiples archivos PDF de certificados. El sistema extraerá el DNI del nombre de archivo y lo asociará al participante.</p>
+              {/* Massive upload card (full width, simplified) */}
+              <div className="max-w-3xl mx-auto bg-white border border-gray-200 p-8 shadow-sm flex flex-col justify-between">
+                <div>
+                  <h3 className="text-base font-black text-gray-900 mb-1">Carga Masiva de Certificados</h3>
+                  <p className="text-xs text-gray-400 mb-6">Sube múltiples archivos PDF de certificados o una carpeta completa. El sistema extraerá el DNI del nombre de archivo y lo asociará al participante.</p>
 
-                    <div className="mb-4">
-                      <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Tipo de Certificado</label>
-                      <select 
-                        value={certType}
-                        onChange={e => setCertType(e.target.value)}
-                        className="w-full border border-gray-300 px-3 py-2 text-xs focus:outline-none bg-white text-gray-800"
-                      >
-                        <option value="Participación">Participación</option>
-                        <option value="Ponencia">Ponencia</option>
-                        <option value="Organización">Organización</option>
-                      </select>
-                    </div>
-
-                    <div className="mb-4">
-                      <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Evento Asociado</label>
-                      <select 
-                        value={selectedEventForCert}
-                        onChange={e => setSelectedEventForCert(e.target.value)}
-                        className="w-full border border-gray-300 px-3 py-2 text-xs focus:outline-none bg-white font-bold text-gray-800"
-                      >
-                        {events.map((ev, i) => (
-                          <option key={i} value={ev.title}>{ev.title}</option>
-                        ))}
-                      </select>
-                    </div>
-
-                    {/* Drag and drop simulated dropzone */}
-                    <div 
-                      onClick={() => fileInputRef.current.click()}
-                      className="border-2 border-dashed border-gray-200 hover:border-[#800404] p-6 text-center cursor-pointer transition-colors bg-gray-50 flex flex-col items-center"
-                    >
-                      <UploadCloud size={32} className="text-gray-400 mb-2" />
-                      <p className="text-xs font-bold text-gray-700">Arrastre archivos PDF o haga clic para seleccionar</p>
-                      <p className="text-[10px] text-gray-400 mt-1">Los nombres deben incluir un DNI de 8 dígitos (Ej: 12345678.pdf)</p>
-                      <input 
-                        type="file" 
-                        ref={fileInputRef} 
-                        multiple 
-                        accept="application/pdf" 
-                        onChange={handleFileSelect}
-                        className="hidden" 
-                      />
-                    </div>
+                  {/* Drag and drop zone with folder and zip support */}
+                  <div 
+                    onClick={() => fileInputRef.current.click()}
+                    onDragOver={handleDragOver}
+                    onDragLeave={handleDragLeave}
+                    onDrop={handleDrop}
+                    className={`border-2 border-dashed p-10 text-center cursor-pointer transition-all duration-200 bg-gray-50 flex flex-col items-center justify-center min-h-[240px] ${
+                      isDragActive 
+                        ? 'border-[#800404] bg-red-50/25 scale-[0.99] shadow-inner' 
+                        : 'border-gray-200 hover:border-[#800404] hover:bg-gray-50/85'
+                    }`}
+                  >
+                    <UploadCloud size={48} className={`mb-4 transition-colors ${isDragActive ? 'text-[#800404] animate-bounce' : 'text-gray-400'}`} />
+                    <p className="text-sm font-black text-gray-700">Arrastra tu carpeta, archivos .ZIP o PDFs aquí</p>
+                    <p className="text-xs text-gray-450 mt-2 max-w-sm mx-auto leading-relaxed">
+                      También puedes hacer clic para seleccionar PDFs o archivos comprimidos. El sistema extraerá el DNI del nombre (ej. <code className="bg-gray-150 px-1 font-mono">12345678.pdf</code>) y lo vinculará automáticamente.
+                    </p>
+                    <input 
+                      type="file" 
+                      ref={fileInputRef} 
+                      multiple 
+                      accept="application/pdf,application/zip" 
+                      onChange={handleFileSelect}
+                      className="hidden" 
+                    />
                   </div>
-
-                  {/* Upload queue */}
-                  {uploadQueue.length > 0 && (
-                    <div className="mt-4 border border-gray-200 max-h-40 overflow-y-auto divide-y divide-gray-100 p-2">
-                      <p className="text-[10px] font-black text-[#800404] mb-2 uppercase">Cola de Procesamiento ({uploadQueue.length})</p>
-                      {uploadQueue.map(item => (
-                        <div key={item.id} className="py-2 flex items-center justify-between text-xs">
-                          <span className="truncate max-w-xs font-mono font-medium text-gray-600" title={item.fileName}>{item.fileName}</span>
-                          <div className="flex items-center gap-3 shrink-0 ml-2">
-                            <span className={`text-[10px] font-bold px-1.5 py-0.5 border ${
-                              item.userFound 
-                                ? 'bg-emerald-50 border-emerald-200 text-emerald-700' 
-                                : 'bg-red-50 border-red-200 text-red-700'
-                            }`}>
-                              DNI: {item.dni} ({item.titular})
-                            </span>
-                            <button 
-                              onClick={() => handleRemoveFromQueue(item.id)} 
-                              className="text-red-500 hover:text-red-700"
-                            >
-                              <X size={14} />
-                            </button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-
-                  {/* Upload progress & trigger */}
-                  {uploadQueue.length > 0 && (
-                    <div className="mt-4 pt-3 border-t border-gray-100 space-y-3">
-                      {isUploading && (
-                        <div className="space-y-1">
-                          <div className="flex items-center justify-between text-xs text-gray-400">
-                            <span>Procesando certificados...</span>
-                            <span>{uploadProgress}%</span>
-                          </div>
-                          <div className="w-full bg-gray-150 h-1.5">
-                            <div className="bg-[#800404] h-1.5 transition-all duration-200" style={{ width: `${uploadProgress}%` }}></div>
-                          </div>
-                        </div>
-                      )}
-                      <button
-                        onClick={handleProcessUploads}
-                        disabled={isUploading}
-                        className="w-full bg-[#800404] hover:bg-[#5a0303] text-white font-black py-2.5 text-xs transition-colors flex items-center justify-center gap-2 rounded-none cursor-pointer"
-                      >
-                        <Plus size={14} /> Procesar Carga Masiva
-                      </button>
-                    </div>
-                  )}
                 </div>
 
-                {/* Validation Test block inside admin */}
-                <div className="bg-white border border-gray-200 p-6 shadow-sm flex flex-col justify-between">
-                  <div>
-                    <h3 className="text-base font-black text-gray-900 mb-1">Validador Interno de Certificados</h3>
-                    <p className="text-xs text-gray-400 mb-4">Comprueba la autenticidad e información de cualquier código de validación del sistema.</p>
+                {/* Upload queue */}
+                {uploadQueue.length > 0 && (
+                  <div className="mt-6 border border-gray-200 max-h-48 overflow-y-auto divide-y divide-gray-100 p-3 bg-gray-50/50">
+                    <p className="text-[10px] font-black text-[#800404] mb-3 uppercase tracking-wider">Cola de Procesamiento ({uploadQueue.length})</p>
+                    {uploadQueue.map(item => (
+                      <div key={item.id} className="py-2.5 flex items-center justify-between text-xs">
+                        <span className="truncate max-w-sm font-mono font-medium text-gray-600" title={item.fileName}>{item.fileName}</span>
+                        <div className="flex items-center gap-3 shrink-0 ml-2">
+                          <span className={`text-[10px] font-bold px-2 py-0.5 border ${
+                            item.userFound 
+                              ? 'bg-emerald-50 border-emerald-200 text-emerald-700' 
+                              : 'bg-red-50 border-red-200 text-red-700'
+                          }`}>
+                            DNI: {item.dni} ({item.titular})
+                          </span>
+                          <button 
+                            onClick={() => handleRemoveFromQueue(item.id)} 
+                            className="text-red-500 hover:text-red-700 cursor-pointer"
+                          >
+                            <X size={15} />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
 
-                    <form onSubmit={handleTestValidate} className="flex gap-2 mb-6">
-                      <input
-                        type="text"
-                        placeholder="CERT-UNI-2026-XXXXXXXX-XXX"
-                        value={testValidationCode}
-                        onChange={e => setTestValidationCode(e.target.value.toUpperCase())}
-                        className="flex-1 border border-gray-300 px-3 py-2 text-xs focus:outline-none focus:border-[#800404] font-mono"
-                      />
-                      <button
-                        type="submit"
-                        className="bg-gray-800 hover:bg-black text-white font-black text-xs px-4 py-2 transition-colors cursor-pointer"
-                      >
-                        Validar
-                      </button>
-                    </form>
-
-                    {testValidationResult && (
-                      <div className={`p-4 border-l-4 rounded-none text-xs space-y-2 ${
-                        testValidationResult.valid 
-                          ? 'bg-emerald-50/50 border-l-emerald-600 border border-emerald-100 text-gray-800' 
-                          : 'bg-red-50/50 border-l-red-600 border border-red-100 text-red-800'
-                      }`}>
-                        {testValidationResult.valid ? (
-                          <>
-                            <p className="font-bold text-emerald-800 flex items-center gap-1">
-                              <Check size={14} /> CERTIFICADO AUTÉNTICO REGISTRADO
-                            </p>
-                            <p>Titular: <strong className="font-bold text-gray-900">{testValidationResult.titular}</strong> (DNI: {testValidationResult.dni})</p>
-                            <p>Evento: <strong className="font-bold text-gray-900">{testValidationResult.evento}</strong></p>
-                            <p>Horas: <span className="text-[#800404] font-bold">{testValidationResult.horas}h extracurriculares</span> &nbsp;·&nbsp; Tipo: {testValidationResult.tipo}</p>
-                            <p>Emisión: {testValidationResult.emision} &nbsp;·&nbsp; Firma: {testValidationResult.rector}</p>
-                          </>
-                        ) : (
-                          <>
-                            <p className="font-bold text-red-800 flex items-center gap-1">
-                              <X size={14} /> CÓDIGO NO VÁLIDO / INEXISTENTE
-                            </p>
-                            <p className="text-gray-500 font-medium">El código de validación ingresado no se encuentra registrado en el sistema oficial.</p>
-                          </>
-                        )}
+                {/* Upload progress & trigger */}
+                {uploadQueue.length > 0 && (
+                  <div className="mt-6 pt-4 border-t border-gray-100 space-y-4">
+                    {isUploading && (
+                      <div className="space-y-1">
+                        <div className="flex items-center justify-between text-xs text-gray-450">
+                          <span>Procesando certificados...</span>
+                          <span>{uploadProgress}%</span>
+                        </div>
+                        <div className="w-full bg-gray-150 h-1.5 rounded-full overflow-hidden">
+                          <div className="bg-[#800404] h-1.5 transition-all duration-200" style={{ width: `${uploadProgress}%` }}></div>
+                        </div>
                       </div>
                     )}
+                    <button
+                      onClick={handleProcessUploads}
+                      disabled={isUploading}
+                      className="w-full bg-[#800404] hover:bg-[#5a0303] text-white font-black py-3 text-xs transition-colors flex items-center justify-center gap-2 rounded-none cursor-pointer uppercase tracking-wider h-[44px]"
+                    >
+                      <Plus size={16} /> Procesar Carga Masiva
+                    </button>
                   </div>
-                  
-                  {/* Demo files to copy */}
-                  <div className="bg-red-50 border border-red-100 p-4 mt-6 text-xs text-red-800 leading-normal flex items-start gap-2">
-                    <ShieldAlert size={16} className="shrink-0 mt-0.5" />
-                    <div>
-                      <p className="font-black">DNI de prueba para cargar:</p>
-                      <p className="text-[11px] text-red-700 mt-0.5">
-                        Prueba cargando un archivo nombrado <span className="font-mono font-bold bg-white px-1 border border-red-200">12345678.pdf</span> (Juan Pérez). El sistema resolverá su nombre automáticamente.
-                      </p>
-                    </div>
-                  </div>
-
-                </div>
-
+                )}
               </div>
-
-              {/* Certificate Management list table */}
-              <div className="bg-white border border-gray-200 p-6 shadow-sm space-y-4">
-                <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
-                  <h3 className="text-base font-black text-gray-900">Historial de Certificados Emitidos</h3>
-                  <div className="flex gap-2 w-full sm:max-w-xs relative">
-                    <input
-                      type="text"
-                      placeholder="Buscar por DNI o Evento..."
-                      value={certSearch}
-                      onChange={e => setCertSearch(e.target.value)}
-                      className="w-full pl-9 pr-4 py-1.5 text-xs border border-gray-300 focus:outline-none focus:border-[#800404] bg-white text-gray-850"
-                    />
-                    <Search size={14} className="absolute left-3 top-2.5 text-gray-400" />
-                  </div>
-                </div>
-
-                <div className="overflow-x-auto border border-gray-150">
-                  <table className="min-w-full divide-y divide-gray-200 text-sm">
-                    <thead className="bg-gray-50 font-black text-gray-700 uppercase tracking-wider text-xs">
-                      <tr>
-                        <th className="px-6 py-3.5 text-left">Participante (DNI)</th>
-                        <th className="px-6 py-3.5 text-left">Evento Asociado</th>
-                        <th className="px-6 py-3.5 text-center">Horas & Tipo</th>
-                        <th className="px-6 py-3.5 text-left">Código de Validación</th>
-                        <th className="px-6 py-3.5 text-right">Acciones</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-100 bg-white">
-                      {certificates
-                        .filter(c => c.dni.includes(certSearch) || 
-                                     c.titular.toLowerCase().includes(certSearch.toLowerCase()) || 
-                                     c.evento.toLowerCase().includes(certSearch.toLowerCase()))
-                        .map(cert => (
-                          <tr key={cert.id} className="hover:bg-gray-50/50">
-                            <td className="px-6 py-3.5">
-                              <p className="font-bold text-gray-900">{cert.titular}</p>
-                              <p className="text-xs text-gray-400 font-mono">DNI: {cert.dni}</p>
-                            </td>
-                            <td className="px-6 py-3.5">
-                              <p className="text-gray-700 truncate max-w-xs" title={cert.evento}>{cert.evento}</p>
-                              <p className="text-xs text-gray-400">Emitido: {cert.emitido}</p>
-                            </td>
-                            <td className="px-6 py-3.5 text-center whitespace-nowrap">
-                              <p className="text-gray-800 font-bold">{cert.horas}h</p>
-                              <p className="text-xs text-[#800404] font-medium">{cert.tipo}</p>
-                            </td>
-                            <td className="px-6 py-3.5 whitespace-nowrap font-mono text-xs font-semibold text-gray-600">
-                              {cert.codigoValidacion}
-                            </td>
-                            <td className="px-6 py-3.5 text-right whitespace-nowrap">
-                              <div className="flex gap-2 justify-end">
-                                <a
-                                  href="#"
-                                  onClick={(e) => { e.preventDefault(); showAlert(`Simulación de descarga del PDF de certificado: ${cert.codigoValidacion}.pdf`, 'Descarga en Proceso', 'success') }}
-                                  className="text-xs font-bold text-[#800404] hover:underline"
-                                >
-                                  Descargar
-                                </a>
-                                <button
-                                  onClick={() => handleDeleteCertificate(cert.id)}
-                                  className="p-1 border border-gray-200 hover:border-gray-450 hover:bg-red-50 text-red-600 transition-all rounded-none cursor-pointer"
-                                  title="Revocar certificado"
-                                >
-                                  <Trash2 size={13} />
-                                </button>
-                              </div>
-                            </td>
-                          </tr>
-                        ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-
             </div>
           )}
 

@@ -40,9 +40,9 @@ export default function Validar() {
         <div className="max-w-4xl mx-auto px-4">
           <div className="flex items-center gap-3 mb-3">
             <Shield size={32} className="text-white/50" />
-            <h1 className="text-4xl font-black">Validador de Certificados</h1>
+            <h1 className="text-2xl sm:text-3xl md:text-4xl font-black">Validador de Certificados</h1>
           </div>
-          <p className="text-white/70 text-lg">
+          <p className="text-white/70 text-sm sm:text-base md:text-lg">
             Verifica la autenticidad de un certificado emitido por la Comisión del Sesquicentenario UNI
           </p>
         </div>
@@ -97,7 +97,7 @@ export default function Validar() {
                   <div className="space-y-3">
                     <div className="border-b border-gray-100 pb-3">
                       <p className="text-xs text-gray-400 uppercase tracking-widest mb-1">Titular del certificado</p>
-                      <p className="font-black text-gray-900 text-xl">{result.titular}</p>
+                      <p className="font-black text-gray-900 text-lg sm:text-xl">{result.titular}</p>
                       <p className="text-sm text-gray-400">DNI: {result.dni}</p>
                     </div>
                     <div className="border-b border-gray-100 pb-3">
@@ -106,7 +106,7 @@ export default function Validar() {
                     </div>
                     <div>
                       <p className="text-xs text-gray-400 uppercase tracking-widest mb-1">Horas extracurriculares</p>
-                      <p className="text-4xl font-black text-[#800404]">{result.horas}h</p>
+                      <p className="text-3xl sm:text-4xl font-black text-[#800404]">{result.horas}h</p>
                     </div>
                   </div>
                   <div className="space-y-3">
