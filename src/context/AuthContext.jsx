@@ -13,8 +13,34 @@ const generateQrData = (dni, eventId) => `UNI-150-TICKET-${eventId}-${dni}-${Mat
 const generateCertCode = (dni, certId) => `UNI-CERT-${certId}-${dni}-${Math.floor(1000 + Math.random() * 9000)}`
 
 export function AuthProvider({ children }) {
-  const [user, setUser] = useState(null)
-  const [users, setUsers] = useState([])
+  const [user, setUser] = useState(() => {
+    try {
+      const activeSession = localStorage.getItem('uni_eventos_session')
+      if (activeSession) {
+        const sessionData = JSON.parse(activeSession)
+        const storedUsers = localStorage.getItem('uni_eventos_users')
+        if (storedUsers) {
+          const parsedUsers = JSON.parse(storedUsers)
+          return parsedUsers.find(u => u.email === sessionData.email) || null
+        }
+      }
+    } catch (e) {
+      console.error("Error cargando sesión inicial de localStorage:", e)
+    }
+    return null
+  })
+  
+  const [users, setUsers] = useState(() => {
+    try {
+      const storedUsers = localStorage.getItem('uni_eventos_users')
+      if (storedUsers) {
+        return JSON.parse(storedUsers)
+      }
+    } catch (e) {
+      console.error("Error cargando usuarios iniciales de localStorage:", e)
+    }
+    return []
+  })
   const [loading, setLoading] = useState(true)
 
   // Load all users and check session from localStorage on mount
@@ -23,9 +49,6 @@ export function AuthProvider({ children }) {
     db.initializeDb()
 
     const initAndSync = async () => {
-      // Sincronizar desde Supabase si está disponible
-      await db.syncFromSupabase()
-
       const storedUsers = localStorage.getItem('uni_eventos_users')
       const activeSession = localStorage.getItem('uni_eventos_session')
       
@@ -144,7 +167,30 @@ export function AuthProvider({ children }) {
           setUser(foundUser)
         }
       }
+      
+      // La carga local es síncrona/inmediata, dejamos de mostrar "loading" para que la UI renderice
       setLoading(false)
+
+      // Sincronizar desde Supabase asíncronamente en segundo plano
+      try {
+        const syncSuccess = await db.syncFromSupabase()
+        if (syncSuccess) {
+          const updatedUsers = localStorage.getItem('uni_eventos_users')
+          if (updatedUsers) {
+            const parsedUpdatedUsers = JSON.parse(updatedUsers)
+            setUsers(parsedUpdatedUsers)
+            if (activeSession) {
+              const sessionData = JSON.parse(activeSession)
+              const foundUpdatedUser = parsedUpdatedUsers.find(u => u.email === sessionData.email)
+              if (foundUpdatedUser) {
+                setUser(foundUpdatedUser)
+              }
+            }
+          }
+        }
+      } catch (syncError) {
+        console.error("Error durante la sincronización en segundo plano con Supabase:", syncError)
+      }
     }
 
     initAndSync()
@@ -408,55 +454,25 @@ export function AuthProvider({ children }) {
   }
 
   // Inscribe current user into an event
-  const registerForEvent = (event, conferencesSelected = []) => {
+  const registerForEvent = (event, conferencesSelected = [], companionsSelected = []) => {
     if (!user) return { success: false, error: 'Debes iniciar sesión para inscribirte.' }
 
     if (!user.dni) {
       return { success: false, error: 'Por favor, completa tu DNI en la sección de perfil de tu cuenta para inscribirte a los eventos.' }
     }
 
-    // Check if already registered
-    const alreadyRegistered = user.registeredEvents.some(e => e.id === event.id)
-    if (alreadyRegistered && conferencesSelected.length === 0) {
-      return { success: false, error: 'Ya estás inscrito en este evento.' }
+    const res = db.registerUserToEvent(user.email, event.id, conferencesSelected, companionsSelected)
+    if (res.success) {
+      const storedUsers = localStorage.getItem('uni_eventos_users')
+      if (storedUsers) {
+        const parsedUsers = JSON.parse(storedUsers)
+        const foundUser = parsedUsers.find(u => u.email === user.email)
+        if (foundUser) {
+          setUser(foundUser)
+        }
+      }
     }
-
-    const newTicketId = `t-${Date.now()}`
-    const qrCodeContent = generateQrData(user.dni, event.id)
-
-    const newTicket = {
-      id: newTicketId,
-      eventId: event.id,
-      eventTitle: event.title,
-      qrCode: qrCodeContent,
-      status: 'Por asistir',
-      date: event.date,
-      location: event.location,
-      conferences: conferencesSelected
-    }
-
-    const updatedEvent = {
-      id: event.id,
-      title: event.title,
-      date: event.date,
-      time: event.time || '08:00 – 18:00',
-      location: event.location,
-      status: 'Confirmado',
-      conferences: conferencesSelected
-    }
-
-    // Filter out if updating existing registration
-    const cleanEvents = user.registeredEvents.filter(e => e.id !== event.id)
-    const cleanTickets = user.tickets.filter(t => t.eventId !== event.id)
-
-    const updatedUser = {
-      ...user,
-      registeredEvents: [...cleanEvents, updatedEvent],
-      tickets: [...cleanTickets, newTicket]
-    }
-
-    saveUserToDb(updatedUser)
-    return { success: true, ticket: newTicket }
+    return res
   }
 
   const [isAuthOpen, setIsAuthOpen] = useState(false)

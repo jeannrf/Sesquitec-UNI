@@ -551,6 +551,9 @@ export default function Admin() {
 
   // --- ASISTENCIA QR STATE & LOGIC ---
   const [selectedEventIdForQr, setSelectedEventIdForQr] = useState('')
+  const [qrEventSearch, setQrEventSearch] = useState('')
+  const [isQrEventDropdownOpen, setIsQrEventDropdownOpen] = useState(false)
+  const eventDropdownRef = useRef(null)
   const [qrParticipantSearch, setQrParticipantSearch] = useState('')
   const [showCameraScanner, setShowCameraScanner] = useState(false)
   const [manualQrInput, setManualQrInput] = useState('')
@@ -558,6 +561,30 @@ export default function Admin() {
   const [isCameraActive, setIsCameraActive] = useState(false)
   const videoRef = useRef(null)
   const [cameraStream, setCameraStream] = useState(null)
+
+  // Sync event search text with active event selection
+  useEffect(() => {
+    if (selectedEventIdForQr) {
+      const activeEv = events.find(e => String(e.id) === String(selectedEventIdForQr))
+      if (activeEv) {
+        setQrEventSearch(activeEv.title)
+      }
+    } else {
+      setQrEventSearch('')
+    }
+  }, [selectedEventIdForQr, events])
+
+  // Click outside for event search dropdown
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (eventDropdownRef.current && !eventDropdownRef.current.contains(event.target)) {
+        setIsQrEventDropdownOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
+
   
   const processQrCode = (qrData) => {
     if (!qrData) return
@@ -1785,21 +1812,84 @@ export default function Admin() {
                     )}
                   </div>
                   
-                  <div className="flex items-center gap-2 self-start md:self-auto">
+                  <div className="flex items-center gap-2 self-start md:self-auto w-full md:w-96 relative" ref={eventDropdownRef}>
                     <label className="text-xs font-bold text-gray-500 uppercase whitespace-nowrap">Evento Activo:</label>
-                    <select
-                      value={selectedEventIdForQr}
-                      onChange={e => {
-                        setSelectedEventIdForQr(e.target.value)
-                        setScanResult(null)
-                      }}
-                      className="border border-gray-300 px-3 py-1.5 text-xs focus:outline-none focus:border-[#800404] bg-white text-gray-850 font-bold"
-                    >
-                      <option value="">-- Seleccionar Evento --</option>
-                      {events.map(ev => (
-                        <option key={ev.id} value={ev.id}>{ev.title}</option>
-                      ))}
-                    </select>
+                    <div className="relative flex-1">
+                      <div className="relative">
+                        <input
+                          type="text"
+                          placeholder="Buscar y seleccionar evento..."
+                          value={qrEventSearch}
+                          onFocus={() => setIsQrEventDropdownOpen(true)}
+                          onChange={e => {
+                            setQrEventSearch(e.target.value)
+                            setIsQrEventDropdownOpen(true)
+                          }}
+                          className="w-full border border-gray-300 pl-8 pr-8 py-1.5 text-xs focus:outline-none focus:border-[#800404] bg-white text-gray-850 font-bold"
+                        />
+                        <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
+                        {selectedEventIdForQr ? (
+                          <button
+                            onClick={() => {
+                              setSelectedEventIdForQr('')
+                              setQrEventSearch('')
+                              setScanResult(null)
+                              setIsQrEventDropdownOpen(false)
+                            }}
+                            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                            type="button"
+                          >
+                            <X size={14} />
+                          </button>
+                        ) : (
+                          <ChevronDown 
+                            size={14} 
+                            className={`absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 transition-transform ${isQrEventDropdownOpen ? 'rotate-180' : ''}`} 
+                          />
+                        )}
+                      </div>
+
+                      {isQrEventDropdownOpen && (() => {
+                        const isSearching = qrEventSearch && (selectedEventIdForQr ? qrEventSearch !== currentSelectedEvent?.title : true)
+                        const filteredEvents = isSearching
+                          ? events.filter(ev => ev.title.toLowerCase().includes(qrEventSearch.toLowerCase()))
+                          : events
+
+                        return (
+                          <div className="absolute left-0 right-0 mt-1 max-h-60 overflow-y-auto bg-white border border-gray-200 shadow-xl z-[70] py-1 divide-y divide-gray-100">
+                            {filteredEvents.length === 0 ? (
+                              <div className="px-3 py-2.5 text-xs text-gray-400 text-center font-bold">
+                                No se encontraron eventos
+                              </div>
+                            ) : (
+                              filteredEvents.map(ev => {
+                                const isSelected = String(ev.id) === String(selectedEventIdForQr)
+                                return (
+                                  <button
+                                    key={ev.id}
+                                    type="button"
+                                    onClick={() => {
+                                      setSelectedEventIdForQr(ev.id)
+                                      setQrEventSearch(ev.title)
+                                      setIsQrEventDropdownOpen(false)
+                                      setScanResult(null)
+                                    }}
+                                    className={`w-full text-left px-3 py-2 text-xs transition-colors font-bold flex items-center justify-between ${
+                                      isSelected 
+                                        ? 'bg-red-50 text-[#800404]' 
+                                        : 'text-gray-700 hover:bg-gray-50 hover:text-[#800404]'
+                                    }`}
+                                  >
+                                    <span className="truncate pr-2">{ev.title}</span>
+                                    {isSelected && <Check size={12} className="shrink-0 text-[#800404]" />}
+                                  </button>
+                                )
+                              })
+                            )}
+                          </div>
+                        )
+                      })()}
+                    </div>
                   </div>
                 </div>
 
