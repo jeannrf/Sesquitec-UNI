@@ -1,5 +1,15 @@
 -- Esquema de Base de Datos para PostgreSQL (Supabase) - Sesquicentenario UNI 150 Años
 
+-- Limpieza opcional de tablas previas en desarrollo
+DROP TABLE IF EXISTS pagos CASCADE;
+DROP TABLE IF EXISTS cms_paginas CASCADE;
+DROP TABLE IF EXISTS qr_logs CASCADE;
+DROP TABLE IF EXISTS certificados CASCADE;
+DROP TABLE IF EXISTS inscripciones CASCADE;
+DROP TABLE IF EXISTS ponencias CASCADE;
+DROP TABLE IF EXISTS eventos CASCADE;
+DROP TABLE IF EXISTS usuarios CASCADE;
+
 -- 1. Tabla de Usuarios
 CREATE TABLE usuarios (
     id SERIAL PRIMARY KEY,
@@ -54,7 +64,10 @@ CREATE TABLE inscripciones (
     event_id VARCHAR(50) NOT NULL REFERENCES eventos(id) ON DELETE CASCADE,
     status VARCHAR(20) DEFAULT 'Registrado' CHECK (status IN ('Registrado', 'Asistió', 'Cancelado')),
     qr_code VARCHAR(255) UNIQUE NOT NULL,
-    registered_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+    ponencias JSONB DEFAULT '[]'::jsonb, -- Ponencias seleccionadas (checklist)
+    acompanantes JSONB DEFAULT '[]'::jsonb, -- Nombres/DNI de acompañantes (Gala)
+    registered_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT unique_user_event UNIQUE (user_dni, event_id)
 );
 
 -- 5. Tabla de Certificados
@@ -67,7 +80,7 @@ CREATE TABLE certificados (
     horas INT,
     emitido VARCHAR(50),
     tipo VARCHAR(50) DEFAULT 'Participación',
-    codigo_validacion VARCHAR(100) UNIQUE NOT NULL,
+    codigo_validacion VARCHAR(100) UNIQUE NOT NULL
 );
 
 -- 6. Tabla de Logs de Asistencia QR
@@ -90,6 +103,17 @@ CREATE TABLE cms_paginas (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
+-- 8. Tabla de Pagos (Cena de Gala)
+CREATE TABLE pagos (
+    id SERIAL PRIMARY KEY,
+    inscripcion_id INT NOT NULL REFERENCES inscripciones(id) ON DELETE CASCADE,
+    monto DECIMAL(10, 2) NOT NULL,
+    metodo_pago VARCHAR(50) NOT NULL,
+    transaccion_id VARCHAR(100) UNIQUE NOT NULL,
+    estado VARCHAR(20) DEFAULT 'Aprobado' CHECK (estado IN ('Pendiente', 'Aprobado', 'Rechazado')),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
 -- Índices recomendados para optimización de consultas recurrentes
 CREATE INDEX idx_certificados_dni ON certificados(dni);
 CREATE INDEX idx_inscripciones_user_dni ON inscripciones(user_dni);
@@ -97,4 +121,5 @@ CREATE INDEX idx_inscripciones_event_id ON inscripciones(event_id);
 CREATE INDEX idx_ponencias_event_id ON ponencias(event_id);
 CREATE INDEX idx_qr_logs_ticket_id ON qr_logs(ticket_id);
 CREATE INDEX idx_qr_logs_user_dni ON qr_logs(user_dni);
+CREATE INDEX idx_pagos_inscripcion_id ON pagos(inscripcion_id);
 

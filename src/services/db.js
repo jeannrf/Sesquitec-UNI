@@ -483,7 +483,8 @@ export const db = {
                 status: ins.status === 'Registrado' ? 'Por asistir' : (ins.status === 'Asistió' ? 'Asistió' : 'Cancelado'),
                 date: ev ? ev.date : '',
                 location: ev ? ev.location : '',
-                conferences: []
+                conferences: ins.ponencias || [],
+                acompanantes: ins.acompanantes || []
               }
             })
 
@@ -508,7 +509,7 @@ export const db = {
             date: t.date,
             location: t.location,
             status: t.status === 'Por asistir' ? 'Confirmado' : t.status,
-            conferences: []
+            conferences: t.conferences || []
           }))
 
           return {
@@ -1012,7 +1013,7 @@ export const db = {
     if (!user) return false
     return (user.tickets || []).some(t => String(t.eventId) === String(eventId))
   },
-  registerUserToEvent(userEmail, eventId) {
+  registerUserToEvent(userEmail, eventId, conferencesSelected = [], companionsSelected = []) {
     const users = this.getUsers()
     const userIdx = users.findIndex(u => u.email === userEmail)
     if (userIdx === -1) {
@@ -1024,46 +1025,70 @@ export const db = {
     if (!event) {
       return { success: false, message: 'Evento no encontrado.' }
     }
-    if (!event.registrationOpen) {
-      return { success: false, message: 'Las inscripciones para este evento están cerradas.' }
-    }
 
     const user = users[userIdx]
-    if ((user.tickets || []).some(t => String(t.eventId) === String(eventId))) {
+    const alreadyRegistered = (user.tickets || []).some(t => String(t.eventId) === String(eventId))
+    
+    if (alreadyRegistered && conferencesSelected.length === 0) {
       return { success: false, message: 'Ya estás inscrito a este evento.' }
     }
 
-    if (event.quota > 0) {
+    if (!alreadyRegistered && !event.registrationOpen) {
+      return { success: false, message: 'Las inscripciones para este evento están cerradas.' }
+    }
+
+    if (!alreadyRegistered && event.quota > 0) {
       const currentCount = this.getEventRegistrationCount(eventId)
       if (currentCount >= event.quota) {
         return { success: false, message: 'El aforo de este evento está completo.' }
       }
     }
 
+    const cleanTickets = (user.tickets || []).filter(t => String(t.eventId) !== String(eventId))
+    const cleanEvents = (user.registeredEvents || []).filter(e => String(e.id) !== String(eventId))
+
+    const newTicketId = `t-${Date.now()}`
+    const qrCodeContent = `UNI-150-TICKET-${event.id}-${user.dni}-${Math.floor(100000 + Math.random() * 900000)}`
+
     const ticket = {
-      id: `TKT-${Date.now()}-${Math.floor(Math.random() * 1005)}`,
+      id: newTicketId,
       eventId: event.id,
       eventTitle: event.title,
       date: event.date,
-      time: event.time,
+      time: event.time || '08:00 – 18:00',
       location: event.location,
-      status: 'Vigente',
-      qrCode: `QR-${event.id}-${user.dni}-${Date.now()}`,
+      status: 'Por asistir',
+      qrCode: qrCodeContent,
+      conferences: conferencesSelected,
+      acompanantes: companionsSelected,
       registeredAt: new Date().toISOString()
     }
 
-    if (!user.tickets) user.tickets = []
-    user.tickets.push(ticket)
+    const updatedEvent = {
+      id: event.id,
+      title: event.title,
+      date: event.date,
+      time: event.time || '08:00 – 18:00',
+      location: event.location,
+      status: 'Confirmado',
+      conferences: conferencesSelected
+    }
+
+    user.tickets = [...cleanTickets, ticket]
+    user.registeredEvents = [...cleanEvents, updatedEvent]
     users[userIdx] = user
     this.saveUsers(users)
 
     if (supabase) {
-      supabase.from('inscripciones').insert({
+      supabase.from('inscripciones').upsert({
         user_dni: user.dni,
         event_id: eventId,
         status: 'Registrado',
-        qr_code: ticket.qrCode
-      }).then(({ error }) => { if (error) console.error("Error al registrar inscripción en Supabase:", error) })
+        qr_code: ticket.qrCode,
+        ponencias: conferencesSelected,
+        acompanantes: companionsSelected
+      }, { onConflict: 'user_dni,event_id' })
+      .then(({ error }) => { if (error) console.error("Error al registrar/actualizar inscripción en Supabase:", error) })
     }
 
     return { success: true, message: '¡Inscripción exitosa!', ticket }
