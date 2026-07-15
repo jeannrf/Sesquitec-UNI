@@ -64,16 +64,26 @@ const conferencesCatalog = {
 }
 
 export default function Dashboard() {
-  const { user, updateProfile, openAuth } = useAuth()
+  const { user, updateProfile, openAuth, migrateEmail } = useAuth()
   const { showAlert } = useAlert()
   const [searchParams, setSearchParams] = useSearchParams()
   const navigate = useNavigate()
 
   const activeTab = searchParams.get('tab') || 'eventos'
+  const userCerts = (user && user.dni)
+    ? db.getCertificates().filter(c => c.dni === user.dni)
+    : []
 
   // Modals state
   const [selectedEventDetails, setSelectedEventDetails] = useState(null)
   const [activeQrModal, setActiveQrModal] = useState(null) // Ticket object
+  const [previewPhotoUrl, setPreviewPhotoUrl] = useState(null)
+  
+  // Account Migration state
+  const [isMigrateModalOpen, setIsMigrateModalOpen] = useState(false)
+  const [migratePassword, setMigratePassword] = useState('')
+  const [migrateNewEmail, setMigrateNewEmail] = useState('')
+  const [migrateError, setMigrateError] = useState('')
   
   // Profile form states
   const [profileForm, setProfileForm] = useState({
@@ -148,6 +158,30 @@ export default function Dashboard() {
   // Handle tab clicks
   const handleTabChange = (tabName) => {
     setSearchParams({ tab: tabName })
+  }
+
+  const handleMigrateSubmit = (e) => {
+    e.preventDefault()
+    setMigrateError('')
+
+    if (!migratePassword) {
+      setMigrateError('Por favor ingrese su contraseña actual para verificar su identidad.')
+      return
+    }
+
+    if (!migrateNewEmail.trim()) {
+      setMigrateError('Por favor ingrese el nuevo correo electrónico.')
+      return
+    }
+
+    const res = migrateEmail(migratePassword, migrateNewEmail)
+    if (res.success) {
+      setIsMigrateModalOpen(false)
+      showAlert('Cuenta migrada con éxito al nuevo correo.', 'Migración Completada', 'success')
+      setProfileForm(f => ({ ...f, email: migrateNewEmail }))
+    } else {
+      setMigrateError(res.error)
+    }
   }
 
   // Handle Profile Update
@@ -421,24 +455,34 @@ export default function Dashboard() {
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
       {/* Header bar banner */}
-      <div className="bg-[#800404] text-white py-14">
+      <div className="bg-[#800404] text-white py-6">
         <div className="max-w-7xl mx-auto px-4 flex flex-col md:flex-row items-center gap-6 justify-between">
           <div className="flex items-center gap-4">
-            <div className="relative group">
+            <div className="relative group w-20 h-20 rounded-full overflow-hidden border-4 border-white/20 shadow-md bg-white/10 flex items-center justify-center">
               <img 
-                src={user.profilePic} 
+                src={user.profilePic || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=200'} 
                 alt="Profile" 
-                className="w-20 h-20 rounded-full object-cover border-4 border-white/20 shadow-md"
+                className="w-full h-full object-cover"
               />
-              <label className="absolute inset-0 rounded-full bg-black/55 opacity-0 group-hover:opacity-100 flex items-center justify-center cursor-pointer transition-opacity text-white">
-                <Upload size={16} />
-                <input 
-                  type="file" 
-                  accept="image/*" 
-                  onChange={handlePhotoUpload} 
-                  className="hidden" 
-                />
-              </label>
+              {/* Hover overlay with options */}
+              <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center text-white">
+                <label className="text-[8px] font-black hover:text-red-200 cursor-pointer uppercase tracking-widest block text-center w-full py-1">
+                  Subir
+                  <input 
+                    type="file" 
+                    accept="image/*" 
+                    onChange={handlePhotoUpload} 
+                    className="hidden" 
+                  />
+                </label>
+                <button 
+                  type="button"
+                  onClick={() => setPreviewPhotoUrl(user.profilePic)}
+                  className="text-[8px] font-black hover:text-red-200 cursor-pointer uppercase tracking-widest border-t border-white/20 w-full text-center py-1 block"
+                >
+                  Ver
+                </button>
+              </div>
             </div>
             <div>
               <span className="bg-white/25 text-white text-[9px] font-black tracking-widest px-2 py-0.5 uppercase">
@@ -474,10 +518,7 @@ export default function Dashboard() {
             { id: 'eventos', label: 'Mis Eventos', icon: <Calendar size={18} /> },
             { id: 'certificados', label: 'Certificados', icon: <Award size={18} /> },
             { id: 'perfil', label: 'Perfil Personal', icon: <User size={18} /> },
-            { id: 'configuracion', label: 'Configuración', icon: <Settings size={18} /> },
-            ...((user.role === 'STAFF' || user.role === 'VOLUNTARIO' || user.role === 'ADMIN')
-              ? [{ id: 'escaner', label: 'Escáner QR', icon: <QrCode size={18} /> }]
-              : [])
+            { id: 'configuracion', label: 'Configuración', icon: <Settings size={18} /> }
           ].map(tab => (
             <button
               key={tab.id}
@@ -752,9 +793,9 @@ export default function Dashboard() {
                 </div>
               </div>
 
-              {user.certificates && user.certificates.length > 0 ? (
+              {userCerts && userCerts.length > 0 ? (
                 <div className="space-y-4">
-                  {user.certificates.map(cert => (
+                  {userCerts.map(cert => (
                     <div key={cert.id} className="border border-gray-200 p-6 flex flex-col md:flex-row items-center justify-between gap-6 hover:border-[#800404] transition-all">
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-2">
@@ -827,28 +868,7 @@ export default function Dashboard() {
 
               <form onSubmit={handleProfileSubmit} className="space-y-6">
                 
-                {/* Photo profile selection */}
-                <div className="bg-gray-50 p-5 border border-gray-200 flex flex-col sm:flex-row items-center gap-4">
-                  <img 
-                    src={user.profilePic} 
-                    alt="Current Profile" 
-                    className="w-16 h-16 rounded-full object-cover border border-gray-300"
-                  />
-                  <div className="text-center sm:text-left">
-                    <p className="text-sm font-bold text-gray-700 mb-1">Foto de Perfil</p>
-                    <p className="text-[11px] text-gray-400 mb-3">Formatos JPG, PNG. Máximo 2MB.</p>
-                    <label className="bg-white border border-gray-300 hover:border-gray-400 text-gray-700 px-4 py-2 text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 inline-block">
-                      <Upload size={13} />
-                      Subir Nueva Foto
-                      <input 
-                        type="file" 
-                        accept="image/*" 
-                        onChange={handlePhotoUpload} 
-                        className="hidden" 
-                      />
-                    </label>
-                  </div>
-                </div>
+
 
                 <div className="grid sm:grid-cols-2 gap-5">
                   <div>
@@ -913,14 +933,32 @@ export default function Dashboard() {
 
                 <div>
                   <label className="block text-xs font-bold text-gray-700 uppercase mb-1">Correo Electrónico *</label>
-                  <input
-                    type="email"
-                    name="email"
-                    value={profileForm.email}
-                    onChange={handleInputChange}
-                    className="w-full border border-gray-300 px-4 py-2.5 text-sm focus:outline-none focus:border-[#800404]"
-                    required
-                  />
+                  <div className="flex gap-2">
+                    <div className="relative flex-1">
+                      <input
+                        type="email"
+                        value={user.email}
+                        readOnly
+                        className="w-full border border-gray-300 bg-gray-100 px-4 py-2.5 text-sm text-gray-500 focus:outline-none cursor-not-allowed select-none"
+                      />
+                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">
+                        <Lock size={14} />
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setMigratePassword('')
+                        setMigrateNewEmail('')
+                        setMigrateError('')
+                        setIsMigrateModalOpen(true)
+                      }}
+                      className="bg-gray-800 hover:bg-black text-white text-xs font-bold px-4 py-2.5 transition-colors cursor-pointer whitespace-nowrap"
+                    >
+                      Migrar Cuenta
+                    </button>
+                  </div>
+                  <p className="text-[10px] text-gray-400 mt-1">El correo principal no se puede editar directamente por seguridad. Usa la opción de migración para cambiarlo.</p>
                 </div>
 
                 {/* Password modification header */}
@@ -1022,10 +1060,7 @@ export default function Dashboard() {
             </div>
           )}
 
-          {/* TAB: ESCÁNER QR (STAFF/VOLUNTARIO ONLY) */}
-          {activeTab === 'escaner' && (user.role === 'STAFF' || user.role === 'VOLUNTARIO' || user.role === 'ADMIN') && (
-            <EscanerQrTab user={user} showAlert={showAlert} />
-          )}
+
 
         </main>
       </div>
@@ -1203,324 +1238,109 @@ export default function Dashboard() {
         </div>
       )}
 
-    </div>
-  )
-}
-
-function EscanerQrTab({ user, showAlert }) {
-  const [qrInput, setQrInput] = useState('')
-  const [scanResult, setScanResult] = useState(null)
-  const [logs, setLogs] = useState([])
-  const [availableTickets, setAvailableTickets] = useState([])
-  const [scanMode, setScanMode] = useState('Entrada') // 'Entrada' o 'Salida'
-
-  const loadLogsAndTickets = () => {
-    setLogs(db.getQrLogs())
-    
-    // Get all tickets registered in system to allow simulation
-    const storedUsers = JSON.parse(localStorage.getItem('uni_eventos_users') || '[]')
-    const tickets = storedUsers.flatMap(u => 
-      (u.tickets || []).map(t => ({
-        ...t,
-        userNombres: u.nombres,
-        userApellidos: u.apellidos,
-        userDni: u.dni
-      }))
-    )
-    setAvailableTickets(tickets)
-  }
-
-  useEffect(() => {
-    loadLogsAndTickets()
-  }, [])
-
-  const handleScan = (code) => {
-    if (!code.trim()) return
-    const cleanCode = code.trim()
-    
-    const storedUsers = JSON.parse(localStorage.getItem('uni_eventos_users') || '[]')
-    let foundUserIdx = -1
-    let foundTicketIdx = -1
-
-    for (let i = 0; i < storedUsers.length; i++) {
-      const idx = (storedUsers[i].tickets || []).findIndex(t => t.qrCode === cleanCode)
-      if (idx !== -1) {
-        foundUserIdx = i
-        foundTicketIdx = idx
-        break
-      }
-    }
-
-    if (foundUserIdx === -1 || foundTicketIdx === -1) {
-      const errLog = {
-        timestamp: new Date().toLocaleTimeString('es-PE') + ' ' + new Date().toLocaleDateString('es-PE'),
-        ticketId: 'N/A',
-        eventTitle: 'Código Desconocido',
-        userDni: 'Desconocido',
-        userName: 'Código QR No Válido',
-        status: 'Fallido',
-        scannedBy: user.email,
-        tipo: scanMode
-      }
-      db.addQrLog(errLog)
-      setScanResult({
-        success: false,
-        message: 'Código de Entrada No Válido',
-        details: 'El código QR no corresponde a ningún ticket registrado en el sistema.'
-      })
-      loadLogsAndTickets()
-      return
-    }
-
-    const targetUser = storedUsers[foundUserIdx]
-    const targetTicket = targetUser.tickets[foundTicketIdx]
-
-    if (scanMode === 'Entrada') {
-      if (targetTicket.status === 'Asistido') {
-        setScanResult({
-          success: false,
-          message: 'Entrada Ya Utilizada',
-          details: `Esta entrada ya fue procesada anteriormente para el ingreso. Participante: ${targetUser.nombres} ${targetUser.apellidos} (DNI: ${targetUser.dni})`
-        })
-        return
-      }
-
-      // Mark as checked in database
-      targetTicket.status = 'Asistido'
-      localStorage.setItem('uni_eventos_users', JSON.stringify(storedUsers))
-    }
-
-    const successLog = {
-      timestamp: new Date().toLocaleTimeString('es-PE') + ' ' + new Date().toLocaleDateString('es-PE'),
-      ticketId: targetTicket.id,
-      eventTitle: targetTicket.eventTitle,
-      userDni: targetUser.dni,
-      userName: `${targetUser.nombres} ${targetUser.apellidos}`,
-      status: 'Éxito',
-      scannedBy: user.email,
-      tipo: scanMode
-    }
-    db.addQrLog(successLog)
-
-    setScanResult({
-      success: true,
-      message: `${scanMode === 'Entrada' ? 'Ingreso' : 'Salida'} Validado con Éxito`,
-      details: {
-        titular: `${targetUser.nombres} ${targetUser.apellidos}`,
-        dni: targetUser.dni,
-        evento: targetTicket.eventTitle,
-        fecha: targetTicket.date,
-        location: targetTicket.location
-      }
-    })
-
-    setQrInput('')
-    loadLogsAndTickets()
-  }
-
-  const handleClearLogs = () => {
-    localStorage.setItem('uni_eventos_qr_logs', JSON.stringify([]))
-    setLogs([])
-    showAlert('Historial de escaneos limpiado.', 'Historial Limpio', 'info')
-  }
-
-  return (
-    <div className="space-y-6">
-      <div className="border-b border-gray-100 pb-5">
-        <h2 className="text-xl font-black text-gray-900">Control de Asistencia QR</h2>
-        <p className="text-xs text-gray-400 mt-1">Panel de STAFF / VOLUNTARIOS para control de ingresos y egresos del Sesquicentenario.</p>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-12 gap-6 md:gap-8 items-start">
-        {/* Left column: Simulated camera scanner */}
-        <div className="md:col-span-5 bg-white border border-gray-200 p-6 flex flex-col items-center">
-          
-          {/* Mode Selector */}
-          <div className="flex gap-6 mb-5 select-none w-full justify-center">
-            <label className="flex items-center gap-2 text-xs font-black text-gray-800 cursor-pointer">
-              <input
-                type="radio"
-                name="scanMode"
-                value="Entrada"
-                checked={scanMode === 'Entrada'}
-                onChange={() => setScanMode('Entrada')}
-                className="text-[#800404] focus:ring-[#800404]"
-              />
-              Control Entrada
-            </label>
-            <label className="flex items-center gap-2 text-xs font-black text-gray-800 cursor-pointer">
-              <input
-                type="radio"
-                name="scanMode"
-                value="Salida"
-                checked={scanMode === 'Salida'}
-                onChange={() => setScanMode('Salida')}
-                className="text-[#800404] focus:ring-[#800404]"
-              />
-              Control Salida
-            </label>
-          </div>
-
-          <p className="text-xs font-black text-gray-700 uppercase mb-4 tracking-wider">Lector de Cámara</p>
-          
-          {/* Box simulation */}
-          <div className="relative w-44 h-44 sm:w-56 sm:h-56 bg-stone-955 border-4 border-gray-800 flex items-center justify-center overflow-hidden mb-4 rounded-sm">
-            {/* Red laser line */}
-            <div className="absolute left-0 right-0 h-0.5 bg-red-600 shadow-[0_0_8px_#ef4444] top-1/2" />
-            {/* Brackets mockup */}
-            <div className="absolute top-2 left-2 w-4 h-4 border-t-2 border-l-2 border-emerald-500" />
-            <div className="absolute top-2 right-2 w-4 h-4 border-t-2 border-r-2 border-emerald-500" />
-            <div className="absolute bottom-2 left-2 w-4 h-4 border-b-2 border-l-2 border-emerald-500" />
-            <div className="absolute bottom-2 right-2 w-4 h-4 border-b-2 border-r-2 border-emerald-500" />
-            
-            <div className="text-center p-4">
-              <QrCode size={48} className="mx-auto text-white/20 mb-2" />
-              <span className="text-[9px] text-emerald-450 uppercase font-black tracking-widest bg-emerald-950/40 px-2 py-0.5 border border-emerald-500/20">
-                Lector {scanMode.toUpperCase()}
-              </span>
-            </div>
-          </div>
-
-          {/* Code input form */}
-          <div className="w-full space-y-3">
-            <div>
-              <label className="block text-[10px] font-bold text-gray-450 uppercase mb-1">Simular Entrada (Lista del Sistema)</label>
-              <select
-                onChange={e => {
-                  if (e.target.value) {
-                    setQrInput(e.target.value)
-                    handleScan(e.target.value)
-                  }
-                }}
-                className="w-full border border-gray-300 px-3 py-2 text-xs focus:outline-none bg-white text-gray-800 font-medium"
-              >
-                <option value="">-- Seleccionar participante --</option>
-                {availableTickets.map((t, idx) => (
-                  <option key={idx} value={t.qrCode}>
-                    {t.userNombres} {t.userApellidos} ({t.status}) - {t.eventTitle.slice(0, 20)}...
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div className="flex gap-2">
-              <input
-                type="text"
-                placeholder="Pegar o escribir código QR..."
-                value={qrInput}
-                onChange={e => setQrInput(e.target.value)}
-                className="flex-1 border border-gray-300 px-3 py-2 text-xs focus:outline-none focus:border-[#800404] font-mono"
-              />
-              <button
-                onClick={() => handleScan(qrInput)}
-                className="bg-[#800404] hover:bg-[#5a0303] text-white font-black text-xs px-4 py-2 cursor-pointer transition-colors"
-              >
-                Validar
-              </button>
-            </div>
+      {/* Photo Preview Modal */}
+      {previewPhotoUrl && (
+        <div className="fixed inset-0 z-[100] bg-black/85 flex items-center justify-center p-4">
+          <div className="relative max-w-md w-full bg-white p-2 shadow-2xl border border-gray-200 rounded-none animate-in fade-in duration-200">
+            <button
+              onClick={() => setPreviewPhotoUrl(null)}
+              className="absolute -top-9 -right-1 text-white hover:text-gray-200 transition-colors p-1 cursor-pointer"
+            >
+              <X size={24} />
+            </button>
+            <img 
+              src={previewPhotoUrl} 
+              alt="Preview" 
+              className="w-full h-auto max-h-[75vh] object-contain"
+            />
           </div>
         </div>
+      )}
 
-        {/* Right column: Scan results & Logs */}
-        <div className="md:col-span-7 space-y-6">
-          {/* Scan result notification card */}
-          {scanResult && (
-            <div className={`p-5 border-l-4 rounded-none text-xs space-y-2 border ${
-              scanResult.success 
-                ? 'bg-emerald-50/50 border-emerald-200 border-l-emerald-600 text-gray-800 animate-in fade-in duration-200' 
-                : 'bg-red-50/50 border-red-200 border-l-red-600 text-gray-800 animate-in fade-in duration-200'
-            }`}>
-              <div className="flex items-center justify-between">
-                <h3 className={`font-black text-sm uppercase flex items-center gap-1 ${
-                  scanResult.success ? 'text-emerald-800' : 'text-red-800'
-                }`}>
-                  {scanResult.success ? <CheckCircle size={15} /> : <AlertCircle size={15} />}
-                  {scanResult.message}
-                </h3>
-                <button onClick={() => setScanResult(null)} className="text-gray-400 hover:text-gray-600 cursor-pointer">
-                  <X size={14} />
-                </button>
-              </div>
-
-              {scanResult.success ? (
-                <div className="space-y-1 text-gray-600 leading-normal">
-                  <p>Participante: <strong className="font-bold text-gray-900">{scanResult.details.titular}</strong> (DNI: {scanResult.details.dni})</p>
-                  <p>Evento: <strong className="font-bold text-gray-900">{scanResult.details.evento}</strong></p>
-                  <p>Ubicación: {scanResult.details.location} &nbsp;·&nbsp; Fecha: {scanResult.details.fecha}</p>
-                </div>
-              ) : (
-                <p className="text-gray-500 font-medium leading-normal">{scanResult.details}</p>
-              )}
-            </div>
-          )}
-
-          {/* Logs table list */}
-          <div className="bg-white border border-gray-200 p-5">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-xs font-black text-gray-700 uppercase tracking-wider">Historial de Validaciones Recientes</h3>
-              {logs.length > 0 && (
-                <button
-                  onClick={handleClearLogs}
-                  className="text-red-500 hover:text-red-700 text-[10px] font-bold flex items-center gap-0.5 cursor-pointer"
-                >
-                  <Trash2 size={11} /> Limpiar
-                </button>
-              )}
+      {/* Account Migration Modal */}
+      {isMigrateModalOpen && (
+        <div className="fixed inset-0 z-[100] bg-black/85 flex items-center justify-center p-4">
+          <form onSubmit={handleMigrateSubmit} className="relative max-w-md w-full bg-white p-6 shadow-2xl border border-gray-200 rounded-none animate-in fade-in duration-200">
+            <button
+              type="button"
+              onClick={() => setIsMigrateModalOpen(false)}
+              className="absolute top-3 right-3 text-gray-400 hover:text-gray-600 transition-colors p-1 cursor-pointer"
+            >
+              <X size={20} />
+            </button>
+            
+            <div className="mb-5 text-center sm:text-left">
+              <h3 className="text-base font-black text-gray-900 uppercase tracking-wider flex items-center gap-1.5 justify-center sm:justify-start">
+                <Lock size={16} className="text-[#800404]" />
+                Migrar Cuenta de Usuario
+              </h3>
+              <p className="text-xs text-gray-500 mt-2 leading-relaxed">
+                Al migrar tu cuenta a una nueva dirección de correo electrónico, se transferirán todos tus registros de eventos, entradas QR y certificados al nuevo correo de forma segura.
+              </p>
             </div>
 
-            {logs.length > 0 ? (
-              <div className="overflow-x-auto max-h-60 overflow-y-auto pr-1">
-                <table className="w-full text-[11px] text-left">
-                  <thead>
-                    <tr className="border-b border-gray-200 text-gray-405 uppercase font-black">
-                      <th className="py-2 font-black">Hora</th>
-                      <th className="py-2 font-black text-center">Tipo</th>
-                      <th className="py-2 font-black">Participante</th>
-                      <th className="py-2 font-black">Evento</th>
-                      <th className="py-2 font-black text-center">Estado</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-100">
-                    {logs.map((l, i) => (
-                      <tr key={l.id || i} className="hover:bg-gray-50/50">
-                        <td className="py-2 text-gray-400 font-medium whitespace-nowrap">{l.timestamp.split(' ')[0]}</td>
-                        <td className="py-2 text-center whitespace-nowrap">
-                          <span className={`inline-block text-[9px] font-black px-1.5 py-0.5 rounded-none border ${
-                            l.tipo === 'Entrada'
-                              ? 'bg-blue-50 border-blue-200 text-blue-700 font-bold'
-                              : 'bg-stone-50 border-stone-200 text-stone-700 font-bold'
-                          }`}>
-                            {l.tipo || 'Entrada'}
-                          </span>
-                        </td>
-                        <td className="py-2">
-                          <p className="font-bold text-gray-800 leading-tight">{l.userName}</p>
-                          <p className="text-[9px] text-gray-450">DNI: {l.userDni}</p>
-                        </td>
-                        <td className="py-2 text-gray-500 font-medium truncate max-w-[150px]" title={l.eventTitle}>{l.eventTitle}</td>
-                        <td className="py-2 text-center whitespace-nowrap">
-                          <span className={`inline-block text-[9px] font-bold px-1.5 py-0.5 rounded-sm border ${
-                            l.status === 'Éxito' 
-                              ? 'bg-emerald-50 border-emerald-200 text-emerald-700' 
-                              : 'bg-red-50 border-red-200 text-red-700'
-                          }`}>
-                            {l.status}
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            ) : (
-              <div className="text-center py-10 text-gray-400">
-                <QrCode className="mx-auto text-gray-200 mb-2" size={32} />
-                <p className="text-xs font-semibold">No se han registrado escaneos en esta sesión.</p>
+            {migrateError && (
+              <div className="bg-red-50 border-l-4 border-red-500 p-3 mb-4 text-xs text-red-700 flex items-start gap-2">
+                <AlertCircle size={15} className="shrink-0 mt-0.5" />
+                <span>{migrateError}</span>
               </div>
             )}
-          </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-[10px] font-bold text-gray-700 uppercase mb-1">Correo Electrónico Actual</label>
+                <input
+                  type="email"
+                  value={user.email}
+                  readOnly
+                  disabled
+                  className="w-full border border-gray-200 bg-gray-50 px-3 py-2 text-xs text-gray-400 focus:outline-none cursor-not-allowed select-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-bold text-gray-700 uppercase mb-1">Nuevo Correo Electrónico *</label>
+                <input
+                  type="email"
+                  required
+                  placeholder="ejemplo@nuevo.com"
+                  value={migrateNewEmail}
+                  onChange={e => setMigrateNewEmail(e.target.value)}
+                  className="w-full border border-gray-300 px-3 py-2 text-xs focus:outline-none focus:border-[#800404]"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-bold text-gray-700 uppercase mb-1">Contraseña Actual *</label>
+                <input
+                  type="password"
+                  required
+                  placeholder="Confirma tu contraseña actual"
+                  value={migratePassword}
+                  onChange={e => setMigratePassword(e.target.value)}
+                  className="w-full border border-gray-300 px-3 py-2 text-xs focus:outline-none focus:border-[#800404]"
+                />
+              </div>
+            </div>
+
+            <div className="flex gap-2.5 mt-6 pt-4 border-t border-gray-100">
+              <button
+                type="button"
+                onClick={() => setIsMigrateModalOpen(false)}
+                className="flex-1 border border-gray-300 hover:bg-gray-50 text-gray-700 py-2.5 text-xs font-bold transition-colors cursor-pointer text-center"
+              >
+                Cancelar
+              </button>
+              <button
+                type="submit"
+                className="flex-1 bg-[#800404] hover:bg-[#5a0303] text-white py-2.5 text-xs font-bold transition-colors cursor-pointer text-center"
+              >
+                Confirmar Migración
+              </button>
+            </div>
+          </form>
         </div>
-      </div>
+      )}
     </div>
   )
 }

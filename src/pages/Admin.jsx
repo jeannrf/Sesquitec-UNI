@@ -31,12 +31,28 @@ export default function Admin() {
     if (!loading) {
       if (!user) {
         navigate('/iniciar-sesion?redirect=/admin')
-      } else if (user.role !== 'ADMIN') {
+      } else if (user.role !== 'ADMIN' && user.role !== 'STAFF') {
         // Redirigir al inicio si es un usuario común
         navigate('/')
       }
     }
   }, [user, loading, navigate])
+
+  // Set active tab based on query param or user role
+  useEffect(() => {
+    if (user) {
+      const isOnlyStaff = user.role === 'STAFF'
+      if (isOnlyStaff) {
+        setActiveTab('asistencia-qr')
+      } else {
+        const urlParams = new URLSearchParams(window.location.search)
+        const tab = urlParams.get('tab')
+        if (tab) {
+          setActiveTab(tab)
+        }
+      }
+    }
+  }, [user])
 
   // --- STATE FOR ALL MODULES ---
   // General db states for listing
@@ -48,18 +64,44 @@ export default function Admin() {
 
   // --- CMS STATE ---
   const [cmsActiveSubTab, setCmsActiveSubTab] = useState('inicio')
+  const [cmsEncuentroSection, setCmsEncuentroSection] = useState('fases') // 'fases' or 'ponentes'
+  const [cmsInicioSection, setCmsInicioSection] = useState('bienvenida') // 'bienvenida', 'significado', 'propuesta', 'programa'
   
   // Inicio states
   const [cmsHomeForm, setCmsHomeForm] = useState({
     heroTitle: '',
     heroSubtitle: '',
+    sliderBanners: ['', '', ''],
     stats: [
       { value: '', label: '' },
       { value: '', label: '' },
       { value: '', label: '' },
       { value: '', label: '' }
     ],
-    programaGeneral: []
+    programaGeneral: [],
+    
+    // Meaning section
+    meaningTitle: '',
+    meaningP1: '',
+    meaningP2: '',
+    meaningInfo: '',
+
+    // Proposal section
+    proposalTitle: '',
+    proposalSubtitle: '',
+    proposalDescription: '',
+    
+    proposalB1Title: '',
+    proposalB1Desc: '',
+    proposalB1Detail: '',
+
+    proposalB2Title: '',
+    proposalB2Desc: '',
+    proposalB2Detail: '',
+
+    proposalB3Title: '',
+    proposalB3Desc: '',
+    proposalB3Detail: ''
   })
 
   // Eventos states
@@ -86,6 +128,7 @@ export default function Admin() {
     setCmsHomeForm({
       heroTitle: db.getCmsValue('home_hero_title', 'Sesquicentenario UNI 150 Años'),
       heroSubtitle: db.getCmsValue('home_hero_subtitle', 'Celebrando un siglo y medio de excelencia académica, científica, tecnológica y de contribución al desarrollo del Perú.'),
+      sliderBanners: db.getCmsValue('home_slider_banners', ['', '', '']),
       stats: db.getCmsValue('home_stats', [
         { value: '150', label: 'Años de historia' },
         { value: '+50', label: 'Eventos programados' },
@@ -111,7 +154,28 @@ export default function Admin() {
         { date: 'MIÉRCOLES 22 DE JULIO', time: '09:30 a.m.', title: 'Ceremonia de cápsula del tiempo.', location: 'Plazuela interna del pabellón central.' },
         { date: 'MIÉRCOLES 22 DE JULIO', time: '11:00 a.m.', title: 'Ceremonia central sesión solemne.', location: 'Gran Teatro.' },
         { date: 'LUNES 3 DE AGOSTO', time: '03:00 p.m.', title: 'Ceremonia solemne de distinción honorífica "Doctor Honoris Causa" al Ing. Jorge Rodríguez Rodríguez, presidente fundador del Grupo Gloria.', location: 'Sala de Consejo Universitario.' }
-      ])
+      ]),
+      
+      meaningTitle: db.getCmsValue('home_meaning_title', '¿Qué significa 150 años de la UNI?'),
+      meaningP1: db.getCmsValue('home_meaning_p1', 'Desde 1876, la Universidad Nacional de Ingeniería (UNI) ha sido un referente en la formación de profesionales, la Investigación y la Innovación, contribuyendo de manera decisiva al progreso del país. Durante estos 150 años, la ciencia ha impulsado la generación de conocimiento, la ingeniería ha transformado desafíos en soluciones para la industria, la infraestructura y la tecnología, y la arquitectura ha promovido el diseño de espacios sostenibles que mejoran la calidad de vida.'),
+      meaningP2: db.getCmsValue('home_meaning_p2', 'El legado de la UNI se refleja en miles de egresados que, con talento, ética y compromiso, lideran proyectos de alto impacto en los sectores público y privado, impulsan el desarrollo científico y tecnológico, y contribuyen a construir un Perú más competitivo y un mundo más innovador y sostenible.'),
+      meaningInfo: db.getCmsValue('home_meaning_info', 'El Sesquicentenario de la UNI conmemora 150 años de liderazgo académico, desde su fundación en 1876 por el Ing. Eduardo de Habich.'),
+
+      proposalTitle: db.getCmsValue('home_proposal_title', 'Propuesta de la UNI para el Futuro del Perú 2026-2050 –'),
+      proposalSubtitle: db.getCmsValue('home_proposal_subtitle', 'Libro de Oro del Sesquicentenario'),
+      proposalDescription: db.getCmsValue('home_proposal_description', 'El objetivo de la propuesta de libro de oro de la UNI es generar aportes académicos y técnicos sobre las perspectivas de desarrollo del país hacia el año 2050.'),
+
+      proposalB1Title: db.getCmsValue('home_proposal_b1_title', 'Primera Versión'),
+      proposalB1Desc: db.getCmsValue('home_proposal_b1_desc', 'Etapa de Análisis y Diagnóstico de los 150 años de la UNI'),
+      proposalB1Detail: db.getCmsValue('home_proposal_b1_detail', 'La Primera Versión comprende la etapa de Análisis y Diagnóstico integral de los 150 años de trayectoria de la UNI y su impacto nacional.'),
+
+      proposalB2Title: db.getCmsValue('home_proposal_b2_title', 'Segunda Versión'),
+      proposalB2Desc: db.getCmsValue('home_proposal_b2_desc', 'Elaboración de propuestas de las 11 facultades UNI'),
+      proposalB2Detail: db.getCmsValue('home_proposal_b2_detail', 'La Segunda Versión documenta la elaboración de propuestas técnicas y académicas específicas de las 11 facultades de la UNI.'),
+
+      proposalB3Title: db.getCmsValue('home_proposal_b3_title', 'Presentación Final'),
+      proposalB3Desc: db.getCmsValue('home_proposal_b3_desc', 'Presentación de la Propuesta de la UNI para el desarrollo del Perú.'),
+      proposalB3Detail: db.getCmsValue('home_proposal_b3_detail', 'La Presentación Final recopila e integra la propuesta final oficial de la UNI para el desarrollo nacional proyectado hacia el 2050.')
     })
 
     // 2. Eventos
@@ -120,16 +184,22 @@ export default function Admin() {
       subtitle: db.getCmsValue('events_subtitle', 'Todos los eventos del Sesquicentenario UNI 2026')
     })
 
+    const defaultSpeakers = [
+      { name: 'Dr. Kenji Tanaka', org: 'University of Tokyo', topic: 'Inteligencia Artificial y Ciudades Inteligentes', country: 'Japón', imageUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=300' },
+      { name: 'Dra. Elena Rodríguez', org: 'MIT - Massachusetts Institute of Technology', topic: 'Infraestructura Resiliente ante el Cambio Climático', country: 'EE.UU.', imageUrl: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=300' },
+      { name: 'Dr. Hans Weber', org: 'ETH Zurich', topic: 'Ingeniería de Materiales Avanzados', country: 'Suiza', imageUrl: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=300' },
+      { name: 'Ing. Priya Sharma', org: 'Indian Institute of Technology Delhi', topic: 'Energía Solar a Gran Escala', country: 'India', imageUrl: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=300' },
+      { name: 'Dr. Roberto Vargas', org: 'Universidad Nacional de Ingeniería', topic: 'IA en la Ingeniería Peruana', country: 'Perú', imageUrl: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&q=80&w=300' },
+      { name: 'Dra. Ana Müller', org: 'Technische Universität München', topic: 'Robótica Industrial y Manufactura', country: 'Alemania', imageUrl: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&q=80&w=300' }
+    ]
+    const loadedSpeakers = db.getCmsValue('meet_speakers', defaultSpeakers).map(s => ({
+      ...s,
+      country: s.country ? s.country.replace(/[\uD83C-\uD83E][\uDC00-\uDFFF]/g, '').trim().slice(0, 20) : ''
+    }))
+
     // 3. Encuentro Internacional
     setCmsMeetForm({
-      speakers: db.getCmsValue('meet_speakers', [
-        { name: 'Dr. Kenji Tanaka', org: 'University of Tokyo', topic: 'Inteligencia Artificial y Ciudades Inteligentes', country: '🇯🇵 Japón' },
-        { name: 'Dra. Elena Rodríguez', org: 'MIT - Massachusetts Institute of Technology', topic: 'Infraestructura Resiliente ante el Cambio Climático', country: '🇺🇸 EE.UU.' },
-        { name: 'Dr. Hans Weber', org: 'ETH Zurich', topic: 'Ingeniería de Materiales Avanzados', country: '🇨🇭 Suiza' },
-        { name: 'Ing. Priya Sharma', org: 'Indian Institute of Technology Delhi', topic: 'Energía Solar a Gran Escala', country: '🇮🇳 India' },
-        { name: 'Dr. Roberto Vargas', org: 'Universidad Nacional de Ingeniería', topic: 'IA en la Ingeniería Peruana', country: '🇵🇪 Perú' },
-        { name: 'Dra. Ana Müller', org: 'Technische Universität München', topic: 'Robótica Industrial y Manufactura', country: '🇩🇪 Alemania' }
-      ]),
+      speakers: loadedSpeakers,
       phases: db.getCmsValue('meet_phases', [
         {
           id: 'sep1',
@@ -188,6 +258,31 @@ export default function Admin() {
     db.updateCmsValue('home_hero_subtitle', cmsHomeForm.heroSubtitle)
     db.updateCmsValue('home_stats', cmsHomeForm.stats)
     db.updateCmsValue('home_programa_general', cmsHomeForm.programaGeneral)
+    db.updateCmsValue('home_slider_banners', cmsHomeForm.sliderBanners)
+
+    // Save meaning values:
+    db.updateCmsValue('home_meaning_title', cmsHomeForm.meaningTitle)
+    db.updateCmsValue('home_meaning_p1', cmsHomeForm.meaningP1)
+    db.updateCmsValue('home_meaning_p2', cmsHomeForm.meaningP2)
+    db.updateCmsValue('home_meaning_info', cmsHomeForm.meaningInfo)
+
+    // Save proposal values:
+    db.updateCmsValue('home_proposal_title', cmsHomeForm.proposalTitle)
+    db.updateCmsValue('home_proposal_subtitle', cmsHomeForm.proposalSubtitle)
+    db.updateCmsValue('home_proposal_description', cmsHomeForm.proposalDescription)
+    
+    db.updateCmsValue('home_proposal_b1_title', cmsHomeForm.proposalB1Title)
+    db.updateCmsValue('home_proposal_b1_desc', cmsHomeForm.proposalB1Desc)
+    db.updateCmsValue('home_proposal_b1_detail', cmsHomeForm.proposalB1Detail)
+
+    db.updateCmsValue('home_proposal_b2_title', cmsHomeForm.proposalB2Title)
+    db.updateCmsValue('home_proposal_b2_desc', cmsHomeForm.proposalB2Desc)
+    db.updateCmsValue('home_proposal_b2_detail', cmsHomeForm.proposalB2Detail)
+
+    db.updateCmsValue('home_proposal_b3_title', cmsHomeForm.proposalB3Title)
+    db.updateCmsValue('home_proposal_b3_desc', cmsHomeForm.proposalB3Desc)
+    db.updateCmsValue('home_proposal_b3_detail', cmsHomeForm.proposalB3Detail)
+
     showAlert('Página de Inicio guardada correctamente.', 'Guardado exitoso', 'success')
   }
 
@@ -215,13 +310,17 @@ export default function Admin() {
   const handleAddSpeaker = () => {
     setCmsMeetForm(prev => ({
       ...prev,
-      speakers: [...prev.speakers, { name: 'Nuevo Ponente', org: 'Organización', topic: 'Tema de ponencia', country: '🇵🇪 Perú' }]
+      speakers: [...prev.speakers, { name: 'Nuevo Ponente', org: 'Organización', topic: 'Tema de ponencia', country: 'Perú', imageUrl: '' }]
     }))
   }
 
   const handleEditSpeaker = (index, field, val) => {
     const updated = [...cmsMeetForm.speakers]
-    updated[index] = { ...updated[index], [field]: val }
+    let finalVal = val
+    if (field === 'country') {
+      finalVal = val.replace(/[\uD83C-\uD83E][\uDC00-\uDFFF]/g, '').slice(0, 20)
+    }
+    updated[index] = { ...updated[index], [field]: finalVal }
     setCmsMeetForm(prev => ({ ...prev, speakers: updated }))
   }
 
@@ -265,7 +364,7 @@ export default function Admin() {
   }
 
   useEffect(() => {
-    if (user && user.role === 'ADMIN') {
+    if (user && (user.role === 'ADMIN' || user.role === 'STAFF')) {
       refreshAllData()
     }
   }, [user])
@@ -287,7 +386,10 @@ export default function Admin() {
     isPaid: false,
     imageUrl: '',
     category: 'Académico',
-    tags: ''
+    tags: '',
+    recapVideoId: '',
+    recapImages: [],
+    report: ''
   })
 
   const handleOpenEventModal = (ev = null) => {
@@ -305,7 +407,10 @@ export default function Admin() {
         isPaid: ev.isPaid || false,
         imageUrl: ev.imageUrl || '',
         category: ev.category || 'Académico',
-        tags: ev.tags ? ev.tags.join(', ') : ''
+        tags: ev.tags ? ev.tags.join(', ') : '',
+        recapVideoId: ev.recapVideoId || '',
+        recapImages: ev.recapImages || [],
+        report: ev.report || ''
       })
     } else {
       setEditingEvent(null)
@@ -321,7 +426,10 @@ export default function Admin() {
         isPaid: false,
         imageUrl: '',
         category: 'Académico',
-        tags: ''
+        tags: '',
+        recapVideoId: '',
+        recapImages: [],
+        report: ''
       })
     }
     setIsEventModalOpen(true)
@@ -340,7 +448,8 @@ export default function Admin() {
 
     const eventData = {
       ...eventForm,
-      tags: parsedTags
+      tags: parsedTags,
+      recapImages: (eventForm.recapImages || []).filter(Boolean)
     }
 
     if (editingEvent) {
@@ -1104,7 +1213,7 @@ export default function Admin() {
     )
   }
 
-  if (!user || user.role !== 'ADMIN') {
+  if (!user || (user.role !== 'ADMIN' && user.role !== 'STAFF')) {
     return null // Security redirect triggers in useEffect
   }
 
@@ -1112,7 +1221,7 @@ export default function Admin() {
     <div className="min-h-screen bg-gray-150 flex flex-col md:flex-row font-sans">
       
       {/* SIDEBAR NAVIGATION */}
-      <aside className="w-full md:w-64 bg-[#800404] text-white flex flex-col shrink-0 shadow-lg">
+      <aside className="hidden md:flex w-full md:w-64 bg-[#800404] text-white flex-col shrink-0 shadow-lg">
         
         {/* Sidebar Header */}
         <div className="p-6 border-b border-white/10 flex items-center gap-3">
@@ -1132,8 +1241,13 @@ export default function Admin() {
             { id: 'asistencia-qr', label: 'Asistencia QR', icon: QrCode },
             { id: 'certificados', label: 'Carga Certificados', icon: Award },
             { id: 'cms', label: 'Editar Páginas', icon: Edit2 },
-
-          ].map(tab => {
+          ].filter(tab => {
+            const isOnlyStaff = user && user.role === 'STAFF'
+            if (isOnlyStaff) {
+              return tab.id === 'asistencia-qr'
+            }
+            return true
+          }).map(tab => {
             const IconComponent = tab.icon
             const isActive = activeTab === tab.id
             return (
@@ -1153,27 +1267,6 @@ export default function Admin() {
           })}
         </nav>
 
-        {/* Sidebar Footer User Info */}
-        <div className="p-4 border-t border-white/10 bg-[#5a0303] flex items-center justify-between">
-          <div className="flex items-center gap-2.5 min-w-0">
-            <img 
-              src={user.profilePic || "https://api.dicebear.com/7.x/initials/svg?seed=Admin"} 
-              alt="Admin Profile" 
-              className="w-9 h-9 rounded-full object-cover border border-white/20 shrink-0"
-            />
-            <div className="min-w-0">
-              <p className="text-xs font-black truncate">{user.nombres} {user.apellidos}</p>
-              <p className="text-[10px] text-white/60 truncate">{user.email}</p>
-            </div>
-          </div>
-          <button 
-            onClick={() => { logout(); navigate('/') }} 
-            title="Cerrar sesión"
-            className="p-1.5 text-white/60 hover:text-white hover:bg-white/10 transition-colors"
-          >
-            <LogOut size={16} />
-          </button>
-        </div>
       </aside>
 
       {/* MAIN MAIN AREA */}
@@ -1188,7 +1281,7 @@ export default function Admin() {
           </div>
           <div className="flex items-center gap-3">
             <span className="bg-red-50 text-[#800404] text-[10px] font-black tracking-wide px-3 py-1 border border-red-200">
-              ROL: ADMINISTRADOR
+              ROL: {user?.role === 'ADMIN' ? 'ADMINISTRADOR' : user?.role === 'STAFF' ? 'STAFF' : user?.role || 'ADMINISTRADOR'}
             </span>
             <button 
               onClick={refreshAllData}
@@ -1798,7 +1891,7 @@ export default function Admin() {
                 
                 {/* Event Selector Header */}
                 <div className="bg-white border border-gray-200 p-6 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
-                  <div className="space-y-1">
+                  <div className="hidden md:block space-y-1">
                     <span className="text-[10px] bg-red-50 text-[#800404] font-black tracking-wider uppercase px-2 py-0.5 border border-red-200">
                       Módulo de Asistencia
                     </span>
@@ -1926,7 +2019,7 @@ export default function Admin() {
                       
                       {/* Form and Camera trigger */}
                       <div className="bg-white border border-gray-200 p-6 shadow-sm space-y-6">
-                        <div className="flex items-center justify-between">
+                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                           <div>
                             <h3 className="text-base font-black text-gray-900">Registrar Entrada</h3>
                             <p className="text-xs text-gray-400">Registra ingresos usando cámara o digitando el código/DNI.</p>
@@ -1940,14 +2033,14 @@ export default function Admin() {
                                 stopCamera()
                               }
                             }}
-                            className={`flex items-center gap-1.5 text-xs font-bold px-4 py-2 transition-all cursor-pointer ${
+                            className={`w-full md:w-auto flex items-center justify-center gap-2 text-sm md:text-xs font-black py-4 md:py-2 px-6 md:px-4 transition-all cursor-pointer shadow-md md:shadow-none ${
                               showCameraScanner
                                 ? 'bg-gray-800 text-white hover:bg-black'
                                 : 'bg-[#800404] text-white hover:bg-[#5a0303]'
                             }`}
                           >
-                            <QrCode size={14} />
-                            {showCameraScanner ? 'Ocultar Cámara' : 'Escanear QR'}
+                            <QrCode size={20} className="md:w-[14px] md:h-[14px]" />
+                            <span>{showCameraScanner ? 'Ocultar Cámara' : 'Escanear QR'}</span>
                           </button>
                         </div>
 
@@ -2287,13 +2380,6 @@ export default function Admin() {
           {/* TAB: EDITAR PAGINAS (CMS) */}
           {activeTab === 'cms' && (
             <div className="space-y-6 bg-white border border-gray-200 p-6 shadow-sm">
-              <div className="flex items-center justify-between border-b border-gray-100 pb-4">
-                <div>
-                  <h3 className="text-lg font-black text-gray-900">Editar Contenido de las Páginas</h3>
-                  <p className="text-sm text-gray-400 mt-0.5">Modifica los textos de bienvenida, banners, expositores y secciones estáticas.</p>
-                </div>
-              </div>
-
               {/* Sub Navigation Tabs */}
               <div className="flex border-b border-gray-200">
                 {[
@@ -2319,156 +2405,416 @@ export default function Admin() {
 
               {/* SUB TAB: INICIO */}
               {cmsActiveSubTab === 'inicio' && (
-                <form onSubmit={handleSaveCmsHome} className="space-y-6 max-w-4xl">
-                  {/* Hero Banner Section */}
-                  <div className="space-y-4">
-                    <h4 className="font-black text-sm text-gray-850 uppercase tracking-wider border-b border-gray-100 pb-2">Sección de Bienvenida (Hero Banner)</h4>
-                    <div className="grid grid-cols-1 gap-4">
-                      <div>
-                        <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Título de Bienvenida</label>
-                        <input
-                          type="text"
-                          value={cmsHomeForm.heroTitle}
-                          onChange={e => setCmsHomeForm(prev => ({ ...prev, heroTitle: e.target.value }))}
-                          className="w-full border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:border-[#800404] text-gray-800"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Subtítulo / Descripción</label>
-                        <textarea
-                          rows={3}
-                          value={cmsHomeForm.heroSubtitle}
-                          onChange={e => setCmsHomeForm(prev => ({ ...prev, heroSubtitle: e.target.value }))}
-                          className="w-full border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:border-[#800404] text-gray-800"
-                        />
-                      </div>
-                    </div>
+                <div className="space-y-6">
+                  {/* Inicio Sub-sections Tabs */}
+                  <div className="flex border-b border-gray-200 gap-2 mb-2 overflow-x-auto">
+                    {[
+                      { id: 'bienvenida', label: 'Sección de bienvenida' },
+                      { id: 'significado', label: '¿Qué significa 150 años?' },
+                      { id: 'propuesta', label: 'Propuesta para el Futuro' },
+                      { id: 'programa', label: 'Programa General' }
+                    ].map(sect => (
+                      <button
+                        key={sect.id}
+                        type="button"
+                        onClick={() => setCmsInicioSection(sect.id)}
+                        className={`px-4 py-2.5 text-xs font-black uppercase tracking-wider border-b-2 transition-all cursor-pointer whitespace-nowrap ${
+                          cmsInicioSection === sect.id
+                            ? 'border-[#800404] text-[#800404]'
+                            : 'border-transparent text-gray-500 hover:text-[#800404]'
+                        }`}
+                      >
+                        {sect.label}
+                      </button>
+                    ))}
                   </div>
 
-                  {/* Estadísticas */}
-                  <div className="space-y-4">
-                    <h4 className="font-black text-sm text-gray-850 uppercase tracking-wider border-b border-gray-100 pb-2">Panel de Estadísticas</h4>
-                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                      {cmsHomeForm.stats.map((stat, idx) => (
-                        <div key={idx} className="border border-gray-200 p-4 space-y-2">
-                          <p className="text-[10px] font-black text-gray-400 uppercase">Dato {idx + 1}</p>
+                  <form onSubmit={handleSaveCmsHome} className="space-y-6 max-w-4xl">
+                    {/* SECTION 1: BIENVENIDA */}
+                    {cmsInicioSection === 'bienvenida' && (
+                      <div className="space-y-6">
+                        {/* Main Carousel Banners */}
+                        <div className="space-y-4">
+                          <h4 className="font-black text-sm text-gray-850 uppercase tracking-wider border-b border-gray-100 pb-2">Eventos Principales (Carrusel Deslizante)</h4>
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            {[0, 1, 2].map((idx) => {
+                              const bannerImg = cmsHomeForm.sliderBanners?.[idx] || '';
+                              return (
+                                <div key={idx} className="border border-gray-200 p-4 space-y-3 bg-gray-50 flex flex-col justify-between">
+                                  <div>
+                                    <p className="text-[10px] font-black text-gray-400 uppercase mb-2">Banner {idx + 1}</p>
+                                    
+                                    {/* Preview */}
+                                    <div className="aspect-video w-full border border-gray-200 bg-white overflow-hidden flex items-center justify-center mb-3">
+                                      {bannerImg ? (
+                                        <img src={bannerImg} alt={`Banner ${idx + 1}`} className="w-full h-full object-cover" />
+                                      ) : (
+                                        <span className="text-[10px] text-gray-400 font-bold uppercase">Por Defecto</span>
+                                      )}
+                                    </div>
+                                  </div>
+
+                                  {/* File Upload / Clear Buttons */}
+                                  <div className="pt-2 flex gap-2">
+                                    <label className="flex-1 text-center bg-gray-800 hover:bg-black text-white py-1.5 text-[10px] font-bold uppercase tracking-wider transition-colors cursor-pointer rounded-none">
+                                      Subir Imagen
+                                      <input
+                                        type="file"
+                                        accept="image/*"
+                                        onChange={e => {
+                                          const file = e.target.files[0];
+                                          if (file) {
+                                            if (file.size > 2 * 1024 * 1024) {
+                                              showAlert('La imagen es demasiado grande. El límite es de 2MB.', 'Imagen Excede Límite', 'warning');
+                                              return;
+                                            }
+                                            const reader = new FileReader();
+                                            reader.onloadend = () => {
+                                              const newBanners = [...(cmsHomeForm.sliderBanners || ['', '', ''])];
+                                              newBanners[idx] = reader.result;
+                                              setCmsHomeForm(prev => ({ ...prev, sliderBanners: newBanners }));
+                                            };
+                                            reader.readAsDataURL(file);
+                                          }
+                                        }}
+                                        className="hidden"
+                                      />
+                                    </label>
+                                    {bannerImg && (
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          const newBanners = [...(cmsHomeForm.sliderBanners || ['', '', ''])];
+                                          newBanners[idx] = '';
+                                          setCmsHomeForm(prev => ({ ...prev, sliderBanners: newBanners }));
+                                        }}
+                                        className="border border-red-200 hover:bg-red-50 text-red-650 px-2 py-1 text-[10px] font-black uppercase transition-colors"
+                                      >
+                                        Limpiar
+                                      </button>
+                                    )}
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+
+                        {/* Estadísticas */}
+                        <div className="space-y-4">
+                          <h4 className="font-black text-sm text-gray-850 uppercase tracking-wider border-b border-gray-100 pb-2">Panel de Estadísticas</h4>
+                          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                            {cmsHomeForm.stats.map((stat, idx) => (
+                              <div key={idx} className="border border-gray-200 p-4 space-y-2">
+                                <p className="text-[10px] font-black text-gray-400 uppercase">Dato {idx + 1}</p>
+                                <div>
+                                  <label className="block text-[10px] font-bold text-gray-500 uppercase mb-0.5">Valor</label>
+                                  <input
+                                    type="text"
+                                    value={stat.value}
+                                    onChange={e => {
+                                      const newStats = [...cmsHomeForm.stats]
+                                      newStats[idx].value = e.target.value
+                                      setCmsHomeForm(prev => ({ ...prev, stats: newStats }))
+                                    }}
+                                    className="w-full border border-gray-300 px-2 py-1 text-xs focus:outline-none focus:border-[#800404] text-gray-800 font-bold"
+                                    placeholder="Ej: 150"
+                                  />
+                                </div>
+                                <div>
+                                  <label className="block text-[10px] font-bold text-gray-500 uppercase mb-0.5">Etiqueta</label>
+                                  <input
+                                    type="text"
+                                    value={stat.label}
+                                    onChange={e => {
+                                      const newStats = [...cmsHomeForm.stats]
+                                      newStats[idx].label = e.target.value
+                                      setCmsHomeForm(prev => ({ ...prev, stats: newStats }))
+                                    }}
+                                    className="w-full border border-gray-300 px-2 py-1 text-xs focus:outline-none focus:border-[#800404] text-gray-800"
+                                    placeholder="Ej: Años de historia"
+                                  />
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* SECTION 2: SIGNIFICADO */}
+                    {cmsInicioSection === 'significado' && (
+                      <div className="space-y-4">
+                        <h4 className="font-black text-sm text-gray-850 uppercase tracking-wider border-b border-gray-100 pb-2">Sección "¿Qué significa 150 años de la UNI?"</h4>
+                        <div className="space-y-4">
                           <div>
-                            <label className="block text-[10px] font-bold text-gray-500 uppercase mb-0.5">Valor</label>
+                            <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Título de la Sección</label>
                             <input
                               type="text"
-                              value={stat.value}
-                              onChange={e => {
-                                const newStats = [...cmsHomeForm.stats]
-                                newStats[idx].value = e.target.value
-                                setCmsHomeForm(prev => ({ ...prev, stats: newStats }))
-                              }}
-                              className="w-full border border-gray-300 px-2 py-1 text-xs focus:outline-none focus:border-[#800404] text-gray-800 font-bold"
-                              placeholder="Ej: 150"
+                              value={cmsHomeForm.meaningTitle || ''}
+                              onChange={e => setCmsHomeForm(prev => ({ ...prev, meaningTitle: e.target.value }))}
+                              className="w-full border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:border-[#800404] text-gray-800"
                             />
                           </div>
                           <div>
-                            <label className="block text-[10px] font-bold text-gray-500 uppercase mb-0.5">Etiqueta</label>
+                            <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Párrafo 1 (Introducción)</label>
+                            <textarea
+                              rows={4}
+                              value={cmsHomeForm.meaningP1 || ''}
+                              onChange={e => setCmsHomeForm(prev => ({ ...prev, meaningP1: e.target.value }))}
+                              className="w-full border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:border-[#800404] text-gray-800"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Párrafo 2 (Legado)</label>
+                            <textarea
+                              rows={4}
+                              value={cmsHomeForm.meaningP2 || ''}
+                              onChange={e => setCmsHomeForm(prev => ({ ...prev, meaningP2: e.target.value }))}
+                              className="w-full border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:border-[#800404] text-gray-800"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Texto del Popup (+ Información)</label>
                             <input
                               type="text"
-                              value={stat.label}
-                              onChange={e => {
-                                const newStats = [...cmsHomeForm.stats]
-                                newStats[idx].label = e.target.value
-                                setCmsHomeForm(prev => ({ ...prev, stats: newStats }))
-                              }}
-                              className="w-full border border-gray-300 px-2 py-1 text-xs focus:outline-none focus:border-[#800404] text-gray-800"
-                              placeholder="Ej: Años de historia"
+                              value={cmsHomeForm.meaningInfo || ''}
+                              onChange={e => setCmsHomeForm(prev => ({ ...prev, meaningInfo: e.target.value }))}
+                              className="w-full border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:border-[#800404] text-gray-800"
                             />
                           </div>
                         </div>
-                      ))}
-                    </div>
-                  </div>
+                      </div>
+                    )}
 
-                  {/* Programa General */}
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between border-b border-gray-100 pb-2">
-                      <h4 className="font-black text-sm text-gray-850 uppercase tracking-wider font-bold">Programa General (Actividades Rápidas)</h4>
-                      <button
-                        type="button"
-                        onClick={handleAddHomeActivity}
-                        className="bg-gray-800 hover:bg-black text-white text-xs font-bold px-3 py-1 flex items-center gap-1 transition-all rounded-none cursor-pointer"
-                      >
-                        <Plus size={12} /> Agregar Actividad
-                      </button>
-                    </div>
-                    
-                    <div className="space-y-3 max-h-96 overflow-y-auto border border-gray-150 p-3 bg-gray-50">
-                      {cmsHomeForm.programaGeneral.length === 0 ? (
-                        <p className="text-xs text-gray-400 text-center py-6">No hay actividades en el programa general.</p>
-                      ) : (
-                        cmsHomeForm.programaGeneral.map((act, idx) => (
-                          <div key={idx} className="bg-white border border-gray-200 p-4 space-y-3 relative">
-                            <button
-                              type="button"
-                              onClick={() => handleRemoveHomeActivity(idx)}
-                              className="absolute top-2 right-2 text-red-500 hover:text-red-700 transition-colors p-1 cursor-pointer"
-                              title="Eliminar actividad"
-                            >
-                              <Trash2 size={14} />
-                            </button>
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                              <div>
-                                <label className="block text-[10px] font-bold text-gray-400 uppercase mb-0.5">Fecha</label>
-                                <input
-                                  type="text"
-                                  value={act.date}
-                                  onChange={e => handleEditHomeActivity(idx, 'date', e.target.value)}
-                                  className="w-full border border-gray-300 px-2 py-1 text-xs focus:outline-none focus:border-[#800404] text-gray-800 font-bold"
-                                  placeholder="Ej: JUEVES 2 DE JULIO"
-                                />
-                              </div>
-                              <div>
-                                <label className="block text-[10px] font-bold text-gray-400 uppercase mb-0.5">Hora</label>
-                                <input
-                                  type="text"
-                                  value={act.time}
-                                  onChange={e => handleEditHomeActivity(idx, 'time', e.target.value)}
-                                  className="w-full border border-gray-300 px-2 py-1 text-xs focus:outline-none focus:border-[#800404] text-gray-800"
-                                  placeholder="Ej: 10:00 a.m."
-                                />
-                              </div>
-                              <div>
-                                <label className="block text-[10px] font-bold text-gray-400 uppercase mb-0.5">Lugar / Ubicación</label>
-                                <input
-                                  type="text"
-                                  value={act.location}
-                                  onChange={e => handleEditHomeActivity(idx, 'location', e.target.value)}
-                                  className="w-full border border-gray-300 px-2 py-1 text-xs focus:outline-none focus:border-[#800404] text-gray-800"
-                                  placeholder="Ej: Auditorio FIIS"
-                                />
-                              </div>
-                            </div>
+                    {/* SECTION 3: PROPUESTA */}
+                    {cmsInicioSection === 'propuesta' && (
+                      <div className="space-y-6">
+                        <h4 className="font-black text-sm text-gray-850 uppercase tracking-wider border-b border-gray-100 pb-2">Sección "Propuesta de la UNI para el Futuro del Perú"</h4>
+                        <div className="space-y-4">
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
-                              <label className="block text-[10px] font-bold text-gray-400 uppercase mb-0.5">Título / Descripción de la Actividad</label>
+                              <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Título de la Sección</label>
                               <input
                                 type="text"
-                                value={act.title}
-                                onChange={e => handleEditHomeActivity(idx, 'title', e.target.value)}
-                                className="w-full border border-gray-300 px-2 py-1.5 text-xs focus:outline-none focus:border-[#800404] text-gray-850"
-                                placeholder="Ej: Romería en homenaje a personajes ilustres..."
+                                value={cmsHomeForm.proposalTitle || ''}
+                                onChange={e => setCmsHomeForm(prev => ({ ...prev, proposalTitle: e.target.value }))}
+                                className="w-full border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:border-[#800404] text-gray-800"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Subtítulo de la Sección</label>
+                              <input
+                                type="text"
+                                value={cmsHomeForm.proposalSubtitle || ''}
+                                onChange={e => setCmsHomeForm(prev => ({ ...prev, proposalSubtitle: e.target.value }))}
+                                className="w-full border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:border-[#800404] text-gray-800"
                               />
                             </div>
                           </div>
-                        ))
-                      )}
-                    </div>
-                  </div>
+                          <div>
+                            <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Descripción del Objetivo</label>
+                            <textarea
+                              rows={3}
+                              value={cmsHomeForm.proposalDescription || ''}
+                              onChange={e => setCmsHomeForm(prev => ({ ...prev, proposalDescription: e.target.value }))}
+                              className="w-full border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:border-[#800404] text-gray-800"
+                            />
+                          </div>
+                        </div>
 
-                  <div className="pt-4 border-t border-gray-100 flex justify-end">
-                    <button
-                      type="submit"
-                      className="bg-[#800404] hover:bg-[#5a0303] text-white font-black text-sm px-6 py-2.5 transition-colors rounded-none cursor-pointer"
-                    >
-                      Guardar Cambios (Inicio)
-                    </button>
-                  </div>
-                </form>
+                        {/* Detalle de Libros */}
+                        <div className="space-y-4">
+                          <h5 className="font-bold text-xs text-gray-700 uppercase tracking-wide border-b border-gray-100 pb-1.5">Edición de Versiones de Libros de Oro</h5>
+                          
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            {/* Libro 1 */}
+                            <div className="border border-gray-200 p-4 space-y-3 bg-gray-50">
+                              <p className="text-[10px] font-black text-gray-400 uppercase">Libro 1: Primera Versión</p>
+                              <div>
+                                <label className="block text-[10px] font-bold text-gray-500 uppercase mb-0.5">Título del Libro</label>
+                                <input
+                                  type="text"
+                                  value={cmsHomeForm.proposalB1Title || ''}
+                                  onChange={e => setCmsHomeForm(prev => ({ ...prev, proposalB1Title: e.target.value }))}
+                                  className="w-full border border-gray-300 px-2 py-1 text-xs focus:outline-none focus:border-[#800404] text-gray-850 font-bold"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-[10px] font-bold text-gray-500 uppercase mb-0.5">Resumen</label>
+                                <input
+                                  type="text"
+                                  value={cmsHomeForm.proposalB1Desc || ''}
+                                  onChange={e => setCmsHomeForm(prev => ({ ...prev, proposalB1Desc: e.target.value }))}
+                                  className="w-full border border-gray-300 px-2 py-1 text-xs focus:outline-none focus:border-[#800404] text-gray-850"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-[10px] font-bold text-gray-500 uppercase mb-0.5">Detalle Popup</label>
+                                <textarea
+                                  rows={3}
+                                  value={cmsHomeForm.proposalB1Detail || ''}
+                                  onChange={e => setCmsHomeForm(prev => ({ ...prev, proposalB1Detail: e.target.value }))}
+                                  className="w-full border border-gray-300 px-2 py-1 text-xs focus:outline-none focus:border-[#800404] text-gray-850"
+                                />
+                              </div>
+                            </div>
+
+                            {/* Libro 2 */}
+                            <div className="border border-gray-200 p-4 space-y-3 bg-gray-50">
+                              <p className="text-[10px] font-black text-gray-400 uppercase">Libro 2: Segunda Versión</p>
+                              <div>
+                                <label className="block text-[10px] font-bold text-gray-500 uppercase mb-0.5">Título del Libro</label>
+                                <input
+                                  type="text"
+                                  value={cmsHomeForm.proposalB2Title || ''}
+                                  onChange={e => setCmsHomeForm(prev => ({ ...prev, proposalB2Title: e.target.value }))}
+                                  className="w-full border border-gray-300 px-2 py-1 text-xs focus:outline-none focus:border-[#800404] text-gray-850 font-bold"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-[10px] font-bold text-gray-500 uppercase mb-0.5">Resumen</label>
+                                <input
+                                  type="text"
+                                  value={cmsHomeForm.proposalB2Desc || ''}
+                                  onChange={e => setCmsHomeForm(prev => ({ ...prev, proposalB2Desc: e.target.value }))}
+                                  className="w-full border border-gray-300 px-2 py-1 text-xs focus:outline-none focus:border-[#800404] text-gray-850"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-[10px] font-bold text-gray-500 uppercase mb-0.5">Detalle Popup</label>
+                                <textarea
+                                  rows={3}
+                                  value={cmsHomeForm.proposalB2Detail || ''}
+                                  onChange={e => setCmsHomeForm(prev => ({ ...prev, proposalB2Detail: e.target.value }))}
+                                  className="w-full border border-gray-300 px-2 py-1 text-xs focus:outline-none focus:border-[#800404] text-gray-850"
+                                />
+                              </div>
+                            </div>
+
+                            {/* Libro 3 */}
+                            <div className="border border-gray-200 p-4 space-y-3 bg-gray-50">
+                              <p className="text-[10px] font-black text-gray-400 uppercase">Libro 3: Presentación Final</p>
+                              <div>
+                                <label className="block text-[10px] font-bold text-gray-500 uppercase mb-0.5">Título del Libro</label>
+                                <input
+                                  type="text"
+                                  value={cmsHomeForm.proposalB3Title || ''}
+                                  onChange={e => setCmsHomeForm(prev => ({ ...prev, proposalB3Title: e.target.value }))}
+                                  className="w-full border border-gray-300 px-2 py-1 text-xs focus:outline-none focus:border-[#800404] text-gray-850 font-bold"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-[10px] font-bold text-gray-500 uppercase mb-0.5">Resumen</label>
+                                <input
+                                  type="text"
+                                  value={cmsHomeForm.proposalB3Desc || ''}
+                                  onChange={e => setCmsHomeForm(prev => ({ ...prev, proposalB3Desc: e.target.value }))}
+                                  className="w-full border border-gray-300 px-2 py-1 text-xs focus:outline-none focus:border-[#800404] text-gray-850"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-[10px] font-bold text-gray-500 uppercase mb-0.5">Detalle Popup</label>
+                                <textarea
+                                  rows={3}
+                                  value={cmsHomeForm.proposalB3Detail || ''}
+                                  onChange={e => setCmsHomeForm(prev => ({ ...prev, proposalB3Detail: e.target.value }))}
+                                  className="w-full border border-gray-300 px-2 py-1 text-xs focus:outline-none focus:border-[#800404] text-gray-850"
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* SECTION 4: PROGRAMA GENERAL */}
+                    {cmsInicioSection === 'programa' && (
+                      <div className="space-y-4">
+                        <div className="flex items-center justify-between border-b border-gray-100 pb-2">
+                          <h4 className="font-black text-sm text-gray-850 uppercase tracking-wider font-bold">Programa General (Actividades Rápidas)</h4>
+                          <button
+                            type="button"
+                            onClick={handleAddHomeActivity}
+                            className="bg-gray-800 hover:bg-black text-white text-xs font-bold px-3 py-1 flex items-center gap-1 transition-all rounded-none cursor-pointer"
+                          >
+                            <Plus size={12} /> Agregar Actividad
+                          </button>
+                        </div>
+                        
+                        <div className="space-y-3 max-h-96 overflow-y-auto border border-gray-150 p-3 bg-gray-50">
+                          {cmsHomeForm.programaGeneral.length === 0 ? (
+                            <p className="text-xs text-gray-400 text-center py-6">No hay actividades en el programa general.</p>
+                          ) : (
+                            cmsHomeForm.programaGeneral.map((act, idx) => (
+                              <div key={idx} className="bg-white border border-gray-200 p-4 space-y-3 relative">
+                                <button
+                                  type="button"
+                                  onClick={() => handleRemoveHomeActivity(idx)}
+                                  className="absolute top-2 right-2 text-red-500 hover:text-red-700 transition-colors p-1 cursor-pointer"
+                                  title="Eliminar actividad"
+                                >
+                                  <Trash2 size={14} />
+                                </button>
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                                  <div>
+                                    <label className="block text-[10px] font-bold text-gray-400 uppercase mb-0.5">Fecha</label>
+                                    <input
+                                      type="text"
+                                      value={act.date}
+                                      onChange={e => handleEditHomeActivity(idx, 'date', e.target.value)}
+                                      className="w-full border border-gray-300 px-2 py-1 text-xs focus:outline-none focus:border-[#800404] text-gray-800 font-bold"
+                                      placeholder="Ej: JUEVES 2 DE JULIO"
+                                    />
+                                  </div>
+                                  <div>
+                                    <label className="block text-[10px] font-bold text-gray-400 uppercase mb-0.5">Hora</label>
+                                    <input
+                                      type="text"
+                                      value={act.time}
+                                      onChange={e => handleEditHomeActivity(idx, 'time', e.target.value)}
+                                      className="w-full border border-gray-300 px-2 py-1 text-xs focus:outline-none focus:border-[#800404] text-gray-800"
+                                      placeholder="Ej: 10:00 a.m."
+                                    />
+                                  </div>
+                                  <div>
+                                    <label className="block text-[10px] font-bold text-gray-400 uppercase mb-0.5">Lugar / Ubicación</label>
+                                    <input
+                                      type="text"
+                                      value={act.location}
+                                      onChange={e => handleEditHomeActivity(idx, 'location', e.target.value)}
+                                      className="w-full border border-gray-300 px-2 py-1 text-xs focus:outline-none focus:border-[#800404] text-gray-800"
+                                      placeholder="Ej: Auditorio FIIS"
+                                    />
+                                  </div>
+                                </div>
+                                <div>
+                                  <label className="block text-[10px] font-bold text-gray-400 uppercase mb-0.5">Título / Descripción de la Actividad</label>
+                                  <input
+                                    type="text"
+                                    value={act.title}
+                                    onChange={e => handleEditHomeActivity(idx, 'title', e.target.value)}
+                                    className="w-full border border-gray-300 px-2 py-1.5 text-xs focus:outline-none focus:border-[#800404] text-gray-855"
+                                    placeholder="Ej: Romería en homenaje a personajes ilustres..."
+                                  />
+                                </div>
+                              </div>
+                            ))
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="pt-4 border-t border-gray-100 flex justify-end">
+                      <button
+                        type="submit"
+                        className="bg-[#800404] hover:bg-[#5a0303] text-white font-black text-sm px-6 py-2.5 transition-colors rounded-none cursor-pointer"
+                      >
+                        Guardar Cambios (Inicio)
+                      </button>
+                    </div>
+                  </form>
+                </div>
               )}
 
               {/* SUB TAB: EVENTOS */}
@@ -2528,186 +2874,300 @@ export default function Admin() {
 
               {/* SUB TAB: ENCUENTRO INTERNACIONAL */}
               {cmsActiveSubTab === 'encuentro' && (
-                <form onSubmit={handleSaveCmsMeet} className="space-y-6 max-w-4xl">
-                  {/* Editor de Fases */}
-                  <div className="space-y-4">
-                    <h4 className="font-black text-sm text-gray-850 uppercase tracking-wider border-b border-gray-100 pb-2">Detalles de las Fases del Encuentro</h4>
-                    <div className="space-y-6">
-                      {cmsMeetForm.phases.map((phase, idx) => (
-                        <div key={phase.id || idx} className="border border-gray-200 p-4 space-y-3 bg-gray-50/50">
-                          <span className="bg-gray-800 text-white text-[10px] font-black px-2 py-0.5 tracking-wider uppercase inline-block">
-                            {phase.label || `Fase ${idx + 1}`} - {phase.title}
-                          </span>
-                          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                            <div>
-                              <label className="block text-[10px] font-bold text-gray-500 uppercase mb-0.5">Título de Fase</label>
-                              <input
-                                type="text"
-                                value={phase.title}
-                                onChange={e => handleEditPhase(idx, 'title', e.target.value)}
-                                className="w-full border border-gray-300 px-2 py-1 text-xs focus:outline-none focus:border-[#800404] text-gray-850 font-bold"
-                              />
-                            </div>
-                            <div>
-                              <label className="block text-[10px] font-bold text-gray-500 uppercase mb-0.5">Fecha</label>
-                              <input
-                                type="text"
-                                value={phase.date}
-                                onChange={e => handleEditPhase(idx, 'date', e.target.value)}
-                                className="w-full border border-gray-300 px-2 py-1 text-xs focus:outline-none focus:border-[#800404] text-gray-850"
-                              />
-                            </div>
-                            <div>
-                              <label className="block text-[10px] font-bold text-gray-500 uppercase mb-0.5">Ubicación</label>
-                              <input
-                                type="text"
-                                value={phase.location}
-                                onChange={e => handleEditPhase(idx, 'location', e.target.value)}
-                                className="w-full border border-gray-300 px-2 py-1 text-xs focus:outline-none focus:border-[#800404] text-gray-850"
-                              />
-                            </div>
-                          </div>
+                <div className="space-y-6">
+                  {/* Encuentro Sub-sections Tabs */}
+                  <div className="flex border-b border-gray-200 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setCmsEncuentroSection('fases')}
+                      className={`px-4 py-2.5 text-xs font-black uppercase tracking-wider border-b-2 transition-all cursor-pointer ${
+                        cmsEncuentroSection === 'fases'
+                          ? 'border-[#800404] text-[#800404]'
+                          : 'border-transparent text-gray-500 hover:text-[#800404]'
+                      }`}
+                    >
+                      Fases del encuentro
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setCmsEncuentroSection('ponentes')}
+                      className={`px-4 py-2.5 text-xs font-black uppercase tracking-wider border-b-2 transition-all cursor-pointer ${
+                        cmsEncuentroSection === 'ponentes'
+                          ? 'border-[#800404] text-[#800404]'
+                          : 'border-transparent text-gray-500 hover:text-[#800404]'
+                      }`}
+                    >
+                      Ponentes del encuentro
+                    </button>
+                  </div>
 
-                          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                            <div>
-                              <label className="block text-[10px] font-bold text-gray-500 uppercase mb-0.5">Horario</label>
-                              <input
-                                type="text"
-                                value={phase.time || ''}
-                                onChange={e => handleEditPhase(idx, 'time', e.target.value)}
-                                className="w-full border border-gray-300 px-2 py-1 text-xs focus:outline-none focus:border-[#800404] text-gray-850"
-                                placeholder="09:00 - 18:00"
-                              />
-                            </div>
-                            <div>
-                              <label className="block text-[10px] font-bold text-gray-500 uppercase mb-0.5">Aforo (Cupos)</label>
-                              <input
-                                type="number"
-                                value={phase.quota || 0}
-                                onChange={e => handleEditPhase(idx, 'quota', parseInt(e.target.value, 10))}
-                                className="w-full border border-gray-300 px-2 py-1 text-xs focus:outline-none focus:border-[#800404] text-gray-850"
-                              />
-                            </div>
-                            <div>
-                              <label className="block text-[10px] font-bold text-gray-500 uppercase mb-0.5">URL de Imagen</label>
-                              <input
-                                type="text"
-                                value={phase.imageUrl || ''}
-                                onChange={e => handleEditPhase(idx, 'imageUrl', e.target.value)}
-                                className="w-full border border-gray-300 px-2 py-1 text-xs focus:outline-none focus:border-[#800404] text-gray-850 font-mono"
-                                placeholder="https://..."
-                              />
-                            </div>
-                          </div>
+                  <form onSubmit={handleSaveCmsMeet} className="space-y-6 max-w-4xl">
+                    {cmsEncuentroSection === 'fases' && (
+                      <div className="space-y-4">
+                        <h4 className="font-black text-sm text-gray-850 uppercase tracking-wider border-b border-gray-100 pb-2">Detalles de las Fases del Encuentro</h4>
+                        <div className="space-y-6">
+                          {cmsMeetForm.phases.map((phase, idx) => (
+                            <div key={phase.id || idx} className="border border-gray-200 p-4 space-y-3 bg-gray-50/50">
+                              <span className="bg-gray-800 text-white text-[10px] font-black px-2 py-0.5 tracking-wider uppercase inline-block">
+                                {phase.label || `Fase ${idx + 1}`} - {phase.title}
+                              </span>
+                              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                                <div>
+                                  <label className="block text-[10px] font-bold text-gray-500 uppercase mb-0.5">Título de Fase</label>
+                                  <input
+                                    type="text"
+                                    value={phase.title}
+                                    onChange={e => handleEditPhase(idx, 'title', e.target.value)}
+                                    className="w-full border border-gray-300 px-2 py-1 text-xs focus:outline-none focus:border-[#800404] text-gray-850 font-bold"
+                                  />
+                                </div>
+                                <div>
+                                  <label className="block text-[10px] font-bold text-gray-500 uppercase mb-0.5">Fecha</label>
+                                  <input
+                                    type="text"
+                                    value={phase.date}
+                                    onChange={e => handleEditPhase(idx, 'date', e.target.value)}
+                                    className="w-full border border-gray-300 px-2 py-1 text-xs focus:outline-none focus:border-[#800404] text-gray-850"
+                                  />
+                                </div>
+                                <div>
+                                  <label className="block text-[10px] font-bold text-gray-500 uppercase mb-0.5">Ubicación</label>
+                                  <input
+                                    type="text"
+                                    value={phase.location}
+                                    onChange={e => handleEditPhase(idx, 'location', e.target.value)}
+                                    className="w-full border border-gray-300 px-2 py-1 text-xs focus:outline-none focus:border-[#800404] text-gray-850"
+                                  />
+                                </div>
+                              </div>
 
-                          <div>
-                            <label className="block text-[10px] font-bold text-gray-500 uppercase mb-0.5">Descripción de la Fase</label>
-                            <textarea
-                              rows={2}
-                              value={phase.description}
-                              onChange={e => handleEditPhase(idx, 'description', e.target.value)}
-                              className="w-full border border-gray-300 px-2 py-1 text-xs focus:outline-none focus:border-[#800404] text-gray-800"
-                            />
-                          </div>
+                              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                                <div>
+                                  <label className="block text-[10px] font-bold text-gray-500 uppercase mb-0.5">Horario</label>
+                                  <input
+                                    type="text"
+                                    value={phase.time || ''}
+                                    onChange={e => handleEditPhase(idx, 'time', e.target.value)}
+                                    className="w-full border border-gray-300 px-2 py-1 text-xs focus:outline-none focus:border-[#800404] text-gray-850"
+                                    placeholder="09:00 - 18:00"
+                                  />
+                                </div>
+                                <div>
+                                  <label className="block text-[10px] font-bold text-gray-500 uppercase mb-0.5">Aforo (Cupos)</label>
+                                  <input
+                                    type="number"
+                                    value={phase.quota || 0}
+                                    onChange={e => handleEditPhase(idx, 'quota', parseInt(e.target.value, 10))}
+                                    className="w-full border border-gray-300 px-2 py-1 text-xs focus:outline-none focus:border-[#800404] text-gray-855"
+                                  />
+                                </div>
+                                <div>
+                                  <label className="block text-[10px] font-bold text-gray-500 uppercase mb-0.5">Foto de la Fase</label>
+                                  <div className="flex items-center gap-3">
+                                    {/* Preview */}
+                                    <div className="w-12 h-12 border border-gray-200 bg-white overflow-hidden flex items-center justify-center shrink-0">
+                                      {phase.imageUrl ? (
+                                        <img src={phase.imageUrl} alt={`Fase ${idx + 1}`} className="w-full h-full object-cover" />
+                                      ) : (
+                                        <span className="text-[8px] text-gray-400 font-bold uppercase text-center">Por Defecto</span>
+                                      )}
+                                    </div>
+                                    <div className="flex gap-1.5">
+                                      <label className="bg-gray-800 hover:bg-black text-white px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider transition-colors cursor-pointer flex items-center justify-center">
+                                        Subir Foto
+                                        <input
+                                          type="file"
+                                          accept="image/*"
+                                          onChange={e => {
+                                            const file = e.target.files[0];
+                                            if (file) {
+                                              if (file.size > 2 * 1024 * 1024) {
+                                                showAlert('La imagen es demasiado grande. El límite es de 2MB.', 'Imagen Excede Límite', 'warning');
+                                                return;
+                                              }
+                                              const reader = new FileReader();
+                                              reader.onloadend = () => {
+                                                handleEditPhase(idx, 'imageUrl', reader.result);
+                                              };
+                                              reader.readAsDataURL(file);
+                                            }
+                                          }}
+                                          className="hidden"
+                                        />
+                                      </label>
+                                      {phase.imageUrl && (
+                                        <button
+                                          type="button"
+                                          onClick={() => handleEditPhase(idx, 'imageUrl', '')}
+                                          className="border border-red-200 hover:bg-red-50 text-red-650 px-2.5 py-1 text-[10px] font-black uppercase transition-colors"
+                                        >
+                                          Limpiar
+                                        </button>
+                                      )}
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
 
-                          {phase.isPaid && (
-                            <div className="grid grid-cols-2 gap-3 max-w-md">
                               <div>
-                                <label className="block text-[10px] font-bold text-gray-500 uppercase mb-0.5">Precio</label>
+                                <label className="block text-[10px] font-bold text-gray-500 uppercase mb-0.5">Descripción de la Fase</label>
+                                <textarea
+                                  rows={2}
+                                  value={phase.description}
+                                  onChange={e => handleEditPhase(idx, 'description', e.target.value)}
+                                  className="w-full border border-gray-300 px-2 py-1 text-xs focus:outline-none focus:border-[#800404] text-gray-850"
+                                />
+                              </div>
+
+                              {phase.isPaid && (
+                                <div className="grid grid-cols-2 gap-3 max-w-md">
+                                  <div>
+                                    <label className="block text-[10px] font-bold text-gray-500 uppercase mb-0.5">Precio</label>
+                                    <input
+                                      type="text"
+                                      value={phase.price || 'S/ 0'}
+                                      onChange={e => handleEditPhase(idx, 'price', e.target.value)}
+                                      className="border border-gray-300 px-2 py-1 text-xs focus:outline-none focus:border-[#800404] text-gray-850 font-bold"
+                                    />
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {cmsEncuentroSection === 'ponentes' && (
+                      <div className="space-y-4">
+                        <div className="flex items-center justify-between border-b border-gray-100 pb-2">
+                          <h4 className="font-black text-sm text-gray-850 uppercase tracking-wider">Lista de Ponentes Invitados</h4>
+                          <button
+                            type="button"
+                            onClick={handleAddSpeaker}
+                            className="bg-gray-800 hover:bg-black text-white text-xs font-bold px-3 py-1 flex items-center gap-1 transition-all rounded-none cursor-pointer"
+                          >
+                            <Plus size={12} /> Agregar Ponente
+                          </button>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          {cmsMeetForm.speakers.map((speaker, idx) => (
+                            <div key={idx} className="border border-gray-200 p-4 space-y-3 bg-white relative">
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveSpeaker(idx)}
+                                className="absolute top-2 right-2 text-red-500 hover:text-red-700 transition-colors p-1 cursor-pointer"
+                                title="Eliminar ponente"
+                              >
+                                <Trash2 size={14} />
+                              </button>
+                              
+                              <div className="grid grid-cols-2 gap-2">
+                                <div>
+                                  <label className="block text-[10px] font-bold text-gray-400 uppercase mb-0.5">Nombre</label>
+                                  <input
+                                    type="text"
+                                    value={speaker.name}
+                                    onChange={e => handleEditSpeaker(idx, 'name', e.target.value)}
+                                    className="w-full border border-gray-300 px-2 py-1 text-xs focus:outline-none focus:border-[#800404] text-gray-850 font-bold"
+                                  />
+                                </div>
+                                <div>
+                                  <label className="block text-[10px] font-bold text-gray-400 uppercase mb-0.5">País (Máx. 20 carac.)</label>
+                                  <input
+                                    type="text"
+                                    maxLength={20}
+                                    value={speaker.country}
+                                    onChange={e => handleEditSpeaker(idx, 'country', e.target.value)}
+                                    className="w-full border border-gray-300 px-2 py-1 text-xs focus:outline-none focus:border-[#800404] text-gray-850"
+                                    placeholder="Ej: Japón"
+                                  />
+                                </div>
+                              </div>
+
+                              <div>
+                                <label className="block text-[10px] font-bold text-gray-400 uppercase mb-0.5">Institución / Organización</label>
                                 <input
                                   type="text"
-                                  value={phase.price || 'S/ 0'}
-                                  onChange={e => handleEditPhase(idx, 'price', e.target.value)}
-                                  className="border border-gray-300 px-2 py-1 text-xs focus:outline-none focus:border-[#800404] text-gray-850 font-bold"
+                                  value={speaker.org}
+                                  onChange={e => handleEditSpeaker(idx, 'org', e.target.value)}
+                                  className="w-full border border-gray-300 px-2 py-1 text-xs focus:outline-none focus:border-[#800404] text-gray-850"
+                                />
+                              </div>
+
+                              <div>
+                                <label className="block text-[10px] font-bold text-gray-400 uppercase mb-0.5">Foto del Ponente</label>
+                                <div className="flex items-center gap-3">
+                                  {/* Preview */}
+                                  <div className="w-12 h-12 border border-gray-200 bg-white overflow-hidden flex items-center justify-center shrink-0">
+                                    {speaker.imageUrl ? (
+                                      <img src={speaker.imageUrl} alt={`Ponente ${idx + 1}`} className="w-full h-full object-cover" />
+                                    ) : (
+                                      <span className="text-[8px] text-gray-400 font-bold uppercase text-center">Por Defecto</span>
+                                    )}
+                                  </div>
+                                  <div className="flex gap-1.5">
+                                    <label className="bg-gray-800 hover:bg-black text-white px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider transition-colors cursor-pointer flex items-center justify-center">
+                                      Subir Foto
+                                      <input
+                                        type="file"
+                                        accept="image/*"
+                                        onChange={e => {
+                                          const file = e.target.files[0];
+                                          if (file) {
+                                            if (file.size > 2 * 1024 * 1024) {
+                                              showAlert('La imagen es demasiado grande. El límite es de 2MB.', 'Imagen Excede Límite', 'warning');
+                                              return;
+                                            }
+                                            const reader = new FileReader();
+                                            reader.onloadend = () => {
+                                              handleEditSpeaker(idx, 'imageUrl', reader.result);
+                                            };
+                                            reader.readAsDataURL(file);
+                                          }
+                                        }}
+                                        className="hidden"
+                                      />
+                                    </label>
+                                    {speaker.imageUrl && (
+                                      <button
+                                        type="button"
+                                        onClick={() => handleEditSpeaker(idx, 'imageUrl', '')}
+                                        className="border border-red-200 hover:bg-red-50 text-red-650 px-2.5 py-1 text-[10px] font-black uppercase transition-colors"
+                                      >
+                                        Limpiar
+                                      </button>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+
+                              <div>
+                                <label className="block text-[10px] font-bold text-gray-400 uppercase mb-0.5">Tema / Especialidad</label>
+                                <input
+                                  type="text"
+                                  value={speaker.topic}
+                                  onChange={e => handleEditSpeaker(idx, 'topic', e.target.value)}
+                                  className="w-full border border-gray-300 px-2 py-1 text-xs focus:outline-none focus:border-[#800404] text-gray-850"
                                 />
                               </div>
                             </div>
-                          )}
+                          ))}
                         </div>
-                      ))}
-                    </div>
-                  </div>
+                      </div>
+                    )}
 
-                  {/* Editor de Ponentes */}
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between border-b border-gray-100 pb-2">
-                      <h4 className="font-black text-sm text-gray-850 uppercase tracking-wider">Lista de Ponentes Invitados</h4>
+                    <div className="pt-4 border-t border-gray-100 flex justify-end">
                       <button
-                        type="button"
-                        onClick={handleAddSpeaker}
-                        className="bg-gray-800 hover:bg-black text-white text-xs font-bold px-3 py-1 flex items-center gap-1 transition-all rounded-none cursor-pointer"
+                        type="submit"
+                        className="bg-[#800404] hover:bg-[#5a0303] text-white font-black text-sm px-6 py-2.5 transition-colors rounded-none cursor-pointer"
                       >
-                        <Plus size={12} /> Agregar Ponente
+                        Guardar Cambios (Encuentro)
                       </button>
                     </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {cmsMeetForm.speakers.map((speaker, idx) => (
-                        <div key={idx} className="border border-gray-200 p-4 space-y-3 bg-white relative">
-                          <button
-                            type="button"
-                            onClick={() => handleRemoveSpeaker(idx)}
-                            className="absolute top-2 right-2 text-red-500 hover:text-red-700 transition-colors p-1 cursor-pointer"
-                            title="Eliminar ponente"
-                          >
-                            <Trash2 size={14} />
-                          </button>
-                          
-                          <div className="grid grid-cols-2 gap-2">
-                            <div>
-                              <label className="block text-[10px] font-bold text-gray-400 uppercase mb-0.5">Nombre</label>
-                              <input
-                                type="text"
-                                value={speaker.name}
-                                onChange={e => handleEditSpeaker(idx, 'name', e.target.value)}
-                                className="w-full border border-gray-300 px-2 py-1 text-xs focus:outline-none focus:border-[#800404] text-gray-850 font-bold"
-                              />
-                            </div>
-                            <div>
-                              <label className="block text-[10px] font-bold text-gray-400 uppercase mb-0.5">País (Bandera + Texto)</label>
-                              <input
-                                type="text"
-                                value={speaker.country}
-                                onChange={e => handleEditSpeaker(idx, 'country', e.target.value)}
-                                className="w-full border border-gray-300 px-2 py-1 text-xs focus:outline-none focus:border-[#800404] text-gray-850"
-                                placeholder="Ej: 🇯🇵 Japón"
-                              />
-                            </div>
-                          </div>
-
-                          <div>
-                            <label className="block text-[10px] font-bold text-gray-400 uppercase mb-0.5">Institución / Organización</label>
-                            <input
-                              type="text"
-                              value={speaker.org}
-                              onChange={e => handleEditSpeaker(idx, 'org', e.target.value)}
-                              className="w-full border border-gray-300 px-2 py-1 text-xs focus:outline-none focus:border-[#800404] text-gray-800"
-                            />
-                          </div>
-
-                          <div>
-                            <label className="block text-[10px] font-bold text-gray-400 uppercase mb-0.5">Tema / Especialidad</label>
-                            <input
-                              type="text"
-                              value={speaker.topic}
-                              onChange={e => handleEditSpeaker(idx, 'topic', e.target.value)}
-                              className="w-full border border-gray-300 px-2 py-1 text-xs focus:outline-none focus:border-[#800404] text-gray-800"
-                            />
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className="pt-4 border-t border-gray-100 flex justify-end">
-                    <button
-                      type="submit"
-                      className="bg-[#800404] hover:bg-[#5a0303] text-white font-black text-sm px-6 py-2.5 transition-colors rounded-none cursor-pointer"
-                    >
-                      Guardar Cambios (Encuentro)
-                    </button>
-                  </div>
-                </form>
+                  </form>
+                </div>
               )}
 
               {/* SUB TAB: CERTIFICADOS */}
@@ -2826,37 +3286,71 @@ export default function Admin() {
                   {/* Right Column */}
                   <div className="space-y-4">
                     <div>
-                      <label className="block text-xs font-bold text-gray-500 uppercase mb-1">URL de la Portada</label>
-                      <div className="flex gap-2">
-                        <input
-                          type="text"
-                          value={eventForm.imageUrl}
-                          onChange={e => setEventForm(prev => ({ ...prev, imageUrl: e.target.value }))}
-                          className="flex-1 border border-gray-300 px-3 py-1.5 text-sm focus:outline-none focus:border-[#800404] text-gray-850"
-                          placeholder="https://..."
-                        />
-                        <button
-                          type="button"
-                          onClick={() => {
-                            const randoms = [
-                              'https://images.unsplash.com/photo-1540575467063-178a50c2df87?auto=format&fit=crop&q=80&w=800',
-                              'https://images.unsplash.com/photo-1519671482749-fd09be7ccebf?auto=format&fit=crop&q=80&w=800',
-                              'https://images.unsplash.com/photo-1507679799987-c73779587ccf?auto=format&fit=crop&q=80&w=800',
-                              'https://images.unsplash.com/photo-1531482615713-2afd69097998?auto=format&fit=crop&q=80&w=800',
-                              'https://images.unsplash.com/photo-1523050854058-8df90110c9f1?auto=format&fit=crop&q=80&w=800',
-                              'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&q=80&w=800',
-                              'https://images.unsplash.com/photo-1521791136368-1a8684c0286d?auto=format&fit=crop&q=80&w=800',
-                              'https://images.unsplash.com/photo-1504384308090-c894fdcc538d?auto=format&fit=crop&q=80&w=800',
-                              'https://images.unsplash.com/photo-1511578314322-379afb476865?auto=format&fit=crop&q=80&w=800'
-                            ];
-                            const idx = Math.floor(Math.random() * randoms.length);
-                            setEventForm(prev => ({ ...prev, imageUrl: randoms[idx] }));
-                          }}
-                          className="bg-gray-200 hover:bg-gray-300 text-gray-700 text-xs font-bold px-3 py-1 cursor-pointer transition-colors shrink-0"
-                          title="Usar imagen de prueba aleatoria"
-                        >
-                          Azar
-                        </button>
+                      <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Portada del Evento</label>
+                      <div className="flex items-center gap-3">
+                        {/* Preview */}
+                        <div className="w-16 h-10 border border-gray-200 bg-white overflow-hidden flex items-center justify-center shrink-0">
+                          {eventForm.imageUrl ? (
+                            <img src={eventForm.imageUrl} alt="Portada" className="w-full h-full object-cover" />
+                          ) : (
+                            <span className="text-[8px] text-gray-400 font-bold uppercase text-center">Sin Imagen</span>
+                          )}
+                        </div>
+                        <div className="flex flex-wrap gap-1.5">
+                          <label className="bg-gray-800 hover:bg-black text-white px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider transition-colors cursor-pointer flex items-center justify-center">
+                            Subir Foto
+                            <input
+                              type="file"
+                              accept="image/*"
+                              onChange={e => {
+                                const file = e.target.files[0];
+                                if (file) {
+                                  if (file.size > 2 * 1024 * 1024) {
+                                    showAlert('La imagen es demasiado grande. El límite es de 2MB.', 'Imagen Excede Límite', 'warning');
+                                    return;
+                                  }
+                                  const reader = new FileReader();
+                                  reader.onloadend = () => {
+                                    setEventForm(prev => ({ ...prev, imageUrl: reader.result }));
+                                  };
+                                  reader.readAsDataURL(file);
+                                }
+                              }}
+                              className="hidden"
+                            />
+                          </label>
+                          {eventForm.imageUrl && (
+                            <button
+                              type="button"
+                              onClick={() => setEventForm(prev => ({ ...prev, imageUrl: '' }))}
+                              className="border border-red-200 hover:bg-red-50 text-red-650 px-2.5 py-1 text-[10px] font-black uppercase transition-colors"
+                            >
+                              Limpiar
+                            </button>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const randoms = [
+                                'https://images.unsplash.com/photo-1540575467063-178a50c2df87?auto=format&fit=crop&q=80&w=800',
+                                'https://images.unsplash.com/photo-1519671482749-fd09be7ccebf?auto=format&fit=crop&q=80&w=800',
+                                'https://images.unsplash.com/photo-1507679799987-c73779587ccf?auto=format&fit=crop&q=80&w=800',
+                                'https://images.unsplash.com/photo-1531482615713-2afd69097998?auto=format&fit=crop&q=80&w=800',
+                                'https://images.unsplash.com/photo-1523050854058-8df90110c9f1?auto=format&fit=crop&q=80&w=800',
+                                'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&q=80&w=800',
+                                'https://images.unsplash.com/photo-1521791136368-1a8684c0286d?auto=format&fit=crop&q=80&w=800',
+                                'https://images.unsplash.com/photo-1504384308090-c894fdcc538d?auto=format&fit=crop&q=80&w=800',
+                                'https://images.unsplash.com/photo-1511578314322-379afb476865?auto=format&fit=crop&q=80&w=800'
+                              ];
+                              const idx = Math.floor(Math.random() * randoms.length);
+                              setEventForm(prev => ({ ...prev, imageUrl: randoms[idx] }));
+                            }}
+                            className="bg-gray-200 hover:bg-gray-300 text-gray-700 text-[10px] font-bold px-2.5 py-1 transition-colors cursor-pointer"
+                            title="Usar imagen de prueba aleatoria"
+                          >
+                            Azar
+                          </button>
+                        </div>
                       </div>
                     </div>
 
@@ -2893,6 +3387,18 @@ export default function Admin() {
                         className="w-full border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:border-[#800404] text-gray-850"
                         placeholder="Ej: 300"
                       />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Estado del Evento</label>
+                      <select
+                        value={eventForm.status}
+                        onChange={e => setEventForm(prev => ({ ...prev, status: e.target.value }))}
+                        className="w-full border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:border-[#800404] bg-white text-gray-805"
+                      >
+                        <option value="pre">Publicado (Próximo / En Curso)</option>
+                        <option value="post">Post-Evento / Finalizado (Recap)</option>
+                      </select>
                     </div>
                   </div>
                 </div>
@@ -2963,6 +3469,143 @@ export default function Admin() {
                       })}
                     </div>
                   </div>
+
+                  {eventForm.status === 'post' && (
+                    <div className="mt-4 pt-4 border-t border-dashed border-gray-300 space-y-4">
+                      <h5 className="text-xs font-black text-[#800404] uppercase tracking-wider">
+                        Contenido del Recap (Post-Evento)
+                      </h5>
+
+                      {/* Grabación del Evento (YouTube ID o Link) */}
+                      <div>
+                        <label className="block text-xs font-bold text-gray-500 uppercase mb-1">
+                          ID o Enlace de Grabación de YouTube
+                        </label>
+                        <input
+                          type="text"
+                          value={eventForm.recapVideoId || ''}
+                          onChange={e => setEventForm(prev => ({ ...prev, recapVideoId: e.target.value }))}
+                          className="w-full border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:border-[#800404] text-gray-850"
+                          placeholder="Ej: https://www.youtube.com/watch?v=WJzWnO4qZc0 o WJzWnO4qZc0"
+                        />
+                      </div>
+
+                      {/* Informe Final (PDF Upload) */}
+                      <div>
+                        <label className="block text-xs font-bold text-gray-500 uppercase mb-1">
+                          Informe Final (PDF)
+                        </label>
+                        <div className="flex items-center gap-3">
+                          <div className="text-xs text-gray-650 font-bold shrink-0">
+                            {eventForm.report ? (
+                              <span className="text-emerald-700 bg-emerald-50 px-2.5 py-1 border border-emerald-100 uppercase tracking-wider text-[10px]">
+                                PDF Cargado
+                              </span>
+                            ) : (
+                              <span className="text-gray-400 bg-gray-50 px-2.5 py-1 border border-gray-200 uppercase tracking-wider text-[10px]">
+                                Sin Informe PDF
+                              </span>
+                            )}
+                          </div>
+                          <div className="flex gap-1.5">
+                            <label className="bg-gray-800 hover:bg-black text-white px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider transition-colors cursor-pointer flex items-center justify-center">
+                              Subir PDF
+                              <input
+                                type="file"
+                                accept="application/pdf"
+                                onChange={e => {
+                                  const file = e.target.files[0];
+                                  if (file) {
+                                    if (file.size > 5 * 1024 * 1024) {
+                                      showAlert('El PDF es demasiado grande. El límite es de 5MB.', 'PDF Excede Límite', 'warning');
+                                      return;
+                                    }
+                                    const reader = new FileReader();
+                                    reader.onloadend = () => {
+                                      setEventForm(prev => ({ ...prev, report: reader.result }));
+                                    };
+                                    reader.readAsDataURL(file);
+                                  }
+                                }}
+                                className="hidden"
+                              />
+                            </label>
+                            {eventForm.report && (
+                              <button
+                                type="button"
+                                onClick={() => setEventForm(prev => ({ ...prev, report: '' }))}
+                                className="border border-red-200 hover:bg-red-50 text-red-650 px-2.5 py-1 text-[10px] font-black uppercase transition-colors"
+                              >
+                                Limpiar
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Galería de Fotos (Hasta 6 imágenes) */}
+                      <div>
+                        <label className="block text-xs font-bold text-gray-500 uppercase mb-1">
+                          Galería de Fotos (Hasta 6 fotos del evento)
+                        </label>
+                        <div className="grid grid-cols-6 gap-2.5">
+                          {Array.from({ length: 6 }).map((_, i) => {
+                            const imgUrl = (eventForm.recapImages || [])[i];
+                            return (
+                              <div key={i} className="flex flex-col items-center gap-1.5 border border-gray-200 p-1.5 bg-gray-50">
+                                <div className="w-full aspect-[4/3] bg-white border border-gray-150 overflow-hidden flex items-center justify-center">
+                                  {imgUrl ? (
+                                    <img src={imgUrl} alt={`Recap ${i + 1}`} className="w-full h-full object-cover" />
+                                  ) : (
+                                    <span className="text-[9px] text-gray-300 font-bold uppercase text-center">Foto {i + 1}</span>
+                                  )}
+                                </div>
+                                <div className="flex gap-1 w-full justify-center">
+                                  <label className="bg-gray-700 hover:bg-gray-900 text-white p-1 text-[9px] font-bold uppercase cursor-pointer flex items-center justify-center shrink-0">
+                                    Subir
+                                    <input
+                                      type="file"
+                                      accept="image/*"
+                                      onChange={e => {
+                                        const file = e.target.files[0];
+                                        if (file) {
+                                          if (file.size > 2 * 1024 * 1024) {
+                                            showAlert('La imagen es demasiado grande. El límite es de 2MB.', 'Imagen Excede Límite', 'warning');
+                                            return;
+                                          }
+                                          const reader = new FileReader();
+                                          reader.onloadend = () => {
+                                            const currentImages = [...(eventForm.recapImages || [])];
+                                            currentImages[i] = reader.result;
+                                            setEventForm(prev => ({ ...prev, recapImages: currentImages }));
+                                          };
+                                          reader.readAsDataURL(file);
+                                        }
+                                      }}
+                                      className="hidden"
+                                    />
+                                  </label>
+                                  {imgUrl && (
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        const currentImages = [...(eventForm.recapImages || [])];
+                                        currentImages[i] = '';
+                                        setEventForm(prev => ({ ...prev, recapImages: currentImages }));
+                                      }}
+                                      className="border border-red-200 text-red-650 hover:bg-red-50 p-1 text-[9px] font-black uppercase"
+                                    >
+                                      X
+                                    </button>
+                                  )}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
 

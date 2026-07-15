@@ -1,17 +1,17 @@
 import { useState, useEffect } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { Calendar, Clock, MapPin, Users, Award, ChevronRight, Star, Globe, Cpu, Utensils, ExternalLink, CheckCircle, UserPlus } from 'lucide-react'
 import { db } from '../services/db'
 import { useAuth } from '../context/AuthContext'
 import { useAlert } from '../context/AlertContext'
 
 const speakers = [
-  { name: 'Dr. Kenji Tanaka', org: 'University of Tokyo', topic: 'Inteligencia Artificial y Ciudades Inteligentes', country: '🇯🇵 Japón' },
-  { name: 'Dra. Elena Rodríguez', org: 'MIT - Massachusetts Institute of Technology', topic: 'Infraestructura Resiliente ante el Cambio Climático', country: '🇺🇸 EE.UU.' },
-  { name: 'Dr. Hans Weber', org: 'ETH Zurich', topic: 'Ingeniería de Materiales Avanzados', country: '🇨🇭 Suiza' },
-  { name: 'Ing. Priya Sharma', org: 'Indian Institute of Technology Delhi', topic: 'Energía Solar a Gran Escala', country: '🇮🇳 India' },
-  { name: 'Dr. Roberto Vargas', org: 'Universidad Nacional de Ingeniería', topic: 'IA en la Ingeniería Peruana', country: '🇵🇪 Perú' },
-  { name: 'Dra. Ana Müller', org: 'Technische Universität München', topic: 'Robótica Industrial y Manufactura', country: '🇩🇪 Alemania' },
+  { name: 'Dr. Kenji Tanaka', org: 'University of Tokyo', topic: 'Inteligencia Artificial y Ciudades Inteligentes', country: 'Japón', imageUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=300' },
+  { name: 'Dra. Elena Rodríguez', org: 'MIT - Massachusetts Institute of Technology', topic: 'Infraestructura Resiliente ante el Cambio Climático', country: 'EE.UU.', imageUrl: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=300' },
+  { name: 'Dr. Hans Weber', org: 'ETH Zurich', topic: 'Ingeniería de Materiales Avanzados', country: 'Suiza', imageUrl: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=300' },
+  { name: 'Ing. Priya Sharma', org: 'Indian Institute of Technology Delhi', topic: 'Energía Solar a Gran Escala', country: 'India', imageUrl: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=300' },
+  { name: 'Dr. Roberto Vargas', org: 'Universidad Nacional de Ingeniería', topic: 'IA en la Ingeniería Peruana', country: 'Perú', imageUrl: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?auto=format&fit=crop&q=80&w=300' },
+  { name: 'Dra. Ana Müller', org: 'Technische Universität München', topic: 'Robótica Industrial y Manufactura', country: 'Alemania', imageUrl: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?auto=format&fit=crop&q=80&w=300' },
 ]
 
 const phases = [
@@ -65,6 +65,7 @@ function PhaseActionSection({ phase }) {
   const { user, openAuth } = useAuth()
   const { showAlert } = useAlert()
   const [isRegistering, setIsRegistering] = useState(false)
+  const navigate = useNavigate()
 
   const registrationCount = db.getEventRegistrationCount(phase.id)
   const isRegistered = user ? db.isUserRegistered(user.email, phase.id) : false
@@ -72,7 +73,7 @@ function PhaseActionSection({ phase }) {
 
   const handleRegister = () => {
     if (!user) {
-      openAuth('login')
+      navigate('/iniciar-sesion?redirect=/encuentro-internacional')
       return
     }
     setIsRegistering(true)
@@ -154,7 +155,11 @@ export default function EncuentroInternacional() {
   const [activePhaseId, setActivePhaseId] = useState('sep1')
   const [dynamicSpeakers, setDynamicSpeakers] = useState(() => {
     const val = db.getCmsValue('meet_speakers', speakers)
-    return Array.isArray(val) ? val : speakers
+    const list = Array.isArray(val) ? val : speakers
+    return list.map(s => ({
+      ...s,
+      country: s.country ? s.country.replace(/[\uD83C-\uD83E][\uDC00-\uDFFF]/g, '').trim().slice(0, 20) : ''
+    }))
   })
   const [dynamicPhases, setDynamicPhases] = useState(() => {
     const val = db.getCmsValue('meet_phases', phases)
@@ -163,7 +168,11 @@ export default function EncuentroInternacional() {
 
   useEffect(() => {
     const sp = db.getCmsValue('meet_speakers', speakers)
-    setDynamicSpeakers(Array.isArray(sp) ? sp : speakers)
+    const list = Array.isArray(sp) ? sp : speakers
+    setDynamicSpeakers(list.map(s => ({
+      ...s,
+      country: s.country ? s.country.replace(/[\uD83C-\uD83E][\uDC00-\uDFFF]/g, '').trim().slice(0, 20) : ''
+    })))
     const ph = db.getCmsValue('meet_phases', phases)
     setDynamicPhases(Array.isArray(ph) ? ph : phases)
   }, [])
@@ -177,7 +186,7 @@ export default function EncuentroInternacional() {
         <div className="absolute inset-0 bg-[url('/encuentro-internacional/sesquitec-imagen.png')] bg-cover bg-center opacity-60" />
         <div className="absolute inset-0 bg-gradient-to-b from-[#800404]/80 to-[#3a0202]" />
 
-        <div className="relative max-w-7xl mx-auto px-4 py-16 md:py-24">
+        <div className="relative max-w-7xl mx-auto px-4 py-10 md:py-14">
           <div className="max-w-3xl">
             <h1 className="text-3xl sm:text-4xl md:text-5xl font-black leading-tight mb-4">
               Encuentro Internacional
@@ -203,27 +212,30 @@ export default function EncuentroInternacional() {
         </div>
       </div>
 
-      {/* Timeline strip (Tabs) */}
       <div className="bg-white border-b border-gray-200 sticky top-16 z-40 shadow-sm">
-        <div className="max-w-4xl mx-auto px-4 flex items-center gap-1 overflow-x-auto scrollbar-hide">
+        <div className="max-w-7xl mx-auto px-4 grid grid-cols-3 gap-0 overflow-x-auto scrollbar-hide">
           {dynamicPhases.map((p, i) => {
             const isActive = p.id === activePhaseId
+            const isLast = i === dynamicPhases.length - 1
             return (
               <button
                 key={p.id}
                 onClick={() => setActivePhaseId(p.id)}
-                className={`py-3 sm:py-4 px-2 sm:px-3 flex items-center gap-1.5 sm:gap-2.5 text-xs sm:text-sm font-bold transition-all whitespace-nowrap border-b-2 cursor-pointer focus:outline-none shrink-0 ${
+                className={`py-3 sm:py-4 px-2 md:px-4 flex items-center justify-center gap-1.5 sm:gap-2.5 text-xs sm:text-sm font-bold transition-all whitespace-nowrap border-b-2 cursor-pointer focus:outline-none w-full shrink-0 ${
                   isActive
-                    ? 'text-[#800404] border-[#800404]'
-                    : 'text-gray-500 border-transparent hover:text-[#800404]'
+                    ? 'text-[#800404] border-[#800404] bg-gray-100'
+                    : 'text-gray-500 border-transparent hover:text-[#800404] hover:bg-gray-50/70'
                 }`}
               >
-                <span className={`w-6 h-6 flex items-center justify-center text-xs font-black transition-colors rounded-full ${
+                <span className={`w-6 h-6 flex items-center justify-center text-xs font-black transition-colors rounded-full shrink-0 ${
                   isActive ? 'bg-[#800404] text-white' : 'bg-gray-100 text-gray-500'
                 }`}>
                   {i + 1}
                 </span>
-                <span>{p.title}</span>
+                <span>
+                  <span className="inline md:hidden">{p.title.split(' ')[0]}</span>
+                  <span className="hidden md:inline">{p.title}</span>
+                </span>
               </button>
             )
           })}
@@ -231,7 +243,7 @@ export default function EncuentroInternacional() {
       </div>
 
       {/* Main Single Large Card */}
-      <div className="max-w-5xl mx-auto px-4 py-8">
+      <div className="max-w-7xl mx-auto px-4 py-8">
         {/* Large Card Container */}
         <div className="bg-white border border-gray-200 shadow-xl overflow-hidden md:grid md:grid-cols-12 rounded-xl transition-all duration-300">
           {/* Left Column: Image */}
@@ -242,7 +254,7 @@ export default function EncuentroInternacional() {
               className="absolute inset-0 w-full h-full object-cover"
             />
             {/* Top color bar indicating status/phase color */}
-            <div className={`absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r ${activePhase.color}`} />
+            <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-[#800404] to-[#b91c1c]" />
           </div>
 
           {/* Right Column: Content */}
@@ -310,24 +322,37 @@ export default function EncuentroInternacional() {
             </p>
           </div>
 
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
             {dynamicSpeakers.map((s, i) => (
-              <div key={i} className="border border-gray-200 p-5 hover:border-[#800404]/20 hover:shadow-sm transition-all group">
-                <div className="flex items-start gap-4">
-                  <div className="w-12 h-12 bg-gradient-to-br from-[#800404] to-[#b91c1c] text-white flex items-center justify-center font-black text-sm shrink-0">
-                    {s.name.split(' ').map(w => w[0]).slice(0, 2).join('')}
-                  </div>
-                  <div className="min-w-0">
-                    <h4 className="font-black text-gray-900 text-sm leading-tight">{s.name}</h4>
-                    <p className="text-[10px] text-gray-400 font-medium mt-0.5">{s.org}</p>
-                    <p className="text-[10px] text-gray-400">{s.country}</p>
+              <div key={i} className="bg-white border border-gray-200 overflow-hidden hover:border-[#800404]/30 hover:shadow-md transition-all group flex flex-col rounded-none">
+                <div className="relative aspect-square w-full overflow-hidden bg-gray-100">
+                  {s.imageUrl ? (
+                    <img
+                      src={s.imageUrl}
+                      alt={s.name}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    />
+                  ) : (
+                    <div className="w-full h-full bg-gradient-to-br from-[#800404] to-[#5a0303] flex items-center justify-center text-white font-black text-2xl">
+                      {s.name.split(' ').map(w => w[0]).slice(0, 2).join('')}
+                    </div>
+                  )}
+                  <div className="absolute top-1.5 right-1.5 bg-black/75 backdrop-blur-sm text-white text-[8px] font-bold px-1.5 py-0.5 rounded-none uppercase tracking-wider">
+                    {s.country}
                   </div>
                 </div>
-                <div className="mt-3 pt-3 border-t border-gray-100">
-                  <p className="text-xs text-gray-600 font-medium leading-normal">
-                    <Star size={10} className="inline text-amber-500 mr-1" />
-                    {s.topic}
-                  </p>
+                
+                <div className="p-3 flex-1 flex flex-col justify-between">
+                  <div>
+                    <h4 className="font-black text-gray-900 text-xs sm:text-sm leading-tight group-hover:text-[#800404] transition-colors">{s.name}</h4>
+                    <p className="text-[9px] text-gray-400 font-bold uppercase tracking-wider mt-1">{s.org}</p>
+                  </div>
+                  <div className="mt-3 pt-2 border-t border-gray-100">
+                    <p className="text-[10px] sm:text-xs text-gray-600 font-semibold italic flex items-start gap-1 leading-tight">
+                      <Star size={11} className="text-amber-500 shrink-0 mt-0.5 fill-amber-500" />
+                      <span>{s.topic}</span>
+                    </p>
+                  </div>
                 </div>
               </div>
             ))}
@@ -336,8 +361,8 @@ export default function EncuentroInternacional() {
       </div>
 
       {/* Info section */}
-      <div className="max-w-7xl mx-auto px-4 py-14">
-        <div className="grid md:grid-cols-2 gap-8 items-center">
+      <div className="max-w-7xl mx-auto px-6 sm:px-10 md:px-16 lg:px-20 py-14">
+        <div className="grid md:grid-cols-2 gap-8 lg:gap-12 items-start">
           <div>
             <span className="text-[10px] font-black text-[#800404] uppercase tracking-widest">Información General</span>
             <h2 className="text-xl sm:text-2xl font-black text-gray-900 mt-2 mb-4">¿Cómo participar?</h2>
@@ -362,26 +387,26 @@ export default function EncuentroInternacional() {
           </div>
           <div className="bg-white border border-gray-200 p-6">
             <h3 className="text-sm font-black text-gray-800 uppercase tracking-wider mb-4">Datos del Evento</h3>
-            <div className="space-y-3 text-sm">
-              <div className="flex justify-between py-2 border-b border-gray-100">
+            <div className="space-y-3 text-xs sm:text-sm">
+              <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-1 lg:gap-0 py-2 border-b border-gray-100">
                 <span className="text-gray-400 font-medium">Organizador</span>
-                <span className="text-gray-800 font-bold">Comisión del Sesquicentenario UNI</span>
+                <span className="text-gray-800 font-bold lg:text-right">Comisión del Sesquicentenario UNI</span>
               </div>
-              <div className="flex justify-between py-2 border-b border-gray-100">
+              <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-1 lg:gap-0 py-2 border-b border-gray-100">
                 <span className="text-gray-400 font-medium">Periodo</span>
-                <span className="text-gray-800 font-bold">08 – 12 Septiembre 2026</span>
+                <span className="text-gray-800 font-bold lg:text-right">08 – 12 Septiembre 2026</span>
               </div>
-              <div className="flex justify-between py-2 border-b border-gray-100">
+              <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-1 lg:gap-0 py-2 border-b border-gray-100">
                 <span className="text-gray-400 font-medium">Sede principal</span>
-                <span className="text-gray-800 font-bold">Campus UNI, Rímac, Lima</span>
+                <span className="text-gray-800 font-bold lg:text-right">Campus UNI, Rímac, Lima</span>
               </div>
-              <div className="flex justify-between py-2 border-b border-gray-100">
+              <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-1 lg:gap-0 py-2 border-b border-gray-100">
                 <span className="text-gray-400 font-medium">Certificación</span>
-                <span className="text-gray-800 font-bold">Certificados digitales con QR</span>
+                <span className="text-gray-800 font-bold lg:text-right">Certificados digitales con QR</span>
               </div>
-              <div className="flex justify-between py-2">
+              <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-1 lg:gap-0 py-2">
                 <span className="text-gray-400 font-medium">Contacto</span>
-                <span className="text-gray-800 font-bold">sesquicentenario@uni.edu.pe</span>
+                <span className="text-gray-800 font-bold lg:text-right">sesquicentenario@uni.edu.pe</span>
               </div>
             </div>
             <div className="flex gap-3 mt-6">
