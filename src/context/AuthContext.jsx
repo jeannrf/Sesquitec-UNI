@@ -475,6 +475,33 @@ export function AuthProvider({ children }) {
     return res
   }
 
+  const migrateEmail = (currentPassword, newEmail) => {
+    if (!user) return { success: false, error: 'Debes iniciar sesión para migrar tu cuenta.' }
+
+    if (user.password && user.password !== currentPassword) {
+      return { success: false, error: 'La contraseña actual es incorrecta.' }
+    }
+
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(newEmail)) {
+      return { success: false, error: 'Por favor ingrese un correo electrónico válido.' }
+    }
+
+    const emailExists = users.some(u => u.email.toLowerCase() === newEmail.toLowerCase())
+    if (emailExists) return { success: false, error: 'Esta cuenta ya está registrada, utiliza otra.' }
+
+    const updatedUsers = users.map(u => u.email === user.email ? { ...u, email: newEmail } : u)
+    const updatedUser = { ...user, email: newEmail }
+
+    localStorage.setItem('uni_eventos_users', JSON.stringify(updatedUsers))
+    localStorage.setItem('uni_eventos_session', JSON.stringify({ email: newEmail }))
+
+    setUsers(updatedUsers)
+    setUser(updatedUser)
+    db.syncUserToSupabase(updatedUser)
+
+    return { success: true }
+  }
+
   const [isAuthOpen, setIsAuthOpen] = useState(false)
   const [authView, setAuthView] = useState('login')
 
@@ -503,6 +530,7 @@ export function AuthProvider({ children }) {
       logout,
       updateProfile,
       registerForEvent,
+      migrateEmail,
       isAuthOpen,
       authView,
       openAuth,

@@ -70,6 +70,50 @@ const programaGeneral = [
   { date: 'LUNES 3 DE AGOSTO', time: '03:00 p.m.', title: 'Ceremonia solemne de distinción honorífica "Doctor Honoris Causa" al Ing. Jorge Rodríguez Rodríguez, presidente fundador del Grupo Gloria.', location: 'Sala de Consejo Universitario.' }
 ]
 
+const defaultPhases = [
+  {
+    id: 'sep1',
+    label: 'FASE I',
+    title: 'Conferencias Internacionales',
+    date: '08 – 09 Sep 2026',
+    time: '09:00 – 18:00',
+    location: 'Teatro UNI, Lima',
+    quota: 960,
+    description: 'Dos días de conferencias magistrales con ponentes internacionales líderes en sus campos. Incluye paneles de discusión, networking y coffee breaks.',
+    color: 'from-[#800404] to-[#b91c1c]',
+    badge: 'Académico',
+    imageUrl: 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?auto=format&fit=crop&q=80&w=800'
+  },
+  {
+    id: 'sep2',
+    label: 'FASE II',
+    title: 'Feria Tecnológica Internacional',
+    date: '10 Sep 2026',
+    time: '10:00 – 20:00',
+    location: 'Explanada de la UNI, Lima',
+    quota: 1500,
+    description: 'La feria tecnológica más grande del Sesquicentenario. Exhibición de prototipos, stands empresariales, demostraciones en vivo y ponencias de innovación.',
+    color: 'from-gray-800 to-gray-600',
+    badge: 'Tecnología',
+    imageUrl: 'https://images.unsplash.com/photo-1485827404703-89b55fcc595e?auto=format&fit=crop&q=80&w=800'
+  },
+  {
+    id: 'sep3',
+    label: 'FASE III',
+    title: 'Cena de Reconocimiento',
+    date: '12 Sep 2026',
+    time: '20:00 – 23:59',
+    location: 'Gran Hotel Bolívar, Lima',
+    quota: 500,
+    description: 'Homenaje central del Sesquicentenario para egresados, personalidades destacadas y autoridades. Cena de honor con música en vivo y reconocimientos especiales.',
+    color: 'from-amber-700 to-amber-500',
+    badge: 'Gala',
+    isPaid: true,
+    price: 'S/ 180',
+    imageUrl: 'https://images.unsplash.com/photo-1519671482749-fd09be7ccebf?auto=format&fit=crop&q=80&w=800'
+  }
+]
+
 const parseEventDate = (dateStr) => {
   const months = {
     'JULIO': 6,
@@ -204,17 +248,24 @@ export default function Home() {
   const [carouselIndex, setCarouselIndex] = useState(1)
   const [isTransitioning, setIsTransitioning] = useState(false)
   const [showAllActivities, setShowAllActivities] = useState(false)
-  const banners = [brochure1, brochure2, brochure3]
-  const slides = [banners[banners.length - 1], ...banners, banners[0]]
+  const [carouselBanners, setCarouselBanners] = useState(() => {
+    const val = db.getCmsValue('home_slider_banners', ['', '', ''])
+    const bannerList = Array.isArray(val) ? val : ['', '', '']
+    return [
+      bannerList[0] || brochure1,
+      bannerList[1] || brochure2,
+      bannerList[2] || brochure3
+    ]
+  })
+  const slides = [carouselBanners[carouselBanners.length - 1], ...carouselBanners, carouselBanners[0]]
 
-  const [heroTitle, setHeroTitle] = useState(() => {
-    const val = db.getCmsValue('home_hero_title', '¿Qué significa 150 años de la UNI?')
-    return typeof val === 'string' ? val : '¿Qué significa 150 años de la UNI?'
+  const [heroPhases, setHeroPhases] = useState(() => {
+    return db.getCmsValue('meet_phases', defaultPhases)
   })
-  const [heroSubtitle, setHeroSubtitle] = useState(() => {
-    const val = db.getCmsValue('home_hero_subtitle', 'Un siglo y medio de excelencia al servicio de la ciencia, la ingeniería, la arquitectura y el desarrollo del Perú.')
-    return typeof val === 'string' ? val : 'Un siglo y medio de excelencia al servicio de la ciencia, la ingeniería, la arquitectura y el desarrollo del Perú.'
-  })
+
+  const [heroTitle, setHeroTitle] = useState(() => db.getCmsValue('home_hero_title', 'Sesquicentenario UNI 150 Años'))
+  const [heroSubtitle, setHeroSubtitle] = useState(() => db.getCmsValue('home_hero_subtitle', 'Celebrando un siglo y medio de excelencia académica, científica, tecnológica y de contribución al desarrollo del Perú.'))
+  
   const [dynamicStats, setDynamicStats] = useState(() => {
     const val = db.getCmsValue('home_stats', stats)
     return Array.isArray(val) ? val : stats
@@ -224,15 +275,64 @@ export default function Home() {
     return Array.isArray(val) ? val : programaGeneral
   })
 
+  // "¿Qué significa 150 años de la UNI?"
+  const [meaningTitle, setMeaningTitle] = useState(() => db.getCmsValue('home_meaning_title', '¿Qué significa 150 años de la UNI?'))
+  const [meaningP1, setMeaningP1] = useState(() => db.getCmsValue('home_meaning_p1', 'Desde 1876, la Universidad Nacional de Ingeniería (UNI) ha sido un referente en la formación de profesionales, la Investigación y la Innovación, contribuyendo de manera decisiva al progreso del país. Durante estos 150 años, la ciencia ha impulsado la generación de conocimiento, la ingeniería ha transformado desafíos en soluciones para la industria, la infraestructura y la tecnología, y la arquitectura ha promovido el diseño de espacios sostenibles que mejoran la calidad de vida.'))
+  const [meaningP2, setMeaningP2] = useState(() => db.getCmsValue('home_meaning_p2', 'El legado de la UNI se refleja en miles de egresados que, con talento, ética y compromiso, lideran proyectos de alto impacto en los sectores público y privado, impulsan el desarrollo científico y tecnológico, y contribuyen a construir un Perú más competitivo y un mundo más innovador y sostenible.'))
+  const [meaningInfo, setMeaningInfo] = useState(() => db.getCmsValue('home_meaning_info', 'El Sesquicentenario de la UNI conmemora 150 años de liderazgo académico, desde su fundación en 1876 por el Ing. Eduardo de Habich.'))
+
+  // "Propuesta de la UNI para el Futuro del Perú 2026-2050"
+  const [proposalTitle, setProposalTitle] = useState(() => db.getCmsValue('home_proposal_title', 'Propuesta de la UNI para el Futuro del Perú 2026-2050 –'))
+  const [proposalSubtitle, setProposalSubtitle] = useState(() => db.getCmsValue('home_proposal_subtitle', 'Libro de Oro del Sesquicentenario'))
+  const [proposalDescription, setProposalDescription] = useState(() => db.getCmsValue('home_proposal_description', 'El objetivo de la propuesta de libro de oro de la UNI es generar aportes académicos y técnicos sobre las perspectivas de desarrollo del país hacia el año 2050.'))
+
+  const [proposalB1Title, setProposalB1Title] = useState(() => db.getCmsValue('home_proposal_b1_title', 'Primera Versión'))
+  const [proposalB1Desc, setProposalB1Desc] = useState(() => db.getCmsValue('home_proposal_b1_desc', 'Etapa de Análisis y Diagnóstico de los 150 años de la UNI'))
+  const [proposalB1Detail, setProposalB1Detail] = useState(() => db.getCmsValue('home_proposal_b1_detail', 'La Primera Versión comprende la etapa de Análisis y Diagnóstico integral de los 150 años de trayectoria de la UNI y su impacto nacional.'))
+
+  const [proposalB2Title, setProposalB2Title] = useState(() => db.getCmsValue('home_proposal_b2_title', 'Segunda Versión'))
+  const [proposalB2Desc, setProposalB2Desc] = useState(() => db.getCmsValue('home_proposal_b2_desc', 'Elaboración de propuestas de las 11 facultades UNI'))
+  const [proposalB2Detail, setProposalB2Detail] = useState(() => db.getCmsValue('home_proposal_b2_detail', 'La Segunda Versión documenta la elaboración de propuestas técnicas y académicas específicas de las 11 facultades de la UNI.'))
+
+  const [proposalB3Title, setProposalB3Title] = useState(() => db.getCmsValue('home_proposal_b3_title', 'Presentación Final'))
+  const [proposalB3Desc, setProposalB3Desc] = useState(() => db.getCmsValue('home_proposal_b3_desc', 'Presentación de la Propuesta de la UNI para el desarrollo del Perú.'))
+  const [proposalB3Detail, setProposalB3Detail] = useState(() => db.getCmsValue('home_proposal_b3_detail', 'La Presentación Final recopila e integra la propuesta final oficial de la UNI para el desarrollo nacional proyectado hacia el 2050.'))
+
   useEffect(() => {
-    const hTitle = db.getCmsValue('home_hero_title', '¿Qué significa 150 años de la UNI?')
-    setHeroTitle(typeof hTitle === 'string' ? hTitle : '¿Qué significa 150 años de la UNI?')
-    const hSub = db.getCmsValue('home_hero_subtitle', 'Un siglo y medio de excelencia al servicio de la ciencia, la ingeniería, la arquitectura y el desarrollo del Perú.')
-    setHeroSubtitle(typeof hSub === 'string' ? hSub : 'Un siglo y medio de excelencia al servicio de la ciencia, la ingeniería, la arquitectura y el desarrollo del Perú.')
-    const dStats = db.getCmsValue('home_stats', stats)
-    setDynamicStats(Array.isArray(dStats) ? dStats : stats)
-    const dProg = db.getCmsValue('home_programa_general', programaGeneral)
-    setDynamicPrograma(Array.isArray(dProg) ? dProg : programaGeneral)
+    setHeroTitle(db.getCmsValue('home_hero_title', 'Sesquicentenario UNI 150 Años'))
+    setHeroSubtitle(db.getCmsValue('home_hero_subtitle', 'Celebrando un siglo y medio de excelencia académica, científica, tecnológica y de contribución al desarrollo del Perú.'))
+    setDynamicStats(db.getCmsValue('home_stats', stats))
+    setDynamicPrograma(db.getCmsValue('home_programa_general', programaGeneral))
+
+    const val = db.getCmsValue('home_slider_banners', ['', '', ''])
+    const bannerList = Array.isArray(val) ? val : ['', '', '']
+    setCarouselBanners([
+      bannerList[0] || brochure1,
+      bannerList[1] || brochure2,
+      bannerList[2] || brochure3
+    ])
+    setHeroPhases(db.getCmsValue('meet_phases', defaultPhases))
+
+    setMeaningTitle(db.getCmsValue('home_meaning_title', '¿Qué significa 150 años de la UNI?'))
+    setMeaningP1(db.getCmsValue('home_meaning_p1', 'Desde 1876, la Universidad Nacional de Ingeniería (UNI) ha sido un referente en la formación de profesionales, la Investigación y la Innovación, contribuyendo de manera decisiva al progreso del país. Durante estos 150 años, la ciencia ha impulsado la generación de conocimiento, la ingeniería ha transformado desafíos en soluciones para la industria, la infraestructura y la tecnología, y la arquitectura ha promovido el diseño de espacios sostenibles que mejoran la calidad de vida.'))
+    setMeaningP2(db.getCmsValue('home_meaning_p2', 'El legado de la UNI se refleja en miles de egresados que, con talento, ética y compromiso, lideran proyectos de alto impacto en los sectores público y privado, impulsan el desarrollo científico y tecnológico, y contribuyen a construir un Perú más competitivo y un mundo más innovador y sostenible.'))
+    setMeaningInfo(db.getCmsValue('home_meaning_info', 'El Sesquicentenario de la UNI conmemora 150 años de liderazgo académico, desde su fundación en 1876 por el Ing. Eduardo de Habich.'))
+
+    setProposalTitle(db.getCmsValue('home_proposal_title', 'Propuesta de la UNI para el Futuro del Perú 2026-2050 –'))
+    setProposalSubtitle(db.getCmsValue('home_proposal_subtitle', 'Libro de Oro del Sesquicentenario'))
+    setProposalDescription(db.getCmsValue('home_proposal_description', 'El objetivo de la propuesta de libro de oro de la UNI es generar aportes académicos y técnicos sobre las perspectivas de desarrollo del país hacia el año 2050.'))
+
+    setProposalB1Title(db.getCmsValue('home_proposal_b1_title', 'Primera Versión'))
+    setProposalB1Desc(db.getCmsValue('home_proposal_b1_desc', 'Etapa de Análisis y Diagnóstico de los 150 años de la UNI'))
+    setProposalB1Detail(db.getCmsValue('home_proposal_b1_detail', 'La Primera Versión comprende la etapa de Análisis y Diagnóstico integral de los 150 años de trayectoria de la UNI y su impacto nacional.'))
+
+    setProposalB2Title(db.getCmsValue('home_proposal_b2_title', 'Segunda Versión'))
+    setProposalB2Desc(db.getCmsValue('home_proposal_b2_desc', 'Elaboración de propuestas de las 11 facultades UNI'))
+    setProposalB2Detail(db.getCmsValue('home_proposal_b2_detail', 'La Segunda Versión documenta la elaboración de propuestas técnicas y académicas específicas de las 11 facultades de la UNI.'))
+
+    setProposalB3Title(db.getCmsValue('home_proposal_b3_title', 'Presentación Final'))
+    setProposalB3Desc(db.getCmsValue('home_proposal_b3_desc', 'Presentación de la Propuesta de la UNI para el desarrollo del Perú.'))
+    setProposalB3Detail(db.getCmsValue('home_proposal_b3_detail', 'La Presentación Final recopila e integra la propuesta final oficial de la UNI para el desarrollo nacional proyectado hacia el 2050.'))
   }, [])
 
   const handleNext = () => {
@@ -343,7 +443,7 @@ export default function Home() {
           {/* Carrusel */}
           <div className="relative overflow-hidden bg-black">
             {/* Espaciador invisible para mantener la altura natural */}
-            <img src={banners[0]} alt="" className="w-full block opacity-0 pointer-events-none" aria-hidden="true" />
+            <img src={carouselBanners[0]} alt="" className="w-full block opacity-0 pointer-events-none" aria-hidden="true" />
             
             {/* Contenedor deslizante */}
             <div 
@@ -376,8 +476,8 @@ export default function Home() {
             </button>
 
             <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10 flex gap-2">
-              {banners.map((_, i) => {
-                const activeDotIndex = (carouselIndex - 1 + banners.length) % banners.length
+              {carouselBanners.map((_, i) => {
+                const activeDotIndex = (carouselIndex - 1 + carouselBanners.length) % carouselBanners.length
                 return (
                   <button
                     key={i}
@@ -398,17 +498,17 @@ export default function Home() {
             >
               <div 
                 className="absolute inset-0 bg-cover bg-center transition-transform duration-500 group-hover:scale-115"
-                style={{ backgroundImage: `url('https://images.unsplash.com/photo-1540575467063-178a50c2df87?auto=format&fit=crop&q=80&w=600')` }}
+                style={{ backgroundImage: `url('${heroPhases[0]?.imageUrl || 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?auto=format&fit=crop&q=80&w=600'}')` }}
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/40 to-transparent z-[1]" />
               <div className="relative z-10">
                 <span className="text-[9px] bg-[#800404] text-white font-black px-2 py-0.5 uppercase tracking-wider inline-block">
-                  7 - 11 Sep
+                  {heroPhases[0]?.date || '7 - 11 Sep'}
                 </span>
                 <h4 className="font-black text-sm mt-1 leading-tight group-hover:text-red-200 transition-colors uppercase tracking-wide">
-                  Encuentro Internacional
+                  {heroPhases[0]?.title || 'Encuentro Internacional'}
                 </h4>
-                <p className="text-[10px] text-gray-305">Conferencias Magistrales UNI</p>
+                <p className="text-[10px] text-gray-305">{heroPhases[0]?.badge || 'Conferencias Magistrales'}</p>
               </div>
             </Link>
 
@@ -419,17 +519,17 @@ export default function Home() {
             >
               <div 
                 className="absolute inset-0 bg-cover bg-center transition-transform duration-500 group-hover:scale-115"
-                style={{ backgroundImage: `url('https://images.unsplash.com/photo-1485827404703-89b55fcc595e?auto=format&fit=crop&q=80&w=600')` }}
+                style={{ backgroundImage: `url('${heroPhases[1]?.imageUrl || 'https://images.unsplash.com/photo-1485827404703-89b55fcc595e?auto=format&fit=crop&q=80&w=600'}')` }}
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/40 to-transparent z-[1]" />
               <div className="relative z-10">
                 <span className="text-[9px] bg-[#800404] text-white font-black px-2 py-0.5 uppercase tracking-wider inline-block">
-                  7 - 11 Sep
+                  {heroPhases[1]?.date || '7 - 11 Sep'}
                 </span>
                 <h4 className="font-black text-sm mt-1 leading-tight group-hover:text-red-200 transition-colors uppercase tracking-wide">
-                  Feria Tecnológica
+                  {heroPhases[1]?.title || 'Feria Tecnológica'}
                 </h4>
-                <p className="text-[10px] text-gray-305">Innovación y Exposición Internacional</p>
+                <p className="text-[10px] text-gray-305">{heroPhases[1]?.badge || 'Exposición Internacional'}</p>
               </div>
             </Link>
 
@@ -440,17 +540,17 @@ export default function Home() {
             >
               <div 
                 className="absolute inset-0 bg-cover bg-center transition-transform duration-500 group-hover:scale-115"
-                style={{ backgroundImage: `url('https://images.unsplash.com/photo-1519671482749-fd09be7ccebf?auto=format&fit=crop&q=80&w=600')` }}
+                style={{ backgroundImage: `url('${heroPhases[2]?.imageUrl || 'https://images.unsplash.com/photo-1519671482749-fd09be7ccebf?auto=format&fit=crop&q=80&w=600'}')` }}
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/45 to-transparent z-[1]" />
               <div className="relative z-10">
                 <span className="text-[9px] bg-[#d4af37] text-black font-black px-2 py-0.5 uppercase tracking-wider inline-block">
-                  12 Sep
+                  {heroPhases[2]?.date || '12 Sep'}
                 </span>
                 <h4 className="font-black text-sm mt-1 leading-tight text-[#d4af37] group-hover:text-white transition-colors uppercase tracking-wide">
-                  Cena de Reconocimiento
+                  {heroPhases[2]?.title || 'Cena de Reconocimiento'}
                 </h4>
-                <p className="text-[10px] text-gray-305">Homenaje del Sesquicentenario</p>
+                <p className="text-[10px] text-gray-305">{heroPhases[2]?.badge || 'Homenaje del Sesquicentenario'}</p>
               </div>
             </Link>
           </div>
@@ -492,22 +592,19 @@ export default function Home() {
           {/* Left Text */}
           <div className="md:col-span-7 space-y-6">
             <h2 className="text-2xl sm:text-3xl font-black text-gray-900 tracking-tight leading-none">
-              {heroTitle}
+              {meaningTitle}
             </h2>
             <div className="text-sm text-gray-605 space-y-4 leading-relaxed font-sans font-medium">
               <p>
-                {heroSubtitle}
+                {meaningP1}
               </p>
               <p>
-                <strong>Desde 1876, la Universidad Nacional de Ingeniería (UNI)</strong> ha sido un referente en la formación de profesionales, la Investigación y la Innovación, contribuyendo de manera decisiva al progreso del país. Durante estos 150 años, la ciencia ha impulsado la generación de conocimiento, la ingeniería ha transformado desafíos en soluciones para la industria, la infraestructura y la tecnología, y la arquitectura ha promovido el diseño de espacios sostenibles que mejoran la calidad de vida.
-              </p>
-              <p>
-                El legado de la UNI se refleja en miles de egresados que, con talento, ética y compromiso, lideran proyectos de alto impacto en los sectores público y privado, impulsan el desarrollo científico y tecnológico, y contribuyen a construir un Perú más competitivo y un mundo más innovador y sostenible.
+                {meaningP2}
               </p>
             </div>
             <div className="pt-2">
               <button 
-                onClick={() => showAlert('El Sesquicentenario de la UNI conmemora 150 años de liderazgo académico, desde su fundación en 1876 por el Ing. Eduardo de Habich.', 'Significado de los 150 Años', 'info')}
+                onClick={() => showAlert(meaningInfo, 'Significado de los 150 Años', 'info')}
                 className="text-[#800404] hover:text-[#5a0303] text-xs font-black tracking-wide uppercase flex items-center gap-1 group hover:underline cursor-pointer"
               >
                 + Información <ChevronRight size={14} className="transition-transform group-hover:translate-x-0.5" />
@@ -537,15 +634,15 @@ export default function Home() {
           <div className="grid md:grid-cols-12 gap-8 items-start mb-16">
             <div className="md:col-span-6">
               <h2 className="text-2xl sm:text-3xl font-black text-gray-900 tracking-tight leading-tight">
-                Propuesta de la UNI para el Futuro del Perú 2026-2050 –
+                {proposalTitle}
               </h2>
               <h3 className="text-lg font-black text-[#800404] uppercase tracking-wider mt-2">
-                Libro de Oro del Sesquicentenario
+                {proposalSubtitle}
               </h3>
             </div>
             <div className="md:col-span-6 md:border-l-2 md:border-gray-250 md:pl-8 pt-2">
-              <p className="text-sm text-gray-505 leading-relaxed font-sans font-medium">
-                El objetivo de la propuesta de libro de oro de la UNI es generar aportes académicos y técnicos sobre las perspectivas de desarrollo del país hacia el año 2050.
+              <p className="text-sm text-gray-550 leading-relaxed font-sans font-medium">
+                {proposalDescription}
               </p>
             </div>
           </div>
@@ -562,10 +659,10 @@ export default function Home() {
                 />
               </div>
               <div className="text-center space-y-2 max-w-[280px] flex flex-col items-center">
-                <h4 className="font-extrabold text-gray-900 text-lg leading-tight">Primera Versión</h4>
-                <p className="text-sm text-gray-600 leading-snug">Etapa de Análisis y Diagnóstico de los 150 años de la UNI</p>
+                <h4 className="font-extrabold text-gray-900 text-lg leading-tight">{proposalB1Title}</h4>
+                <p className="text-sm text-gray-600 leading-snug">{proposalB1Desc}</p>
                 <button 
-                  onClick={() => showAlert('La Primera Versión comprende la etapa de Análisis y Diagnóstico integral de los 150 años de trayectoria de la UNI y su impacto nacional.', 'Primera Versión - Libro de Oro', 'info')}
+                  onClick={() => showAlert(proposalB1Detail, `${proposalB1Title} - Libro de Oro`, 'info')}
                   className="w-full max-w-[200px] py-2.5 border border-[#800404] text-[#800404] hover:bg-[#800404] hover:text-white font-bold text-xs uppercase tracking-wider transition-colors duration-300 mt-3 cursor-pointer text-center"
                 >
                   Más información
@@ -583,10 +680,10 @@ export default function Home() {
                 />
               </div>
               <div className="text-center space-y-2 max-w-[280px] flex flex-col items-center">
-                <h4 className="font-extrabold text-gray-900 text-lg leading-tight">Segunda Versión</h4>
-                <p className="text-sm text-gray-600 leading-snug">Elaboración de propuestas de las 11 facultades UNI</p>
+                <h4 className="font-extrabold text-gray-900 text-lg leading-tight">{proposalB2Title}</h4>
+                <p className="text-sm text-gray-600 leading-snug">{proposalB2Desc}</p>
                 <button 
-                  onClick={() => showAlert('La Segunda Versión documenta la elaboración de propuestas técnicas y académicas específicas de las 11 facultades de la UNI.', 'Segunda Versión - Libro de Oro', 'info')}
+                  onClick={() => showAlert(proposalB2Detail, `${proposalB2Title} - Libro de Oro`, 'info')}
                   className="w-full max-w-[200px] py-2.5 border border-[#800404] text-[#800404] hover:bg-[#800404] hover:text-white font-bold text-xs uppercase tracking-wider transition-colors duration-300 mt-3 cursor-pointer text-center"
                 >
                   Más información
@@ -604,10 +701,10 @@ export default function Home() {
                 />
               </div>
               <div className="text-center space-y-2 max-w-[280px] flex flex-col items-center">
-                <h4 className="font-extrabold text-gray-900 text-lg leading-tight">Presentación Final</h4>
-                <p className="text-sm text-gray-600 leading-snug">Presentación de la Propuesta de la UNI para el desarrollo del Perú.</p>
+                <h4 className="font-extrabold text-gray-900 text-lg leading-tight">{proposalB3Title}</h4>
+                <p className="text-sm text-gray-600 leading-snug">{proposalB3Desc}</p>
                 <button 
-                  onClick={() => showAlert('La Presentación Final recopila e integra la propuesta final oficial de la UNI para el desarrollo nacional proyectado hacia el 2050.', 'Presentación Final - Libro de Oro', 'info')}
+                  onClick={() => showAlert(proposalB3Detail, `${proposalB3Title} - Libro de Oro`, 'info')}
                   className="w-full max-w-[200px] py-2.5 border border-[#800404] text-[#800404] hover:bg-[#800404] hover:text-white font-bold text-xs uppercase tracking-wider transition-colors duration-300 mt-3 cursor-pointer text-center"
                 >
                   Más información

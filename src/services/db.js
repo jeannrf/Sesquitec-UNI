@@ -398,23 +398,44 @@ export const db = {
         return this.syncFromSupabase(); // re-sincronizar después de sembrar
       }
 
-      const mappedEvents = eventos.map(ev => ({
-        id: ev.id,
-        title: ev.title,
-        organizer: ev.organizer,
-        date: ev.date,
-        time: ev.time,
-        location: ev.location,
-        description: ev.description,
-        quota: ev.quota,
-        status: ev.status,
-        isPaid: ev.is_paid,
-        imageUrl: ev.image_url,
-        category: ev.category,
-        tags: ev.tags ? ev.tags.split(',') : [],
-        registrationOpen: ev.registration_open,
-        max_edit_date: ev.max_edit_date
-      }))
+      const mappedEvents = eventos.map(ev => {
+        let descText = ev.description || '';
+        let recapVideoId = '';
+        let recapImages = [];
+        let report = '';
+
+        if (descText.includes('---RECAP---')) {
+          const parts = descText.split('---RECAP---');
+          descText = parts[0].trim();
+          try {
+            const recap = JSON.parse(parts[1]);
+            recapVideoId = recap.recapVideoId || '';
+            recapImages = recap.recapImages || [];
+            report = recap.report || '';
+          } catch (e) {}
+        }
+
+        return {
+          id: ev.id,
+          title: ev.title,
+          organizer: ev.organizer,
+          date: ev.date,
+          time: ev.time,
+          location: ev.location,
+          description: descText,
+          quota: ev.quota,
+          status: ev.status,
+          isPaid: ev.is_paid,
+          imageUrl: ev.image_url,
+          category: ev.category,
+          tags: ev.tags ? ev.tags.split(',') : [],
+          registrationOpen: ev.registration_open,
+          max_edit_date: ev.max_edit_date,
+          recapVideoId,
+          recapImages,
+          report
+        };
+      })
       localStorage.setItem(EVENTS_KEY, JSON.stringify(mappedEvents))
 
       // 2. Obtener Ponencias
@@ -669,6 +690,16 @@ export const db = {
     this.saveEvents(events)
 
     if (supabase) {
+      let finalDesc = newEvent.description || '';
+      if (newEvent.status === 'post') {
+        const recapObj = {
+          recapVideoId: newEvent.recapVideoId || '',
+          recapImages: newEvent.recapImages || [],
+          report: newEvent.report || ''
+        };
+        finalDesc = `${newEvent.description || ''} ---RECAP--- ${JSON.stringify(recapObj)}`;
+      }
+
       supabase.from('eventos').insert({
         id: newEvent.id,
         title: newEvent.title,
@@ -676,7 +707,7 @@ export const db = {
         date: newEvent.date,
         time: newEvent.time,
         location: newEvent.location,
-        description: newEvent.description,
+        description: finalDesc,
         quota: newEvent.quota,
         status: newEvent.status,
         is_paid: newEvent.isPaid || false,
@@ -702,13 +733,23 @@ export const db = {
       this.saveEvents(events)
 
       if (supabase) {
+        let finalDesc = updatedEvent.description || '';
+        if (updatedEvent.status === 'post') {
+          const recapObj = {
+            recapVideoId: updatedEvent.recapVideoId || '',
+            recapImages: updatedEvent.recapImages || [],
+            report: updatedEvent.report || ''
+          };
+          finalDesc = `${updatedEvent.description || ''} ---RECAP--- ${JSON.stringify(recapObj)}`;
+        }
+
         supabase.from('eventos').update({
           title: updatedEvent.title,
           organizer: updatedEvent.organizer,
           date: updatedEvent.date,
           time: updatedEvent.time,
           location: updatedEvent.location,
-          description: updatedEvent.description,
+          description: finalDesc,
           quota: parseInt(updatedEvent.quota) || 0,
           status: updatedEvent.status,
           is_paid: updatedEvent.isPaid,

@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
-import { Menu, X, User, ChevronDown, Calendar, CreditCard, Award, Settings, LogOut, Shield } from 'lucide-react'
+import { Menu, X, User, ChevronDown, Calendar, CreditCard, Award, Settings, LogOut, Shield, QrCode } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
 import logo from '../../assets/logo.png'
 
@@ -18,6 +18,7 @@ export default function Header() {
   const [mobileProfileOpen, setMobileProfileOpen] = useState(false)
   const [encuentroOpen, setEncuentroOpen] = useState(false)
   const [mobileEncuentroOpen, setMobileEncuentroOpen] = useState(false)
+  const isStaff = user && (user.role === 'STAFF' || user.role === 'ADMIN')
   const location = useLocation()
   const navigate = useNavigate()
   const dropdownRef = useRef(null)
@@ -132,7 +133,17 @@ export default function Header() {
         </nav>
 
         {/* Action Buttons / Profile info */}
-        <div className="flex items-center gap-2 sm:gap-3">
+        <div className="flex items-center gap-4 sm:gap-5">
+          {isStaff && (
+            <button
+              onClick={() => navigate('/admin?tab=asistencia-qr')}
+              className="flex items-center justify-center gap-1.5 bg-[#800404] hover:bg-[#5a0303] text-white p-2.5 sm:px-4 sm:py-2 text-xs sm:text-sm font-black transition-all cursor-pointer shadow-sm uppercase tracking-wider rounded-none"
+              title="Escanear QR"
+            >
+              <QrCode size={20} className="sm:w-[16px] sm:h-[16px]" />
+              <span className="hidden sm:inline">Escanear QR</span>
+            </button>
+          )}
           
           {/* Desktop: User state buttons */}
           {user ? (
@@ -278,7 +289,7 @@ export default function Header() {
 
           {/* Hamburger (Mobile/Tablet nav toggle) */}
           <button
-            className="lg:hidden p-2 bg-[#800404] text-white hover:bg-[#5a0303] transition-colors cursor-pointer"
+            className="lg:hidden p-2.5 bg-[#800404] text-white hover:bg-[#5a0303] transition-colors cursor-pointer"
             onClick={() => { setMenuOpen(!menuOpen); setMobileProfileOpen(false) }}
           >
             {menuOpen ? <X size={20} /> : <Menu size={20} />}

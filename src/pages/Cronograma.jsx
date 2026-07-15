@@ -340,13 +340,12 @@ function EventCard({ event }) {
               <X size={18} />
             </button>
           </div>
-
           {/* Body */}
           <div className="p-6 space-y-6">
             {/* Intro text */}
             <div>
               <p className="text-sm text-gray-650 leading-relaxed text-justify">
-                El evento finalizó exitosamente. En el marco de la conmemoración del Sesquicentenario de la UNI, agradecemos a toda la comunidad universitaria por su grata presencia. Los certificados oficiales firmados ya se encuentran disponibles.
+                {event.description || 'El evento finalizó exitosamente. En el marco de la conmemoración del Sesquicentenario de la UNI, agradecemos a toda la comunidad universitaria por su grata presencia. Los certificados oficiales firmados ya se encuentran disponibles.'}
               </p>
             </div>
 
@@ -358,7 +357,20 @@ function EventCard({ event }) {
               <div className="aspect-video w-full bg-gray-100 border border-gray-200 overflow-hidden relative">
                 <iframe
                   className="w-full h-full"
-                  src={`https://www.youtube.com/embed/${event.id === 'may1' ? 'WJzWnO4qZc0' : 'dQw4w9WgXcQ'}`}
+                  src={(() => {
+                    const input = event.recapVideoId;
+                    if (!input) return 'https://www.youtube.com/embed/dQw4w9WgXcQ';
+                    if (input.includes('youtube.com') || input.includes('youtu.be')) {
+                      let videoId = '';
+                      const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+                      const match = input.match(regExp);
+                      if (match && match[2].length === 11) {
+                        videoId = match[2];
+                      }
+                      return videoId ? `https://www.youtube.com/embed/${videoId}` : input;
+                    }
+                    return `https://www.youtube.com/embed/${input}`;
+                  })()}
                   title="YouTube video player"
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                   allowFullScreen
@@ -372,11 +384,14 @@ function EventCard({ event }) {
                 <Image size={12} className="text-[#800404]" /> Galería de Fotos
               </p>
               <div className="grid grid-cols-3 gap-2.5">
-                {[
-                  'https://images.unsplash.com/photo-1540575467063-178a50c2df87?auto=format&fit=crop&q=80&w=300',
-                  'https://images.unsplash.com/photo-1475721027785-f74eccf877e2?auto=format&fit=crop&q=80&w=300',
-                  'https://images.unsplash.com/photo-1515187029135-18ee286d815b?auto=format&fit=crop&q=80&w=300'
-                ].map((imgUrl, i) => (
+                {(event.recapImages && event.recapImages.length > 0
+                  ? event.recapImages
+                  : [
+                      'https://images.unsplash.com/photo-1540575467063-178a50c2df87?auto=format&fit=crop&q=80&w=300',
+                      'https://images.unsplash.com/photo-1475721027785-f74eccf877e2?auto=format&fit=crop&q=80&w=300',
+                      'https://images.unsplash.com/photo-1515187029135-18ee286d815b?auto=format&fit=crop&q=80&w=300'
+                    ]
+                ).map((imgUrl, i) => (
                   <a key={i} href={imgUrl} target="_blank" rel="noopener noreferrer" className="group overflow-hidden border border-gray-200 block aspect-[4/3] relative">
                     <img src={imgUrl} className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110" alt={`Foto ${i + 1}`} />
                     <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white text-xs font-bold">
@@ -387,10 +402,9 @@ function EventCard({ event }) {
               </div>
             </div>
 
-
             {/* Event Resources */}
             <div className="grid sm:grid-cols-2 gap-3 pt-2">
-              <a href={event.report || '#'} target="_blank" rel="noopener noreferrer" className="border border-gray-300 hover:border-[#800404] hover:bg-red-50/30 text-gray-700 flex items-center justify-center gap-2 py-3 text-xs font-black transition-colors uppercase tracking-wider rounded-none">
+              <a href={event.report || '#'} download={event.report?.startsWith('data:') ? `${event.title.replace(/\s+/g, '_')}_Informe_Final.pdf` : undefined} target="_blank" rel="noopener noreferrer" className="border border-gray-300 hover:border-[#800404] hover:bg-red-50/30 text-gray-700 flex items-center justify-center gap-2 py-3 text-xs font-black transition-colors uppercase tracking-wider rounded-none">
                 <FileText size={14} className="text-[#800404]" /> Informe Final (PDF)
               </a>
               <Link to="/certificados" className="bg-[#800404] hover:bg-[#5a0303] text-white flex items-center justify-center gap-2 py-3 text-xs font-black transition-colors uppercase tracking-wider rounded-none text-center">
@@ -439,8 +453,6 @@ export default function Cronograma() {
     return monthsOptions.includes(currentMonthName) ? currentMonthName : 'Todos'
   })
   const [activeCategory, setActiveCategory] = useState('Todos')
-  const [activeStatus, setActiveStatus] = useState('Todos') // 'Todos', 'Próximos', 'Pasados'
-  const [activeCost, setActiveCost] = useState('Todos') // 'Todos', 'Gratuitos', 'De Pago'
   
   const [searchParams, setSearchParams] = useSearchParams()
   const urlFiltro = searchParams.get('filtro')
@@ -511,30 +523,36 @@ export default function Cronograma() {
       }
     }
 
-    // 4. Filtro por Estado (Próximos vs Pasados)
-    if (activeStatus !== 'Todos') {
-      const isPost = ev.status === 'post'
-      if (activeStatus === 'Próximos' && isPost) {
-        return false
-      }
-      if (activeStatus === 'Pasados' && !isPost) {
-        return false
-      }
-    }
 
-    // 5. Filtro por Costo (Gratuitos vs De Pago)
-    if (activeCost !== 'Todos') {
-      const isPaid = ev.isPaid === true
-      if (activeCost === 'Gratuitos' && isPaid) {
-        return false
-      }
-      if (activeCost === 'De Pago' && !isPaid) {
-        return false
-      }
-    }
 
     return true
   })
+
+  const eventsInOtherMonths = (searchQuery.trim() !== '' && activeMonth !== 'Todos')
+    ? dbEvents.filter(ev => {
+        const q = searchQuery.toLowerCase()
+        const titleMatch = ev.title?.toLowerCase().includes(q)
+        const descMatch = ev.description?.toLowerCase().includes(q)
+        const orgMatch = ev.organizer?.toLowerCase().includes(q)
+        const locMatch = ev.location?.toLowerCase().includes(q)
+        const catMatch = ev.category?.toLowerCase().includes(q)
+        const tagsMatch = Array.isArray(ev.tags) ? ev.tags.some(tag => tag.toLowerCase().includes(q)) : false
+        if (!titleMatch && !descMatch && !orgMatch && !locMatch && !catMatch && !tagsMatch) {
+          return false
+        }
+
+        if (activeCategory !== 'Todos' && ev.category !== activeCategory) {
+          return false
+        }
+
+        const eventMonth = getEventMonth(ev.date)
+        if (eventMonth === activeMonth) {
+          return false
+        }
+
+        return true
+      })
+    : []
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -611,43 +629,13 @@ export default function Cronograma() {
                 </select>
               </div>
 
-              {/* Selector de Estado */}
-              <div className="flex flex-col min-w-0">
-                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Estado</span>
-                <select
-                  value={activeStatus}
-                  onChange={(e) => setActiveStatus(e.target.value)}
-                  className="border border-gray-300 px-3 py-2 text-sm text-gray-700 bg-white font-medium focus:border-[#800404] focus:outline-none cursor-pointer rounded-none"
-                >
-                  <option value="Todos">Todos los Estados</option>
-                  <option value="Próximos">Próximos</option>
-                  <option value="Pasados">Pasados</option>
-                </select>
-              </div>
-
-              {/* Selector de Costo */}
-              <div className="flex flex-col min-w-0">
-                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Costo</span>
-                <select
-                  value={activeCost}
-                  onChange={(e) => setActiveCost(e.target.value)}
-                  className="border border-gray-300 px-3 py-2 text-sm text-gray-700 bg-white font-medium focus:border-[#800404] focus:outline-none cursor-pointer rounded-none"
-                >
-                  <option value="Todos">Todos los Costos</option>
-                  <option value="Gratuitos">Gratuitos</option>
-                  <option value="De Pago">De Pago</option>
-                </select>
-              </div>
-
               {/* Botón Limpiar Filtros */}
-              {(searchQuery || activeMonth !== 'Todos' || activeCategory !== 'Todos' || activeStatus !== 'Todos' || activeCost !== 'Todos') && (
+              {(searchQuery || activeMonth !== 'Todos' || activeCategory !== 'Todos') && (
                 <button
                   onClick={() => {
                     setSearchQuery('')
                     setActiveMonth('Todos')
                     setActiveCategory('Todos')
-                    setActiveStatus('Todos')
-                    setActiveCost('Todos')
                     setSearchParams({})
                   }}
                   className="col-span-2 sm:col-span-1 self-end mt-auto flex items-center gap-1 text-xs font-black text-[#800404] hover:text-[#5a0303] border border-[#800404]/20 hover:bg-red-50/50 px-3 py-2 transition-colors uppercase tracking-wider rounded-none h-[38px] cursor-pointer"
@@ -667,12 +655,10 @@ export default function Cronograma() {
             <h2 className="text-xl sm:text-2xl font-black text-gray-900 leading-tight">
               {activeMonth === 'Todos' ? 'Todos los Eventos' : `${activeMonth} 2026`}
             </h2>
-            {activeCategory !== 'Todos' || activeStatus !== 'Todos' || activeCost !== 'Todos' || searchQuery ? (
+            {activeCategory !== 'Todos' || searchQuery ? (
               <p className="text-xs font-bold text-[#800404] mt-1 uppercase tracking-wider">
                 Filtros activos: {[
                   activeCategory !== 'Todos' && `Categoría: ${activeCategory}`,
-                  activeStatus !== 'Todos' && `Estado: ${activeStatus}`,
-                  activeCost !== 'Todos' && `Costo: ${activeCost}`,
                   searchQuery && `Búsqueda: "${searchQuery}"`
                 ].filter(Boolean).join(' | ')}
               </p>
@@ -684,9 +670,9 @@ export default function Cronograma() {
         </div>
 
         {filteredEvents.length === 0 ? (
-          <div className="text-center py-20 text-gray-300">
-            <Calendar size={48} className="mx-auto mb-4 opacity-30" />
-            <p className="text-lg text-gray-400">
+          <div className="text-center py-8 text-gray-300 bg-white border border-dashed border-gray-200">
+            <Calendar size={32} className="mx-auto mb-2 opacity-30 text-gray-400" />
+            <p className="text-sm text-gray-500 font-medium">
               No se encontraron eventos con los filtros seleccionados.
             </p>
           </div>
@@ -695,6 +681,26 @@ export default function Cronograma() {
             {filteredEvents.map(ev => (
               <EventCard key={ev.id} event={ev} />
             ))}
+          </div>
+        )}
+
+        {/* Sección de eventos recomendados en otros meses */}
+        {eventsInOtherMonths.length > 0 && (
+          <div className="mt-12">
+            <div className="border-b border-gray-200 pb-3 mb-6">
+              <h3 className="text-base sm:text-lg font-black text-[#800404] uppercase tracking-wide flex items-center gap-2">
+                <span className="w-1.5 h-6 bg-[#800404]"></span>
+                Eventos con esta búsqueda en otros meses
+              </h3>
+              <p className="text-xs text-gray-500 mt-1">
+                Se encontraron los siguientes eventos que coinciden con "{searchQuery}" fuera del mes de {activeMonth}.
+              </p>
+            </div>
+            <div className="space-y-3">
+              {eventsInOtherMonths.map(ev => (
+                <EventCard key={ev.id} event={ev} />
+              ))}
+            </div>
           </div>
         )}
       </div>
