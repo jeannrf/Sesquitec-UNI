@@ -113,28 +113,6 @@ function EventCard({ event }) {
             <div>
               {!isPost ? (
                 <div className="space-y-3">
-                  {/* Aforo progress bar */}
-                  {event.quota > 0 && event.registrationOpen && (
-                    <div>
-                      <div className="flex justify-between items-center mb-1">
-                        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wide">Aforo</span>
-                        <span className="text-[10px] font-black text-gray-600">
-                          {registrationCount} / {event.quota}
-                        </span>
-                      </div>
-                      <div className="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                        <div
-                          className={`h-full transition-all duration-500 rounded-full ${
-                            isFull ? 'bg-red-500' : registrationCount / event.quota > 0.8 ? 'bg-amber-500' : 'bg-emerald-500'
-                          }`}
-                          style={{ width: `${Math.min((registrationCount / event.quota) * 100, 100)}%` }}
-                        />
-                      </div>
-                      {isFull && (
-                        <p className="text-[10px] font-bold text-red-600 mt-1">Aforo completo</p>
-                      )}
-                    </div>
-                  )}
                   {event.mapsUrl && (
                     <a href={event.mapsUrl} className="flex items-center gap-2 text-sm text-[#800404] hover:underline font-medium">
                       <MapPin size={14} />Ver en Google Maps
@@ -162,13 +140,12 @@ function EventCard({ event }) {
                       )
                     ) : event.registrationOpen ? (
                       isUserAlreadyRegistered ? (
-                        <button disabled className="flex-1 text-center bg-emerald-50 text-emerald-700 font-black py-3 text-sm border border-emerald-200 cursor-default flex items-center justify-center gap-1.5">
-                          <CheckCircle size={14} /> Inscrito
-                        </button>
-                      ) : isFull ? (
-                        <button disabled className="flex-1 text-center bg-gray-100 text-gray-400 font-bold py-3 text-sm cursor-not-allowed border border-gray-200">
-                          Aforo Completo
-                        </button>
+                        <Link
+                          to="/dashboard?tab=eventos"
+                          className="flex-1 text-center bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-black py-3 text-sm border border-emerald-200 transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
+                        >
+                          <CheckCircle size={14} /> Ver mi inscripción
+                        </Link>
                       ) : (
                         <button
                           onClick={handleQuickRegister}
@@ -218,24 +195,30 @@ function EventCard({ event }) {
 
     {isDetailsOpen && (
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fade-in">
-        <div className="bg-white max-w-2xl w-full border border-gray-200 shadow-2xl flex flex-col md:flex-row overflow-hidden rounded-none animate-scale-up max-h-[90vh] md:max-h-none overflow-y-auto md:overflow-y-visible">
+        <div className="bg-white max-w-5xl w-full border border-gray-200 shadow-2xl flex flex-col md:flex-row overflow-hidden rounded-none animate-scale-up max-h-[95vh] overflow-y-auto relative">
+          {/* Absolute Close button */}
+          <button
+            onClick={() => setIsDetailsOpen(false)}
+            className="absolute top-4 right-4 text-gray-400 hover:text-gray-900 transition-colors cursor-pointer bg-white/80 hover:bg-white p-1.5 rounded-full shadow-sm z-50 border border-gray-150"
+            title="Cerrar"
+          >
+            <X size={20} className="stroke-[3]" />
+          </button>
+
           {/* Left Photo Banner */}
           <div 
-            className="w-full md:w-2/5 h-48 md:h-auto min-h-[200px] md:min-h-0 bg-cover bg-center shrink-0"
+            className="w-full md:w-5/12 h-64 md:h-auto min-h-[280px] md:min-h-[400px] bg-cover bg-center shrink-0"
             style={{ backgroundImage: `url(${event.imageUrl || 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?auto=format&fit=crop&q=80&w=800'})` }}
           />
 
           {/* Right Content */}
           <div className="p-6 flex flex-col justify-between flex-1">
             <div>
-              {/* Header Badge & Close Button */}
-              <div className="flex items-start justify-between mb-4">
+              {/* Header Badge */}
+              <div className="flex items-start mb-4">
                 <span className="text-[9px] font-black text-white bg-[#800404] px-2.5 py-0.5 tracking-wider uppercase">
                   {event.category || 'EVENTO'}
                 </span>
-                <button onClick={() => setIsDetailsOpen(false)} className="text-gray-400 hover:text-gray-600 transition-colors cursor-pointer">
-                  <X size={18} />
-                </button>
               </div>
 
               {/* Event Name */}
@@ -266,9 +249,59 @@ function EventCard({ event }) {
                   <MapPin size={14} className="text-[#800404] shrink-0" />
                   <span>{event.location}</span>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Users size={14} className="text-[#800404] shrink-0" />
-                  <span>Organiza: <strong className="font-bold">{event.organizer}</strong></span>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <div className="flex items-center gap-2">
+                    <Users size={14} className="text-[#800404] shrink-0" />
+                    <span>Organiza: <strong className="font-bold">{event.organizer}</strong></span>
+                  </div>
+                  {/* Social media profile links */}
+                  {(event.instagramUrl || event.linkedinUrl || event.facebookUrl) && (
+                    <div className="flex items-center gap-1 border-l border-gray-300 pl-2 ml-1">
+                      {event.instagramUrl && (
+                        <a
+                          href={event.instagramUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-gray-400 hover:text-pink-600 transition-colors p-1"
+                          title="Visitar Instagram"
+                        >
+                          <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <rect width="20" height="20" x="2" y="2" rx="5" ry="5"/>
+                            <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/>
+                            <line x1="17.5" x2="17.51" y1="6.5" y2="6.5"/>
+                          </svg>
+                        </a>
+                      )}
+                      {event.linkedinUrl && (
+                        <a
+                          href={event.linkedinUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-gray-400 hover:text-blue-600 transition-colors p-1"
+                          title="Visitar LinkedIn"
+                        >
+                          <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/>
+                            <rect width="4" height="12" x="2" y="9"/>
+                            <circle cx="4" cy="4" r="2"/>
+                          </svg>
+                        </a>
+                      )}
+                      {event.facebookUrl && (
+                        <a
+                          href={event.facebookUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-gray-400 hover:text-indigo-600 transition-colors p-1"
+                          title="Visitar Facebook"
+                        >
+                          <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/>
+                          </svg>
+                        </a>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -288,13 +321,12 @@ function EventCard({ event }) {
             <div className="flex justify-end mt-6 gap-3">
               {!isPost && event.registrationOpen && (
                 isUserAlreadyRegistered ? (
-                  <button disabled className="bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-black px-6 py-2.5 uppercase tracking-wider cursor-default flex items-center gap-2">
-                    <CheckCircle size={14} /> Inscrito
-                  </button>
-                ) : isFull ? (
-                  <button disabled className="bg-gray-100 text-gray-400 border border-gray-200 text-xs font-black px-6 py-2.5 uppercase tracking-wider cursor-not-allowed">
-                    Aforo Lleno
-                  </button>
+                  <Link
+                    to="/dashboard?tab=eventos"
+                    className="bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 text-xs font-black px-6 py-2.5 uppercase tracking-wider cursor-pointer flex items-center gap-2"
+                  >
+                    <CheckCircle size={14} /> Ver mi inscripción
+                  </Link>
                 ) : (
                   <button
                     onClick={handleQuickRegister}
@@ -318,10 +350,19 @@ function EventCard({ event }) {
 
     {isRecapOpen && (
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fade-in">
-        <div className="bg-white max-w-2xl w-full border border-gray-200 shadow-2xl flex flex-col overflow-hidden rounded-none animate-scale-up max-h-[90vh] overflow-y-auto">
+        <div className="bg-white max-w-5xl w-full border border-gray-200 shadow-2xl flex flex-col overflow-hidden rounded-none animate-scale-up max-h-[95vh] overflow-y-auto relative">
+          {/* Absolute Close button */}
+          <button
+            onClick={() => setIsRecapOpen(false)}
+            className="absolute top-4 right-4 text-gray-400 hover:text-gray-900 transition-colors cursor-pointer bg-white/80 hover:bg-white p-1.5 rounded-full shadow-sm z-50 border border-gray-150"
+            title="Cerrar"
+          >
+            <X size={20} className="stroke-[3]" />
+          </button>
+
           {/* Header */}
           <div className="p-6 border-b border-gray-100 bg-[#f8f9fa] flex items-center justify-between">
-            <div>
+            <div className="w-full">
               <span className="text-[9px] font-black text-white bg-[#800404] px-2.5 py-0.5 tracking-wider uppercase mb-1 inline-block">
                 RESUMEN DE EVENTO
               </span>
@@ -335,10 +376,77 @@ function EventCard({ event }) {
                   </span>
                 ))}
               </div>
+
+              {/* Event Metadata & Organizer Social Links */}
+              <div className="flex flex-wrap gap-x-6 gap-y-2 text-xs text-gray-500 font-medium pt-3 border-t border-gray-200/60 mt-2">
+                <div className="flex items-center gap-1.5">
+                  <Calendar size={13} className="text-[#800404]" />
+                  <span>{event.date}</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <Clock size={13} className="text-[#800404]" />
+                  <span>{event.time || '08:00 – 18:00'}</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <MapPin size={13} className="text-[#800404]" />
+                  <span>{event.location}</span>
+                </div>
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <div className="flex items-center gap-1.5">
+                    <Users size={13} className="text-[#800404]" />
+                    <span>Organiza: <strong className="font-bold">{event.organizer}</strong></span>
+                  </div>
+                  {/* Social media profile links */}
+                  {(event.instagramUrl || event.linkedinUrl || event.facebookUrl) && (
+                    <div className="flex items-center gap-1 border-l border-gray-300 pl-2 ml-1.5">
+                      {event.instagramUrl && (
+                        <a
+                          href={event.instagramUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-gray-400 hover:text-pink-600 transition-colors p-0.5"
+                          title="Visitar Instagram del Organizador"
+                        >
+                          <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <rect width="20" height="20" x="2" y="2" rx="5" ry="5"/>
+                            <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/>
+                            <line x1="17.5" x2="17.51" y1="6.5" y2="6.5"/>
+                          </svg>
+                        </a>
+                      )}
+                      {event.linkedinUrl && (
+                        <a
+                          href={event.linkedinUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-gray-400 hover:text-blue-600 transition-colors p-0.5"
+                          title="Visitar LinkedIn del Organizador"
+                        >
+                          <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/>
+                            <rect width="4" height="12" x="2" y="9"/>
+                            <circle cx="4" cy="4" r="2"/>
+                          </svg>
+                        </a>
+                      )}
+                      {event.facebookUrl && (
+                        <a
+                          href={event.facebookUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-gray-400 hover:text-indigo-600 transition-colors p-0.5"
+                          title="Visitar Facebook del Organizador"
+                        >
+                          <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/>
+                          </svg>
+                        </a>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
-            <button onClick={() => setIsRecapOpen(false)} className="text-gray-400 hover:text-gray-600 transition-colors cursor-pointer">
-              <X size={18} />
-            </button>
           </div>
           {/* Body */}
           <div className="p-6 space-y-6">
@@ -349,65 +457,127 @@ function EventCard({ event }) {
               </p>
             </div>
 
-            {/* Video Player Section */}
-            <div>
-              <p className="text-xs font-bold text-gray-400 uppercase tracking-wide mb-2 flex items-center gap-1.5">
-                <Play size={12} className="text-[#800404]" /> Grabación del Evento (YouTube)
-              </p>
-              <div className="aspect-video w-full bg-gray-100 border border-gray-200 overflow-hidden relative">
-                <iframe
-                  className="w-full h-full"
-                  src={(() => {
-                    const input = event.recapVideoId;
-                    if (!input) return 'https://www.youtube.com/embed/dQw4w9WgXcQ';
-                    if (input.includes('youtube.com') || input.includes('youtu.be')) {
-                      let videoId = '';
-                      const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
-                      const match = input.match(regExp);
-                      if (match && match[2].length === 11) {
-                        videoId = match[2];
-                      }
-                      return videoId ? `https://www.youtube.com/embed/${videoId}` : input;
-                    }
-                    return `https://www.youtube.com/embed/${input}`;
-                  })()}
-                  title="YouTube video player"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                  allowFullScreen
-                ></iframe>
+            {/* Layout: Main photo on the left, up to 6 recap photos on the right */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* Main Event Cover Photo */}
+              <div className="lg:col-span-2">
+                <p className="text-xs font-bold text-gray-400 uppercase tracking-wide mb-2 flex items-center gap-1.5">
+                  <Image size={12} className="text-[#800404]" /> Foto Principal del Evento
+                </p>
+                <div className="border border-gray-200 bg-white aspect-[16/9] w-full overflow-hidden">
+                  <img
+                    src={event.imageUrl || 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?auto=format&fit=crop&q=80&w=800'}
+                    className="w-full h-full object-cover"
+                    alt="Portada Principal"
+                  />
+                </div>
+              </div>
+
+              {/* Recap Photo Gallery */}
+              <div>
+                <p className="text-xs font-bold text-gray-400 uppercase tracking-wide mb-2 flex items-center gap-1.5">
+                  <Image size={12} className="text-[#800404]" /> Galería de Fotos (Recap)
+                </p>
+                {event.recapImages && event.recapImages.filter(Boolean).length > 0 ? (
+                  <div className="grid grid-cols-3 lg:grid-cols-2 gap-2">
+                    {event.recapImages.filter(Boolean).map((imgUrl, i) => (
+                      <a
+                        key={i}
+                        href={imgUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="group overflow-hidden border border-gray-200 block aspect-[4/3] relative bg-white"
+                      >
+                        <img
+                          src={imgUrl}
+                          className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
+                          alt={`Recap ${i + 1}`}
+                        />
+                        <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white text-[10px] font-bold">
+                          Ver
+                        </div>
+                      </a>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="border border-dashed border-gray-200 h-full min-h-[150px] lg:min-h-[220px] flex items-center justify-center text-xs text-gray-400 font-bold uppercase tracking-wider bg-gray-50/50">
+                    Sin imágenes de recap
+                  </div>
+                )}
               </div>
             </div>
 
-            {/* Image Gallery */}
-            <div>
-              <p className="text-xs font-bold text-gray-400 uppercase tracking-wide mb-2 flex items-center gap-1.5">
-                <Image size={12} className="text-[#800404]" /> Galería de Fotos
-              </p>
-              <div className="grid grid-cols-3 gap-2.5">
-                {(event.recapImages && event.recapImages.length > 0
-                  ? event.recapImages
-                  : [
-                      'https://images.unsplash.com/photo-1540575467063-178a50c2df87?auto=format&fit=crop&q=80&w=300',
-                      'https://images.unsplash.com/photo-1475721027785-f74eccf877e2?auto=format&fit=crop&q=80&w=300',
-                      'https://images.unsplash.com/photo-1515187029135-18ee286d815b?auto=format&fit=crop&q=80&w=300'
-                    ]
-                ).map((imgUrl, i) => (
-                  <a key={i} href={imgUrl} target="_blank" rel="noopener noreferrer" className="group overflow-hidden border border-gray-200 block aspect-[4/3] relative">
-                    <img src={imgUrl} className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110" alt={`Foto ${i + 1}`} />
-                    <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white text-xs font-bold">
-                      Ampliar
-                    </div>
-                  </a>
-                ))}
+            {/* Social media and recap publications links */}
+            {(event.instagramUrl || event.linkedinUrl || event.facebookUrl || (event.recapVideoId && !event.recapVideoId.includes('youtube.com/embed'))) && (
+              <div className="pt-2">
+                <p className="text-xs font-bold text-gray-400 uppercase tracking-wide mb-2 flex items-center gap-1.5">
+                  <ExternalLink size={12} className="text-[#800404]" /> Publicaciones y Enlaces
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {event.instagramUrl && (
+                    <a
+                      href={event.instagramUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-1.5 px-3 py-1.5 border border-pink-200 bg-pink-50/40 text-pink-700 hover:bg-pink-50 text-xs font-bold uppercase transition-colors"
+                    >
+                      <svg className="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <rect width="20" height="20" x="2" y="2" rx="5" ry="5"/>
+                        <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/>
+                        <line x1="17.5" x2="17.51" y1="6.5" y2="6.5"/>
+                      </svg>
+                      Instagram
+                    </a>
+                  )}
+                  {event.linkedinUrl && (
+                    <a
+                      href={event.linkedinUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-1.5 px-3 py-1.5 border border-blue-200 bg-blue-50/40 text-blue-700 hover:bg-blue-50 text-xs font-bold uppercase transition-colors"
+                    >
+                      <svg className="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/>
+                        <rect width="4" height="12" x="2" y="9"/>
+                        <circle cx="4" cy="4" r="2"/>
+                      </svg>
+                      LinkedIn
+                    </a>
+                  )}
+                  {event.facebookUrl && (
+                    <a
+                      href={event.facebookUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-1.5 px-3 py-1.5 border border-indigo-200 bg-indigo-50/40 text-indigo-700 hover:bg-indigo-50 text-xs font-bold uppercase transition-colors"
+                    >
+                      <svg className="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/>
+                      </svg>
+                      Facebook
+                    </a>
+                  )}
+                  {event.recapVideoId && (
+                    <a
+                      href={event.recapVideoId.startsWith('http') ? event.recapVideoId : `https://www.youtube.com/watch?v=${event.recapVideoId}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-1.5 px-3 py-1.5 border border-red-200 bg-red-50/40 text-red-700 hover:bg-red-50 text-xs font-bold uppercase transition-colors"
+                    >
+                      <svg className="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M2.5 17a24.12 24.12 0 0 1 0-10 2 2 0 0 1 1.4-1.4 49.56 49.56 0 0 1 16.2 0A2 2 0 0 1 21.5 7a24.12 24.12 0 0 1 0 10 2 2 0 1 1-1.4 1.4 49.56 49.56 0 0 1-16.2 0A2 2 0 0 1 2.5 17z"/>
+                        <polygon points="10 15 15 12 10 9"/>
+                      </svg>
+                      YouTube
+                    </a>
+                  )}
+                </div>
               </div>
-            </div>
+            )}
 
             {/* Event Resources */}
-            <div className="grid sm:grid-cols-2 gap-3 pt-2">
-              <a href={event.report || '#'} download={event.report?.startsWith('data:') ? `${event.title.replace(/\s+/g, '_')}_Informe_Final.pdf` : undefined} target="_blank" rel="noopener noreferrer" className="border border-gray-300 hover:border-[#800404] hover:bg-red-50/30 text-gray-700 flex items-center justify-center gap-2 py-3 text-xs font-black transition-colors uppercase tracking-wider rounded-none">
-                <FileText size={14} className="text-[#800404]" /> Informe Final (PDF)
-              </a>
-              <Link to="/certificados" className="bg-[#800404] hover:bg-[#5a0303] text-white flex items-center justify-center gap-2 py-3 text-xs font-black transition-colors uppercase tracking-wider rounded-none text-center">
+            <div className="pt-2">
+              <Link to="/certificados" className="w-full bg-[#800404] hover:bg-[#5a0303] text-white flex items-center justify-center gap-2 py-3 text-xs font-black transition-colors uppercase tracking-wider rounded-none text-center">
                 <Award size={14} /> Buscar Certificados
               </Link>
             </div>
@@ -565,12 +735,12 @@ export default function Cronograma() {
       </div>
 
       {/* Filters bar */}
-      <div className="bg-white border-b border-gray-200 sticky top-16 z-40 py-4 shadow-sm">
+      <div className="bg-white border-b border-gray-200 sticky top-16 z-40 py-3 shadow-sm">
         <div className="max-w-7xl mx-auto px-4">
           {/* Main search and selectors row */}
-          <div className="flex flex-col lg:flex-row gap-4 items-stretch lg:items-end justify-between">
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
             {/* Search Input */}
-            <div className="flex flex-col flex-1">
+            <div className="flex flex-col md:col-span-6">
               <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Buscar</span>
               <div className="relative">
                 <input
@@ -578,7 +748,7 @@ export default function Cronograma() {
                   placeholder="Buscar por título, organizador, palabra clave o etiquetas..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full border border-gray-300 pl-10 pr-4 py-2 focus:border-[#800404] focus:outline-none transition-colors text-sm text-gray-800 bg-gray-50/50 rounded-none"
+                  className="w-full border border-gray-300 pl-10 pr-4 py-2 focus:border-[#800404] focus:outline-none transition-colors text-sm text-gray-800 bg-gray-50/50 rounded-none h-[38px]"
                 />
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -596,15 +766,15 @@ export default function Cronograma() {
               </div>
             </div>
 
-            {/* Selectors grid */}
-            <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-end gap-3">
+            {/* Selectors grid: 3 columns on mobile, 6 columns span on desktop */}
+            <div className="grid grid-cols-3 md:col-span-6 gap-2 md:gap-3 items-end">
               {/* Selector de Mes */}
               <div className="flex flex-col min-w-0">
                 <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Mes</span>
                 <select
                   value={activeMonth}
                   onChange={(e) => setActiveMonth(e.target.value)}
-                  className="border border-gray-300 px-3 py-2 text-sm text-gray-700 bg-white font-medium focus:border-[#800404] focus:outline-none cursor-pointer rounded-none"
+                  className="border border-gray-300 px-2 sm:px-3 py-2 text-xs sm:text-sm text-gray-700 bg-white font-medium focus:border-[#800404] focus:outline-none cursor-pointer rounded-none h-[38px] w-full"
                 >
                   {months.map(m => (
                     <option key={m} value={m}>{m}</option>
@@ -618,9 +788,9 @@ export default function Cronograma() {
                 <select
                   value={activeCategory}
                   onChange={(e) => setActiveCategory(e.target.value)}
-                  className="border border-gray-300 px-3 py-2 text-sm text-gray-700 bg-white font-medium focus:border-[#800404] focus:outline-none cursor-pointer rounded-none"
+                  className="border border-gray-300 px-2 sm:px-3 py-2 text-xs sm:text-sm text-gray-700 bg-white font-medium focus:border-[#800404] focus:outline-none cursor-pointer rounded-none h-[38px] w-full"
                 >
-                  <option value="Todos">Todas las Categorías</option>
+                  <option value="Todos">Todas</option>
                   <option value="Académico">Académico</option>
                   <option value="Cultural">Cultural</option>
                   <option value="Egresados">Egresados</option>
@@ -630,19 +800,23 @@ export default function Cronograma() {
               </div>
 
               {/* Botón Limpiar Filtros */}
-              {(searchQuery || activeMonth !== 'Todos' || activeCategory !== 'Todos') && (
-                <button
-                  onClick={() => {
-                    setSearchQuery('')
-                    setActiveMonth('Todos')
-                    setActiveCategory('Todos')
-                    setSearchParams({})
-                  }}
-                  className="col-span-2 sm:col-span-1 self-end mt-auto flex items-center gap-1 text-xs font-black text-[#800404] hover:text-[#5a0303] border border-[#800404]/20 hover:bg-red-50/50 px-3 py-2 transition-colors uppercase tracking-wider rounded-none h-[38px] cursor-pointer"
-                >
-                  <X size={13} /> Limpiar
-                </button>
-              )}
+              <button
+                onClick={() => {
+                  setSearchQuery('')
+                  setActiveMonth('Todos')
+                  setActiveCategory('Todos')
+                  setSearchParams({})
+                }}
+                disabled={!(searchQuery || activeMonth !== 'Todos' || activeCategory !== 'Todos')}
+                className={`flex items-center justify-center gap-1 text-[10px] sm:text-xs font-black px-2 py-2 transition-colors uppercase tracking-wider rounded-none h-[38px] w-full ${
+                  (searchQuery || activeMonth !== 'Todos' || activeCategory !== 'Todos')
+                    ? 'text-[#800404] hover:text-[#5a0303] border border-[#800404]/20 hover:bg-red-50/50 cursor-pointer'
+                    : 'text-gray-350 border border-gray-200 bg-gray-50/80 cursor-not-allowed opacity-60'
+                }`}
+              >
+                <X size={11} className="shrink-0" />
+                <span>Limpiar</span>
+              </button>
             </div>
           </div>
         </div>

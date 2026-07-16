@@ -299,83 +299,91 @@ export default function Header() {
 
       {/* Mobile menu */}
       {menuOpen && (
-        <div className="lg:hidden border-t border-gray-200 bg-white shadow-inner max-h-[85vh] overflow-y-auto">
-          {/* Main Links */}
-          <div className="py-2">
-            {navLinks.map(link => {
-              if (link.subLinks) {
-                const isActive = link.subLinks.some(s => location.pathname === s.path)
+        <>
+          {/* Backdrop overlay to darken contents below */}
+          <div 
+            className="fixed inset-0 top-16 bg-black/60 z-40 transition-opacity duration-300 animate-in fade-in"
+            onClick={() => setMenuOpen(false)}
+          />
+          {/* Menu panel overlay */}
+          <div className="absolute top-16 left-0 right-0 bg-white shadow-xl z-50 border-t border-gray-200 overflow-y-auto max-h-[80vh] animate-in slide-in-from-top duration-300 ease-out origin-top">
+            {/* Main Links */}
+            <div className="py-2">
+              {navLinks.map(link => {
+                if (link.subLinks) {
+                  const isActive = link.subLinks.some(s => location.pathname === s.path)
+                  return (
+                    <div key={link.label} className="border-b border-gray-100">
+                      <button
+                        onClick={() => setMobileEncuentroOpen(!mobileEncuentroOpen)}
+                        className={`w-full flex items-center justify-between px-6 py-3.5 text-sm font-bold cursor-pointer ${
+                          isActive ? 'text-[#800404] bg-red-50/50' : 'text-gray-750 hover:bg-gray-50'
+                        }`}
+                      >
+                        <span>{link.label}</span>
+                        <ChevronDown size={15} className={`text-gray-400 transition-transform duration-200 ${mobileEncuentroOpen ? 'rotate-180' : ''}`} />
+                      </button>
+                      {mobileEncuentroOpen && (
+                        <div className="bg-gray-50/40 border-t border-gray-100/50 py-1 pl-4 flex flex-col">
+                          {link.subLinks.map(subLink => (
+                            <Link
+                              key={subLink.path}
+                              to={subLink.path}
+                              onClick={() => setMenuOpen(false)}
+                              className={`block px-6 py-2.5 text-xs font-semibold ${
+                                location.pathname === subLink.path
+                                  ? 'text-[#800404] border-l-2 border-[#800404] pl-5'
+                                  : 'text-gray-650 hover:text-[#800404]'
+                              }`}
+                            >
+                              {subLink.label}
+                            </Link>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )
+                }
                 return (
-                  <div key={link.label} className="border-b border-gray-100">
-                    <button
-                      onClick={() => setMobileEncuentroOpen(!mobileEncuentroOpen)}
-                      className={`w-full flex items-center justify-between px-6 py-3.5 text-sm font-bold cursor-pointer ${
-                        isActive ? 'text-[#800404] bg-red-50/50' : 'text-gray-750 hover:bg-gray-50'
-                      }`}
-                    >
-                      <span>{link.label}</span>
-                      <ChevronDown size={15} className={`text-gray-400 transition-transform duration-200 ${mobileEncuentroOpen ? 'rotate-180' : ''}`} />
-                    </button>
-                    {mobileEncuentroOpen && (
-                      <div className="bg-gray-50/40 border-t border-gray-100/50 py-1 pl-4 flex flex-col">
-                        {link.subLinks.map(subLink => (
-                          <Link
-                            key={subLink.path}
-                            to={subLink.path}
-                            onClick={() => setMenuOpen(false)}
-                            className={`block px-6 py-2.5 text-xs font-semibold ${
-                              location.pathname === subLink.path
-                                ? 'text-[#800404] border-l-2 border-[#800404] pl-5'
-                                : 'text-gray-650 hover:text-[#800404]'
-                            }`}
-                          >
-                            {subLink.label}
-                          </Link>
-                        ))}
-                      </div>
-                    )}
-                  </div>
+                  <Link
+                    key={link.path}
+                    to={link.path}
+                    onClick={() => setMenuOpen(false)}
+                    className={`block px-6 py-3 text-sm font-medium border-b border-gray-100 ${
+                      location.pathname === link.path
+                        ? 'text-[#800404] bg-red-50 border-l-4 border-l-[#800404]'
+                        : 'text-gray-700 hover:bg-gray-50'
+                    }`}
+                  >
+                    {link.label}
+                  </Link>
                 )
-              }
-              return (
-                <Link
-                  key={link.path}
-                  to={link.path}
-                  onClick={() => setMenuOpen(false)}
-                  className={`block px-6 py-3 text-sm font-medium border-b border-gray-100 ${
-                    location.pathname === link.path
-                      ? 'text-[#800404] bg-red-50 border-l-4 border-l-[#800404]'
-                      : 'text-gray-700 hover:bg-gray-50'
-                  }`}
-                >
-                  {link.label}
-                </Link>
-              )
-            })}
-          </div>
-
-          {/* Auth buttons for non-logged-in users in mobile menu */}
-          {!user && (
-            <div className="bg-gray-50 p-6 border-t border-gray-200">
-              <div className="flex flex-col gap-2">
-                <Link
-                  to="/iniciar-sesion"
-                  onClick={() => setMenuOpen(false)}
-                  className="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 border border-gray-300 font-bold py-2.5 text-sm transition-colors text-center block"
-                >
-                  Iniciar Sesión
-                </Link>
-                <Link
-                  to="/registrarse"
-                  onClick={() => setMenuOpen(false)}
-                  className="w-full bg-[#800404] hover:bg-[#5a0303] text-white font-bold py-2.5 text-sm transition-colors text-center block"
-                >
-                  Registrarse
-                </Link>
-              </div>
+              })}
             </div>
-          )}
-        </div>
+
+            {/* Auth buttons for non-logged-in users in mobile menu */}
+            {!user && (
+              <div className="bg-gray-50 p-6 border-t border-gray-200">
+                <div className="flex flex-col gap-2">
+                  <Link
+                    to="/iniciar-sesion"
+                    onClick={() => setMenuOpen(false)}
+                    className="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 border border-gray-300 font-bold py-2.5 text-sm transition-colors text-center block"
+                  >
+                    Iniciar Sesión
+                  </Link>
+                  <Link
+                    to="/registrarse"
+                    onClick={() => setMenuOpen(false)}
+                    className="w-full bg-[#800404] hover:bg-[#5a0303] text-white font-bold py-2.5 text-sm transition-colors text-center block"
+                  >
+                    Registrarse
+                  </Link>
+                </div>
+              </div>
+            )}
+          </div>
+        </>
       )}
     </header>
   )

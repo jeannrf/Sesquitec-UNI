@@ -89,34 +89,12 @@ function PhaseActionSection({ phase }) {
   }
 
   return (
-    <div className="w-full flex flex-col md:flex-row items-stretch md:items-center justify-between gap-6">
-      {/* Aforo bar */}
-      {phase.quota > 0 && (
-        <div className="flex-grow max-w-md">
-          <div className="flex justify-between items-center mb-1">
-            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wide">Aforo</span>
-            <span className="text-[10px] font-black text-gray-600">{registrationCount} / {phase.quota}</span>
-          </div>
-          <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
-            <div
-              className={`h-full transition-all duration-500 rounded-full ${
-                isFull ? 'bg-red-500' : registrationCount / phase.quota > 0.8 ? 'bg-amber-500' : 'bg-emerald-500'
-              }`}
-              style={{ width: `${Math.min((registrationCount / phase.quota) * 100, 100)}%` }}
-            />
-          </div>
-        </div>
-      )}
-
+    <div className="w-full flex justify-end">
       {/* Button */}
-      <div className="shrink-0 min-w-[220px]">
+      <div className="w-full md:w-auto shrink-0 md:min-w-[240px]">
         {isRegistered ? (
           <button disabled className="w-full bg-emerald-50 text-emerald-700 font-black py-3 px-6 text-sm border border-emerald-200 flex items-center justify-center gap-2 cursor-default rounded-none">
             <CheckCircle size={16} /> Ya estás inscrito
-          </button>
-        ) : isFull ? (
-          <button disabled className="w-full bg-gray-100 text-gray-400 font-bold py-3 px-6 text-sm border border-gray-200 cursor-not-allowed rounded-none">
-            Aforo Completo
           </button>
         ) : (
           <button

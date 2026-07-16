@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
+import jsQR from 'jsqr'
 import { useAuth } from '../context/AuthContext'
 import { db } from '../services/db'
 import { supabase } from '../services/supabaseClient'
@@ -25,6 +26,21 @@ export default function Admin() {
   const { showAlert, showConfirm } = useAlert()
   const navigate = useNavigate()
   const [activeTab, setActiveTab] = useState('dashboard')
+
+  const tabsList = [
+    { id: 'dashboard', label: 'Dashboard', shortLabel: 'Dashboard', icon: LayoutDashboard },
+    { id: 'eventos', label: 'Eventos', shortLabel: 'Eventos', icon: Calendar },
+    { id: 'participantes', label: 'Usuarios Registrados', shortLabel: 'Usuarios', icon: Users },
+    { id: 'asistencia-qr', label: 'Asistencia QR', shortLabel: 'Asistencia', icon: QrCode },
+    { id: 'certificados', label: 'Carga Certificados', shortLabel: 'Certificados', icon: Award },
+    { id: 'cms', label: 'Editar Páginas', shortLabel: 'Páginas', icon: Edit2 },
+  ].filter(tab => {
+    const isOnlyStaff = user && user.role === 'STAFF'
+    if (isOnlyStaff) {
+      return tab.id === 'asistencia-qr'
+    }
+    return true
+  })
 
   // Redirection / Security Guard
   useEffect(() => {
@@ -61,6 +77,7 @@ export default function Admin() {
   const [certificates, setCertificates] = useState([])
   const [usersList, setUsersList] = useState([])
   const [qrLogs, setQrLogs] = useState([])
+  const [isSyncing, setIsSyncing] = useState(false)
 
   // --- CMS STATE ---
   const [cmsActiveSubTab, setCmsActiveSubTab] = useState('inicio')
@@ -363,6 +380,26 @@ export default function Admin() {
     loadCmsData()
   }
 
+  const handleManualSync = async () => {
+    if (isSyncing) return
+    setIsSyncing(true)
+    try {
+      const syncSuccess = await db.syncFromSupabase()
+      refreshAllData()
+      if (syncSuccess) {
+        showAlert('Los datos se han sincronizado correctamente con Supabase.', 'Sincronización Exitosa', 'success')
+      } else {
+        showAlert('No se pudo establecer conexión con el servidor. Se cargaron los datos locales.', 'Aviso', 'warning')
+      }
+    } catch (error) {
+      console.error(error)
+      refreshAllData()
+      showAlert('Ocurrió un error inesperado durante la sincronización.', 'Error', 'error')
+    } finally {
+      setIsSyncing(false)
+    }
+  }
+
   useEffect(() => {
     if (user && (user.role === 'ADMIN' || user.role === 'STAFF')) {
       refreshAllData()
@@ -381,7 +418,7 @@ export default function Admin() {
     time: '',
     location: '',
     description: '',
-    quota: '',
+    quota: 0,
     status: 'pre',
     isPaid: false,
     imageUrl: '',
@@ -389,7 +426,10 @@ export default function Admin() {
     tags: '',
     recapVideoId: '',
     recapImages: [],
-    report: ''
+    report: '',
+    instagramUrl: '',
+    linkedinUrl: '',
+    facebookUrl: ''
   })
 
   const handleOpenEventModal = (ev = null) => {
@@ -402,7 +442,7 @@ export default function Admin() {
         time: ev.time || '',
         location: ev.location || '',
         description: ev.description || '',
-        quota: ev.quota || '',
+        quota: ev.quota || 0,
         status: ev.status || 'pre',
         isPaid: ev.isPaid || false,
         imageUrl: ev.imageUrl || '',
@@ -410,7 +450,10 @@ export default function Admin() {
         tags: ev.tags ? ev.tags.join(', ') : '',
         recapVideoId: ev.recapVideoId || '',
         recapImages: ev.recapImages || [],
-        report: ev.report || ''
+        report: ev.report || '',
+        instagramUrl: ev.instagramUrl || '',
+        linkedinUrl: ev.linkedinUrl || '',
+        facebookUrl: ev.facebookUrl || ''
       })
     } else {
       setEditingEvent(null)
@@ -421,7 +464,7 @@ export default function Admin() {
         time: '08:00 – 18:00',
         location: '',
         description: '',
-        quota: '300',
+        quota: 0,
         status: 'pre',
         isPaid: false,
         imageUrl: '',
@@ -429,7 +472,10 @@ export default function Admin() {
         tags: '',
         recapVideoId: '',
         recapImages: [],
-        report: ''
+        report: '',
+        instagramUrl: '',
+        linkedinUrl: '',
+        facebookUrl: ''
       })
     }
     setIsEventModalOpen(true)
@@ -449,7 +495,11 @@ export default function Admin() {
     const eventData = {
       ...eventForm,
       tags: parsedTags,
-      recapImages: (eventForm.recapImages || []).filter(Boolean)
+      recapImages: (eventForm.recapImages || []).filter(Boolean),
+      instagramUrl: eventForm.instagramUrl || '',
+      linkedinUrl: eventForm.linkedinUrl || '',
+      facebookUrl: eventForm.facebookUrl || '',
+      recapVideoId: eventForm.recapVideoId || ''
     }
 
     if (editingEvent) {
@@ -464,6 +514,7 @@ export default function Admin() {
     }
     setIsEventModalOpen(false)
     refreshAllData()
+    showAlert('La información del evento se ha guardado correctamente.', 'Evento Guardado', 'success')
   }
 
   const handleDeleteEvent = (id) => {
@@ -665,7 +716,7 @@ export default function Admin() {
   const eventDropdownRef = useRef(null)
   const [qrParticipantSearch, setQrParticipantSearch] = useState('')
   const [showCameraScanner, setShowCameraScanner] = useState(false)
-  const [manualQrInput, setManualQrInput] = useState('')
+  const [manualQrInput, setManualQrInput] = useState('UNI150-')
   const [scanResult, setScanResult] = useState(null) // { success: boolean, message: string, detail?: object }
   const [isCameraActive, setIsCameraActive] = useState(false)
   const videoRef = useRef(null)
@@ -700,23 +751,47 @@ export default function Admin() {
     
     let eventId = null
     let dni = null
+    let targetUser = null
+    let targetEvent = null
 
-    const isTicketFormat = qrData.startsWith('UNI-150-TICKET-')
-    if (!isTicketFormat) {
-      // Treat as raw DNI/Document number
-      if (!selectedEventIdForQr) {
+    const isNewTicketFormat = qrData.startsWith('UNI150-')
+    const isOldTicketFormat = qrData.startsWith('UNI-150-TICKET-')
+
+    if (isNewTicketFormat) {
+      const allUsers = db.getUsers()
+      let foundTicket = null
+      for (const u of allUsers) {
+        if (u.tickets) {
+          const t = u.tickets.find(tk => tk.qrCode === qrData)
+          if (t) {
+            foundTicket = t
+            targetUser = u
+            break
+          }
+        }
+      }
+      if (foundTicket && targetUser) {
+        eventId = foundTicket.eventId
+        dni = targetUser.dni
+      } else {
+        const log = {
+          name: 'Código Desconocido',
+          dni: 'N/A',
+          eventTitle: 'N/A',
+          result: 'Código Inválido',
+          detail: qrData
+        }
+        db.addQrLog(log)
         setScanResult({
           success: false,
           type: 'invalid',
-          message: 'Evento no seleccionado.',
-          detail: 'Por favor, seleccione un evento de la lista para registrar asistencia usando DNI.'
+          message: 'Código de ticket no encontrado.',
+          detail: `El código ${qrData} no corresponde a ningún participante o entrada registrada.`
         })
+        refreshAllData()
         return
       }
-      dni = qrData
-      eventId = selectedEventIdForQr
-    } else {
-      // QR format: UNI-150-TICKET-{eventId}-{dni}-{random}
+    } else if (isOldTicketFormat) {
       const regex = /^UNI-150-TICKET-([^-]+)-([^-]+)-(\d+)$/
       const match = qrData.match(regex)
       
@@ -741,13 +816,28 @@ export default function Admin() {
 
       eventId = match[1]
       dni = match[2]
+      
+      const allUsers = db.getUsers()
+      targetUser = allUsers.find(u => u.dni === dni)
+    } else {
+      if (!selectedEventIdForQr) {
+        setScanResult({
+          success: false,
+          type: 'invalid',
+          message: 'Evento no seleccionado.',
+          detail: 'Por favor, seleccione un evento de la lista para registrar asistencia usando DNI.'
+        })
+        return
+      }
+      dni = qrData
+      eventId = selectedEventIdForQr
+      
+      const allUsers = db.getUsers()
+      targetUser = allUsers.find(u => u.dni === dni)
     }
     
-    // Find event and user
     const dbEvents = db.getEvents()
-    const targetEvent = dbEvents.find(e => String(e.id) === String(eventId))
-    const allUsers = db.getUsers()
-    const targetUser = allUsers.find(u => u.dni === dni)
+    targetEvent = dbEvents.find(e => String(e.id) === String(eventId))
 
     if (!targetUser) {
       const log = {
@@ -852,14 +942,18 @@ export default function Admin() {
         time: new Date().toLocaleTimeString('es-PE')
       }
     })
-    setManualQrInput('')
+    setManualQrInput('UNI150-')
     refreshAllData()
   }
 
   const handleManualQrSubmit = (e) => {
     e.preventDefault()
-    if (!manualQrInput.trim()) return
-    processQrCode(manualQrInput.trim())
+    let input = manualQrInput.trim()
+    if (!input || input === 'UNI150-') return
+    if (/^\d{5}$/.test(input)) {
+      input = `UNI150-${input}`
+    }
+    processQrCode(input)
   }
 
   const handleToggleAttendance = (userDni, status) => {
@@ -879,28 +973,66 @@ export default function Admin() {
     refreshAllData()
   }
 
+  const lastScannedCodeRef = useRef('')
+  const lastScannedTimeRef = useRef(0)
+
+  useEffect(() => {
+    let active = true
+    let animationFrameId
+
+    const scan = () => {
+      if (!active || !isCameraActive || !videoRef.current) return
+
+      const video = videoRef.current
+      if (video.readyState === video.HAVE_ENOUGH_DATA) {
+        const canvas = document.createElement('canvas')
+        canvas.width = video.videoWidth
+        canvas.height = video.videoHeight
+        const ctx = canvas.getContext('2d')
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height)
+        
+        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height)
+        const code = jsQR(imageData.data, imageData.width, imageData.height, {
+          inversionAttempts: 'dontInvert',
+        })
+
+        if (code && code.data) {
+          const now = Date.now()
+          if (code.data !== lastScannedCodeRef.current || now - lastScannedTimeRef.current > 3000) {
+            lastScannedCodeRef.current = code.data
+            lastScannedTimeRef.current = now
+            processQrCode(code.data)
+          }
+        }
+      }
+      animationFrameId = requestAnimationFrame(scan)
+    }
+
+    if (isCameraActive && cameraStream) {
+      scan()
+    }
+
+    return () => {
+      active = false
+      if (animationFrameId) {
+        cancelAnimationFrame(animationFrameId)
+      }
+    }
+  }, [isCameraActive, cameraStream])
+
   const startCamera = async () => {
     setIsCameraActive(true)
     setScanResult(null)
+    lastScannedCodeRef.current = ''
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
       setCameraStream(stream)
       if (videoRef.current) {
         videoRef.current.srcObject = stream
       }
-      
-      // Simulate scanning code automatically in 4 seconds for display/demo if camera is active
-      setTimeout(() => {
-        if (stream.active) {
-          // Try scanning Juan Perez's ticket
-          const juanTicket = 'UNI-150-TICKET-1-12345678-854721'
-          setManualQrInput(juanTicket)
-        }
-      }, 4000)
-
     } catch (err) {
       console.error('No se pudo acceder a la cámara:', err)
-      showAlert('No se pudo acceder a la webcam. Por favor, utilice el simulador de entrada de texto.', 'Error de Cámara', 'error')
+      showAlert('No se pudo acceder a la cámara de su dispositivo. Por favor, asegúrese de otorgar permisos de acceso.', 'Error de Cámara', 'error')
       setIsCameraActive(false)
     }
   }
@@ -1234,64 +1366,79 @@ export default function Admin() {
 
         {/* Sidebar Menu */}
         <nav className="flex-1 px-3 py-4 space-y-1.5 overflow-y-auto">
-          {[
-            { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-            { id: 'eventos', label: 'Eventos', icon: Calendar },
-            { id: 'participantes', label: 'Usuarios Registrados', icon: Users },
-            { id: 'asistencia-qr', label: 'Asistencia QR', icon: QrCode },
-            { id: 'certificados', label: 'Carga Certificados', icon: Award },
-            { id: 'cms', label: 'Editar Páginas', icon: Edit2 },
-          ].filter(tab => {
-            const isOnlyStaff = user && user.role === 'STAFF'
-            if (isOnlyStaff) {
-              return tab.id === 'asistencia-qr'
-            }
-            return true
-          }).map(tab => {
-            const IconComponent = tab.icon
-            const isActive = activeTab === tab.id
-            return (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-bold transition-all ${
-                  isActive 
-                    ? 'bg-white text-[#800404] shadow-md border-l-4 border-white' 
-                    : 'text-white/80 hover:bg-white/10 hover:text-white'
-                }`}
-              >
-                <IconComponent size={18} />
-                {tab.label}
-              </button>
-            )
-          })}
+          {user.role === 'STAFF' ? (
+            <div className="flex items-center gap-3 px-4 py-3 text-sm font-black bg-white/10 text-white border-l-4 border-white select-none">
+              <QrCode size={18} />
+              Registro Asistencia QR
+            </div>
+          ) : (
+            tabsList.map(tab => {
+              const IconComponent = tab.icon
+              const isActive = activeTab === tab.id
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`w-full flex items-center gap-3 px-4 py-3 text-sm font-bold transition-all ${
+                    isActive 
+                      ? 'bg-white text-[#800404] shadow-md border-l-4 border-white' 
+                      : 'text-white/80 hover:bg-white/10 hover:text-white'
+                  }`}
+                >
+                  <IconComponent size={18} />
+                  {tab.label}
+                </button>
+              )
+            })
+          )}
         </nav>
+
+        {/* Sidebar Footer */}
+        <div className="p-4 border-t border-white/10 shrink-0">
+          <button
+            onClick={handleManualSync}
+            disabled={isSyncing}
+            title="Sincronizar base de datos"
+            className="w-full flex items-center justify-center gap-2 py-2 px-3 text-xs font-bold bg-white/10 hover:bg-white/20 text-white transition-all border border-white/10 disabled:opacity-50 disabled:pointer-events-none cursor-pointer"
+          >
+            <RefreshCw size={14} className={isSyncing ? 'animate-spin' : ''} />
+            {isSyncing ? 'Sincronizando...' : 'Sincronizar Base de Datos'}
+          </button>
+        </div>
 
       </aside>
 
       {/* MAIN MAIN AREA */}
       <main className="flex-1 flex flex-col min-w-0 bg-gray-50 overflow-y-auto">
-        
-        {/* Top Header of Main Area */}
-        <header className="bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between sticky top-0 z-30">
-          <div className="flex items-center gap-2">
-            <h1 className="text-xl font-black text-gray-800 capitalize">
-              {activeTab === 'cms' ? 'Editor de páginas desde panel de Administrador' : activeTab === 'participantes' ? 'Usuarios Registrados' : activeTab.replace('-', ' ')}
-            </h1>
+
+        {/* Mobile Navigation Header Bar (Visible on mobile/tablet only) */}
+        {user.role === 'STAFF' ? (
+          <div className="md:hidden bg-[#800404] text-white p-3.5 shadow-sm w-full text-center font-black text-xs uppercase tracking-wider">
+            Registro de Asistencia con QR
           </div>
-          <div className="flex items-center gap-3">
-            <span className="bg-red-50 text-[#800404] text-[10px] font-black tracking-wide px-3 py-1 border border-red-200">
-              ROL: {user?.role === 'ADMIN' ? 'ADMINISTRADOR' : user?.role === 'STAFF' ? 'STAFF' : user?.role || 'ADMINISTRADOR'}
-            </span>
-            <button 
-              onClick={refreshAllData}
-              title="Sincronizar base de datos"
-              className="p-2 border border-gray-200 hover:border-gray-400 hover:bg-gray-50 text-gray-500 hover:text-gray-800 transition-all rounded-none cursor-pointer"
-            >
-              <RefreshCw size={15} />
-            </button>
+        ) : (
+          <div className="md:hidden bg-white border-b border-gray-200 sticky top-0 z-30 p-2.5 shadow-sm w-full overflow-hidden">
+            <div className="grid grid-cols-3 gap-1.5">
+              {tabsList.map(tab => {
+                const isActive = activeTab === tab.id
+                return (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id)}
+                    className={`py-2 px-0.5 text-center transition-all font-black text-[9px] uppercase tracking-tighter rounded-none cursor-pointer w-full overflow-hidden truncate block ${
+                      isActive
+                        ? 'bg-[#800404] text-white shadow'
+                        : 'bg-gray-200/80 text-gray-650 hover:bg-gray-200 hover:text-gray-800'
+                    }`}
+                    title={tab.label}
+                  >
+                    {tab.shortLabel}
+                  </button>
+                )
+              })}
+            </div>
           </div>
-        </header>
+        )}
 
         {/* Dynamic Inner Tab Component */}
         <div className="p-6">
@@ -1423,10 +1570,9 @@ export default function Admin() {
                 <table className="min-w-full divide-y divide-gray-200 text-sm">
                   <thead className="bg-gray-50 font-black text-gray-700 uppercase tracking-wider text-xs">
                     <tr>
-                      <th className="px-6 py-3.5 text-left">Título / Organizador</th>
+                      <th className="px-6 py-3.5 text-left min-w-[340px]">Título / Organizador</th>
                       <th className="px-6 py-3.5 text-left">Fecha & Hora</th>
                       <th className="px-6 py-3.5 text-left">Ubicación</th>
-                      <th className="px-6 py-3.5 text-center">Capacidad</th>
                       <th className="px-6 py-3.5 text-center">Estado</th>
                       <th className="px-6 py-3.5 text-right">Acciones</th>
                     </tr>
@@ -1471,10 +1617,6 @@ export default function Admin() {
                               <span className="text-gray-600 truncate max-w-xs block" title={ev.location}>
                                 {ev.location}
                               </span>
-                            </td>
-                            <td className="px-6 py-4 text-center whitespace-nowrap font-medium">
-                              <span className="text-gray-700">{registeredCount}</span>
-                              <span className="text-gray-400"> / {ev.quota || '∞'}</span>
                             </td>
                             <td className="px-6 py-4 text-center whitespace-nowrap">
                               <span className={`inline-block text-[10px] font-black px-2.5 py-1 uppercase border rounded-none ${
@@ -1987,9 +2129,9 @@ export default function Admin() {
                 </div>
 
                 {!selectedEventIdForQr ? (
-                  <div className="bg-white border border-gray-200 p-12 text-center max-w-xl mx-auto shadow-sm space-y-6">
+                  <div className="bg-white border border-gray-200 p-16 text-center w-full shadow-sm space-y-6">
                     <QrCode size={48} className="mx-auto text-gray-300 animate-pulse" />
-                    <div className="space-y-2">
+                    <div className="space-y-2 max-w-md mx-auto">
                       <h3 className="text-lg font-black text-gray-900">Control de Asistencia</h3>
                       <p className="text-sm text-gray-500">
                         Seleccione un evento de la lista desplegable en la esquina superior para registrar ingresos o ver los participantes inscritos.
@@ -1999,7 +2141,7 @@ export default function Admin() {
                 ) : (
                   <>
                     {/* Stats Counter Bar */}
-                    <div className="grid grid-cols-3 gap-4">
+                    <div className="grid grid-cols-2 gap-4">
                       <div className="bg-white border border-gray-200 p-4 shadow-sm text-center">
                         <p className="text-xs font-bold text-gray-400 uppercase">Inscritos</p>
                         <p className="text-2xl font-black text-gray-800 mt-1">{totalRegistered}</p>
@@ -2007,10 +2149,6 @@ export default function Admin() {
                       <div className="bg-emerald-50 border border-emerald-100 p-4 shadow-sm text-center">
                         <p className="text-xs font-bold text-emerald-600 uppercase">Presentes</p>
                         <p className="text-2xl font-black text-emerald-800 mt-1">{totalAttended}</p>
-                      </div>
-                      <div className="bg-gray-50 border border-gray-200 p-4 shadow-sm text-center">
-                        <p className="text-xs font-bold text-gray-400 uppercase">Pendientes</p>
-                        <p className="text-2xl font-black text-gray-600 mt-1">{totalPending}</p>
                       </div>
                     </div>
 
@@ -2174,15 +2312,7 @@ export default function Admin() {
                           )}
                         </div>
                         
-                        <div className="bg-red-50 border border-red-100 p-4 mt-6 text-xs text-red-800 leading-normal flex items-start gap-2">
-                          <ShieldAlert size={16} className="shrink-0 mt-0.5" />
-                          <div>
-                            <p className="font-black">Simulación Rápida:</p>
-                            <p className="text-[11px] text-red-700 mt-0.5">
-                              Puedes simular un ingreso manual copiando y pegando el DNI de un participante inscrito o marcando la asistencia directamente en la tabla inferior.
-                            </p>
-                          </div>
-                        </div>
+
                       </div>
 
                     </div>
@@ -2290,7 +2420,7 @@ export default function Admin() {
           {activeTab === 'certificados' && (
             <div className="space-y-6">
               {/* Massive upload card (full width, simplified) */}
-              <div className="max-w-3xl mx-auto bg-white border border-gray-200 p-8 shadow-sm flex flex-col justify-between">
+              <div className="w-full bg-white border border-gray-200 p-8 shadow-sm flex flex-col justify-between">
                 <div>
                   <h3 className="text-base font-black text-gray-900 mb-1">Carga Masiva de Certificados</h3>
                   <p className="text-xs text-gray-400 mb-6">Sube múltiples archivos PDF de certificados o una carpeta completa. El sistema extraerá el DNI del nombre de archivo y lo asociará al participante.</p>
@@ -2381,24 +2511,25 @@ export default function Admin() {
           {activeTab === 'cms' && (
             <div className="space-y-6 bg-white border border-gray-200 p-6 shadow-sm">
               {/* Sub Navigation Tabs */}
-              <div className="flex border-b border-gray-200">
+              <div className="grid grid-cols-4 border-b border-gray-200 w-full">
                 {[
-                  { id: 'inicio', label: 'Inicio' },
-                  { id: 'eventos', label: 'Eventos' },
-                  { id: 'encuentro', label: 'Encuentro Internacional' },
-                  { id: 'certificados', label: 'Certificados' }
+                  { id: 'inicio', label: 'Inicio', shortLabel: 'Inicio' },
+                  { id: 'eventos', label: 'Eventos', shortLabel: 'Eventos' },
+                  { id: 'encuentro', label: 'Encuentro Internacional', shortLabel: 'Encuentro' },
+                  { id: 'certificados', label: 'Certificados', shortLabel: 'Certificados' }
                 ].map(sub => (
                   <button
                     key={sub.id}
                     type="button"
                     onClick={() => setCmsActiveSubTab(sub.id)}
-                    className={`px-6 py-3 text-sm font-bold border-b-2 transition-all cursor-pointer ${
+                    className={`py-3 text-center text-xs md:text-sm font-black border-b-2 transition-all cursor-pointer truncate ${
                       cmsActiveSubTab === sub.id
                         ? 'border-[#800404] text-[#800404]'
                         : 'border-transparent text-gray-500 hover:text-[#800404]'
                     }`}
                   >
-                    {sub.label}
+                    <span className="hidden md:inline">{sub.label}</span>
+                    <span className="inline md:hidden">{sub.shortLabel}</span>
                   </button>
                 ))}
               </div>
@@ -2941,7 +3072,7 @@ export default function Admin() {
                                 </div>
                               </div>
 
-                              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                                 <div>
                                   <label className="block text-[10px] font-bold text-gray-500 uppercase mb-0.5">Horario</label>
                                   <input
@@ -2950,15 +3081,6 @@ export default function Admin() {
                                     onChange={e => handleEditPhase(idx, 'time', e.target.value)}
                                     className="w-full border border-gray-300 px-2 py-1 text-xs focus:outline-none focus:border-[#800404] text-gray-850"
                                     placeholder="09:00 - 18:00"
-                                  />
-                                </div>
-                                <div>
-                                  <label className="block text-[10px] font-bold text-gray-500 uppercase mb-0.5">Aforo (Cupos)</label>
-                                  <input
-                                    type="number"
-                                    value={phase.quota || 0}
-                                    onChange={e => handleEditPhase(idx, 'quota', parseInt(e.target.value, 10))}
-                                    className="w-full border border-gray-300 px-2 py-1 text-xs focus:outline-none focus:border-[#800404] text-gray-855"
                                   />
                                 </div>
                                 <div>
@@ -3219,7 +3341,7 @@ export default function Admin() {
       {/* MODAL: CREAR O EDITAR EVENTO */}
       {isEventModalOpen && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white w-full max-w-4xl shadow-2xl border border-gray-200 overflow-hidden font-sans flex flex-col max-h-[90vh]">
+          <div className="bg-white w-full max-w-6xl shadow-2xl border border-gray-200 overflow-hidden font-sans flex flex-col max-h-[95vh]">
             
             <div className="bg-[#800404] text-white p-5 flex items-center justify-between shrink-0">
               <h4 className="font-black text-base">{editingEvent ? 'Editar Evento' : 'Crear Nuevo Evento'}</h4>
@@ -3230,191 +3352,166 @@ export default function Admin() {
 
             <form onSubmit={handleSaveEvent} className="flex flex-col flex-1 overflow-hidden">
               <div className="p-6 space-y-4 overflow-y-auto flex-1">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
-                  {/* Left Column */}
-                  <div className="space-y-4">
-                    <div>
-                      <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Título del Evento *</label>
-                      <input
-                        type="text"
-                        required
-                        value={eventForm.title}
-                        onChange={e => setEventForm(prev => ({ ...prev, title: e.target.value }))}
-                        className="w-full border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:border-[#800404] text-gray-850"
-                        placeholder="Ej: Congreso de Inteligencia Artificial"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Categoría del Evento *</label>
-                      <select
-                        value={eventForm.category}
-                        onChange={e => setEventForm(prev => ({ ...prev, category: e.target.value }))}
-                        className="w-full border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:border-[#800404] bg-white text-gray-805"
-                      >
-                        <option value="Académico">Académico</option>
-                        <option value="Egresados">Egresados</option>
-                        <option value="Cultural">Cultural</option>
-                        <option value="Laboral">Laboral</option>
-                      </select>
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Organizador</label>
-                      <input
-                        type="text"
-                        value={eventForm.organizer}
-                        onChange={e => setEventForm(prev => ({ ...prev, organizer: e.target.value }))}
-                        className="w-full border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:border-[#800404] text-gray-850"
-                        placeholder="Ej: Rectorado / UNICODE"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Ubicación *</label>
-                      <input
-                        type="text"
-                        required
-                        value={eventForm.location}
-                        onChange={e => setEventForm(prev => ({ ...prev, location: e.target.value }))}
-                        className="w-full border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:border-[#800404] text-gray-850"
-                        placeholder="Ej: Teatro UNI, Lima"
-                      />
-                    </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-x-5 gap-y-4">
+                  {/* Row 1 */}
+                  <div>
+                    <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Título del Evento *</label>
+                    <input
+                      type="text"
+                      required
+                      value={eventForm.title}
+                      onChange={e => setEventForm(prev => ({ ...prev, title: e.target.value }))}
+                      className="w-full border border-gray-300 px-3 py-1.5 text-xs focus:outline-none focus:border-[#800404] text-gray-850"
+                      placeholder="Ej: Congreso de Inteligencia Artificial"
+                    />
                   </div>
 
-                  {/* Right Column */}
-                  <div className="space-y-4">
-                    <div>
-                      <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Portada del Evento</label>
-                      <div className="flex items-center gap-3">
-                        {/* Preview */}
-                        <div className="w-16 h-10 border border-gray-200 bg-white overflow-hidden flex items-center justify-center shrink-0">
-                          {eventForm.imageUrl ? (
-                            <img src={eventForm.imageUrl} alt="Portada" className="w-full h-full object-cover" />
-                          ) : (
-                            <span className="text-[8px] text-gray-400 font-bold uppercase text-center">Sin Imagen</span>
-                          )}
-                        </div>
-                        <div className="flex flex-wrap gap-1.5">
-                          <label className="bg-gray-800 hover:bg-black text-white px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider transition-colors cursor-pointer flex items-center justify-center">
-                            Subir Foto
-                            <input
-                              type="file"
-                              accept="image/*"
-                              onChange={e => {
-                                const file = e.target.files[0];
-                                if (file) {
-                                  if (file.size > 2 * 1024 * 1024) {
-                                    showAlert('La imagen es demasiado grande. El límite es de 2MB.', 'Imagen Excede Límite', 'warning');
-                                    return;
-                                  }
-                                  const reader = new FileReader();
-                                  reader.onloadend = () => {
-                                    setEventForm(prev => ({ ...prev, imageUrl: reader.result }));
-                                  };
-                                  reader.readAsDataURL(file);
+                  <div>
+                    <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Ubicación *</label>
+                    <input
+                      type="text"
+                      required
+                      value={eventForm.location}
+                      onChange={e => setEventForm(prev => ({ ...prev, location: e.target.value }))}
+                      className="w-full border border-gray-300 px-3 py-1.5 text-xs focus:outline-none focus:border-[#800404] text-gray-850"
+                      placeholder="Ej: Teatro UNI, Lima"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Portada del Evento</label>
+                    <div className="flex items-center gap-2">
+                      {/* Preview */}
+                      <div className="w-12 h-8 border border-gray-200 bg-white overflow-hidden flex items-center justify-center shrink-0">
+                        {eventForm.imageUrl ? (
+                          <img src={eventForm.imageUrl} alt="Portada" className="w-full h-full object-cover" />
+                        ) : (
+                          <span className="text-[7px] text-gray-400 font-bold uppercase text-center">Sin Foto</span>
+                        )}
+                      </div>
+                      <div className="flex flex-wrap gap-1">
+                        <label className="bg-gray-800 hover:bg-black text-white px-2 py-1 text-[9px] font-bold uppercase tracking-wider transition-colors cursor-pointer flex items-center justify-center">
+                          Subir
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={e => {
+                              const file = e.target.files[0];
+                              if (file) {
+                                if (file.size > 2 * 1024 * 1024) {
+                                  showAlert('La imagen es demasiado grande. El límite es de 2MB.', 'Imagen Excede Límite', 'warning');
+                                  return;
                                 }
-                              }}
-                              className="hidden"
-                            />
-                          </label>
-                          {eventForm.imageUrl && (
-                            <button
-                              type="button"
-                              onClick={() => setEventForm(prev => ({ ...prev, imageUrl: '' }))}
-                              className="border border-red-200 hover:bg-red-50 text-red-650 px-2.5 py-1 text-[10px] font-black uppercase transition-colors"
-                            >
-                              Limpiar
-                            </button>
-                          )}
+                                const reader = new FileReader();
+                                reader.onloadend = () => {
+                                  setEventForm(prev => ({ ...prev, imageUrl: reader.result }));
+                                };
+                                reader.readAsDataURL(file);
+                              }
+                            }}
+                            className="hidden"
+                          />
+                        </label>
+                        {eventForm.imageUrl && (
                           <button
                             type="button"
-                            onClick={() => {
-                              const randoms = [
-                                'https://images.unsplash.com/photo-1540575467063-178a50c2df87?auto=format&fit=crop&q=80&w=800',
-                                'https://images.unsplash.com/photo-1519671482749-fd09be7ccebf?auto=format&fit=crop&q=80&w=800',
-                                'https://images.unsplash.com/photo-1507679799987-c73779587ccf?auto=format&fit=crop&q=80&w=800',
-                                'https://images.unsplash.com/photo-1531482615713-2afd69097998?auto=format&fit=crop&q=80&w=800',
-                                'https://images.unsplash.com/photo-1523050854058-8df90110c9f1?auto=format&fit=crop&q=80&w=800',
-                                'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&q=80&w=800',
-                                'https://images.unsplash.com/photo-1521791136368-1a8684c0286d?auto=format&fit=crop&q=80&w=800',
-                                'https://images.unsplash.com/photo-1504384308090-c894fdcc538d?auto=format&fit=crop&q=80&w=800',
-                                'https://images.unsplash.com/photo-1511578314322-379afb476865?auto=format&fit=crop&q=80&w=800'
-                              ];
-                              const idx = Math.floor(Math.random() * randoms.length);
-                              setEventForm(prev => ({ ...prev, imageUrl: randoms[idx] }));
-                            }}
-                            className="bg-gray-200 hover:bg-gray-300 text-gray-700 text-[10px] font-bold px-2.5 py-1 transition-colors cursor-pointer"
-                            title="Usar imagen de prueba aleatoria"
+                            onClick={() => setEventForm(prev => ({ ...prev, imageUrl: '' }))}
+                            className="border border-red-200 hover:bg-red-50 text-red-650 px-2 py-1 text-[9px] font-black uppercase transition-colors"
                           >
-                            Azar
+                            Limpiar
                           </button>
-                        </div>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const randoms = [
+                              'https://images.unsplash.com/photo-1540575467063-178a50c2df87?auto=format&fit=crop&q=80&w=800',
+                              'https://images.unsplash.com/photo-1519671482749-fd09be7ccebf?auto=format&fit=crop&q=80&w=800',
+                              'https://images.unsplash.com/photo-1507679799987-c73779587ccf?auto=format&fit=crop&q=80&w=800',
+                              'https://images.unsplash.com/photo-1531482615713-2afd69097998?auto=format&fit=crop&q=80&w=800',
+                              'https://images.unsplash.com/photo-1523050854058-8df90110c9f1?auto=format&fit=crop&q=80&w=800',
+                              'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&q=80&w=800',
+                              'https://images.unsplash.com/photo-1521791136368-1a8684c0286d?auto=format&fit=crop&q=80&w=800',
+                              'https://images.unsplash.com/photo-1504384308090-c894fdcc538d?auto=format&fit=crop&q=80&w=800',
+                              'https://images.unsplash.com/photo-1511578314322-379afb476865?auto=format&fit=crop&q=80&w=800'
+                            ];
+                            const idx = Math.floor(Math.random() * randoms.length);
+                            setEventForm(prev => ({ ...prev, imageUrl: randoms[idx] }));
+                          }}
+                          className="bg-gray-200 hover:bg-gray-300 text-gray-700 text-[9px] font-bold px-2 py-1 transition-colors cursor-pointer"
+                          title="Usar imagen de prueba aleatoria"
+                        >
+                          Azar
+                        </button>
                       </div>
                     </div>
+                  </div>
 
-                    <div>
-                      <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Fecha *</label>
-                      <input
-                        type="text"
-                        required
-                        value={eventForm.date}
-                        onChange={e => setEventForm(prev => ({ ...prev, date: e.target.value }))}
-                        className="w-full border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:border-[#800404] text-gray-850"
-                        placeholder="Ej: 14 Jul 2026"
-                      />
-                    </div>
+                  {/* Row 2 */}
+                  <div>
+                    <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Categoría del Evento *</label>
+                    <select
+                      value={eventForm.category}
+                      onChange={e => setEventForm(prev => ({ ...prev, category: e.target.value }))}
+                      className="w-full border border-gray-300 px-3 py-1.5 text-xs focus:outline-none focus:border-[#800404] bg-white text-gray-805"
+                    >
+                      <option value="Académico">Académico</option>
+                      <option value="Egresados">Egresados</option>
+                      <option value="Cultural">Cultural</option>
+                      <option value="Laboral">Laboral</option>
+                    </select>
+                  </div>
 
-                    <div>
-                      <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Horario</label>
-                      <input
-                        type="text"
-                        value={eventForm.time}
-                        onChange={e => setEventForm(prev => ({ ...prev, time: e.target.value }))}
-                        className="w-full border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:border-[#800404] text-gray-850"
-                        placeholder="Ej: 08:00 – 18:00"
-                      />
-                    </div>
+                  <div>
+                    <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Fecha *</label>
+                    <input
+                      type="text"
+                      required
+                      value={eventForm.date}
+                      onChange={e => setEventForm(prev => ({ ...prev, date: e.target.value }))}
+                      className="w-full border border-gray-300 px-3 py-1.5 text-xs focus:outline-none focus:border-[#800404] text-gray-850"
+                      placeholder="Ej: 14 Jul 2026"
+                    />
+                  </div>
 
-                    <div>
-                      <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Aforo Máximo (Cupos) *</label>
-                      <input
-                        type="number"
-                        required
-                        value={eventForm.quota}
-                        onChange={e => setEventForm(prev => ({ ...prev, quota: e.target.value }))}
-                        className="w-full border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:border-[#800404] text-gray-850"
-                        placeholder="Ej: 300"
-                      />
+                  {/* Row 2, Item 3: ¿Es un evento de pago? */}
+                  <div className="flex flex-col justify-end">
+                    <div className="bg-gray-50 p-2.5 border border-gray-150 flex items-center h-[38px] w-full shrink-0">
+                      <label className="flex items-center gap-2 text-xs font-black text-gray-700 cursor-pointer select-none">
+                        <input
+                          type="checkbox"
+                          checked={eventForm.isPaid}
+                          onChange={e => setEventForm(prev => ({ ...prev, isPaid: e.target.checked }))}
+                          className="border-gray-300 rounded-none cursor-pointer"
+                        />
+                        ¿Es un evento de pago?
+                      </label>
                     </div>
+                  </div>
 
-                    <div>
-                      <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Estado del Evento</label>
-                      <select
-                        value={eventForm.status}
-                        onChange={e => setEventForm(prev => ({ ...prev, status: e.target.value }))}
-                        className="w-full border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:border-[#800404] bg-white text-gray-805"
-                      >
-                        <option value="pre">Publicado (Próximo / En Curso)</option>
-                        <option value="post">Post-Evento / Finalizado (Recap)</option>
-                      </select>
-                    </div>
+                  {/* Row 3 */}
+                  <div>
+                    <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Organizador</label>
+                    <input
+                      type="text"
+                      value={eventForm.organizer}
+                      onChange={e => setEventForm(prev => ({ ...prev, organizer: e.target.value }))}
+                      className="w-full border border-gray-300 px-3 py-1.5 text-xs focus:outline-none focus:border-[#800404] text-gray-850"
+                      placeholder="Ej: Rectorado / UNICODE"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Horario</label>
+                    <input
+                      type="text"
+                      value={eventForm.time}
+                      onChange={e => setEventForm(prev => ({ ...prev, time: e.target.value }))}
+                      className="w-full border border-gray-300 px-3 py-1.5 text-xs focus:outline-none focus:border-[#800404] text-gray-850"
+                      placeholder="Ej: 08:00 – 18:00"
+                    />
                   </div>
                 </div>
-
-                <div className="grid grid-cols-1 gap-4 pt-2">
-                  <div className="flex items-center gap-4 bg-gray-50 p-3 border border-gray-150">
-                    <label className="flex items-center gap-2 text-xs font-bold text-gray-700 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={eventForm.isPaid}
-                        onChange={e => setEventForm(prev => ({ ...prev, isPaid: e.target.checked }))}
-                        className="border-gray-300"
-                      />
-                      ¿Es un evento de pago? (Cena de Gala, etc.)
-                    </label>
-                  </div>
 
                   <div>
                     <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Descripción del Evento</label>
@@ -3470,77 +3567,68 @@ export default function Admin() {
                     </div>
                   </div>
 
+                  <div className="border-t border-gray-150 pt-4 space-y-3">
+                    <h5 className="text-xs font-black text-[#800404] uppercase tracking-wider">
+                      Enlaces y Redes Sociales del Evento
+                    </h5>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div>
+                        <label className="block text-xs font-bold text-gray-500 uppercase mb-1">
+                          Instagram del Organizador / Evento
+                        </label>
+                        <input
+                          type="text"
+                          value={eventForm.instagramUrl || ''}
+                          onChange={e => setEventForm(prev => ({ ...prev, instagramUrl: e.target.value }))}
+                          className="w-full border border-gray-300 px-3 py-1.5 text-xs focus:outline-none focus:border-[#800404] text-gray-850"
+                          placeholder="Ej: https://www.instagram.com/..."
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-gray-500 uppercase mb-1">
+                          LinkedIn del Organizador / Evento
+                        </label>
+                        <input
+                          type="text"
+                          value={eventForm.linkedinUrl || ''}
+                          onChange={e => setEventForm(prev => ({ ...prev, linkedinUrl: e.target.value }))}
+                          className="w-full border border-gray-300 px-3 py-1.5 text-xs focus:outline-none focus:border-[#800404] text-gray-850"
+                          placeholder="Ej: https://www.linkedin.com/..."
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-gray-500 uppercase mb-1">
+                          Facebook del Organizador / Evento
+                        </label>
+                        <input
+                          type="text"
+                          value={eventForm.facebookUrl || ''}
+                          onChange={e => setEventForm(prev => ({ ...prev, facebookUrl: e.target.value }))}
+                          className="w-full border border-gray-300 px-3 py-1.5 text-xs focus:outline-none focus:border-[#800404] text-gray-850"
+                          placeholder="Ej: https://www.facebook.com/..."
+                        />
+                      </div>
+                    </div>
+                  </div>
+
                   {eventForm.status === 'post' && (
                     <div className="mt-4 pt-4 border-t border-dashed border-gray-300 space-y-4">
                       <h5 className="text-xs font-black text-[#800404] uppercase tracking-wider">
                         Contenido del Recap (Post-Evento)
                       </h5>
 
-                      {/* Grabación del Evento (YouTube ID o Link) */}
+                      {/* Enlace de Grabación (YouTube) */}
                       <div>
                         <label className="block text-xs font-bold text-gray-500 uppercase mb-1">
-                          ID o Enlace de Grabación de YouTube
+                          Enlace de Grabación (YouTube)
                         </label>
                         <input
                           type="text"
                           value={eventForm.recapVideoId || ''}
                           onChange={e => setEventForm(prev => ({ ...prev, recapVideoId: e.target.value }))}
-                          className="w-full border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:border-[#800404] text-gray-850"
-                          placeholder="Ej: https://www.youtube.com/watch?v=WJzWnO4qZc0 o WJzWnO4qZc0"
+                          className="w-full border border-gray-300 px-3 py-1.5 text-xs focus:outline-none focus:border-[#800404] text-gray-850"
+                          placeholder="Ej: https://www.youtube.com/watch?v=..."
                         />
-                      </div>
-
-                      {/* Informe Final (PDF Upload) */}
-                      <div>
-                        <label className="block text-xs font-bold text-gray-500 uppercase mb-1">
-                          Informe Final (PDF)
-                        </label>
-                        <div className="flex items-center gap-3">
-                          <div className="text-xs text-gray-650 font-bold shrink-0">
-                            {eventForm.report ? (
-                              <span className="text-emerald-700 bg-emerald-50 px-2.5 py-1 border border-emerald-100 uppercase tracking-wider text-[10px]">
-                                PDF Cargado
-                              </span>
-                            ) : (
-                              <span className="text-gray-400 bg-gray-50 px-2.5 py-1 border border-gray-200 uppercase tracking-wider text-[10px]">
-                                Sin Informe PDF
-                              </span>
-                            )}
-                          </div>
-                          <div className="flex gap-1.5">
-                            <label className="bg-gray-800 hover:bg-black text-white px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider transition-colors cursor-pointer flex items-center justify-center">
-                              Subir PDF
-                              <input
-                                type="file"
-                                accept="application/pdf"
-                                onChange={e => {
-                                  const file = e.target.files[0];
-                                  if (file) {
-                                    if (file.size > 5 * 1024 * 1024) {
-                                      showAlert('El PDF es demasiado grande. El límite es de 5MB.', 'PDF Excede Límite', 'warning');
-                                      return;
-                                    }
-                                    const reader = new FileReader();
-                                    reader.onloadend = () => {
-                                      setEventForm(prev => ({ ...prev, report: reader.result }));
-                                    };
-                                    reader.readAsDataURL(file);
-                                  }
-                                }}
-                                className="hidden"
-                              />
-                            </label>
-                            {eventForm.report && (
-                              <button
-                                type="button"
-                                onClick={() => setEventForm(prev => ({ ...prev, report: '' }))}
-                                className="border border-red-200 hover:bg-red-50 text-red-650 px-2.5 py-1 text-[10px] font-black uppercase transition-colors"
-                              >
-                                Limpiar
-                              </button>
-                            )}
-                          </div>
-                        </div>
                       </div>
 
                       {/* Galería de Fotos (Hasta 6 imágenes) */}
@@ -3607,7 +3695,6 @@ export default function Admin() {
                     </div>
                   )}
                 </div>
-              </div>
 
               <div className="p-5 border-t border-gray-100 bg-gray-50 flex gap-3 justify-end shrink-0">
                 <button

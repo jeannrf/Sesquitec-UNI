@@ -27,7 +27,10 @@ const initialEvents = [
     registrationOpen: false,
     imageUrl: 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?auto=format&fit=crop&q=80&w=800',
     category: 'Académico',
-    tags: ['Investigación', 'Innovación', 'Tecnología']
+    tags: ['Investigación', 'Innovación', 'Tecnología'],
+    instagramUrl: 'https://www.instagram.com/uni_oficial/',
+    linkedinUrl: 'https://www.linkedin.com/school/uni-peru/',
+    facebookUrl: 'https://www.facebook.com/UNI.pe'
   },
   {
     id: 'may2',
@@ -42,7 +45,9 @@ const initialEvents = [
     registrationOpen: false,
     imageUrl: 'https://images.unsplash.com/photo-1511578314322-379afb476865?auto=format&fit=crop&q=80&w=800',
     category: 'Cultural',
-    tags: ['Aniversario', 'UNI', 'Cultural']
+    tags: ['Aniversario', 'UNI', 'Cultural'],
+    instagramUrl: 'https://www.instagram.com/uni_oficial/',
+    facebookUrl: 'https://www.facebook.com/UNI.pe'
   },
   {
     id: 'may3',
@@ -72,7 +77,9 @@ const initialEvents = [
     registrationOpen: false,
     imageUrl: 'https://images.unsplash.com/photo-1507679799987-c73779587ccf?auto=format&fit=crop&q=80&w=800',
     category: 'Académico',
-    tags: ['FC', 'Ciencias', 'Física']
+    tags: ['FC', 'Ciencias', 'Física'],
+    instagramUrl: 'https://www.instagram.com/fc_uni/',
+    linkedinUrl: 'https://www.linkedin.com/school/uni-peru/'
   },
   {
     id: 'jun2',
@@ -108,6 +115,9 @@ const initialEvents = [
     id: 'jul1',
     status: 'pre',
     date: '14 Jul 2026',
+    instagramUrl: 'https://www.instagram.com/uni_oficial/',
+    linkedinUrl: 'https://www.linkedin.com/school/uni-peru/',
+    facebookUrl: 'https://www.facebook.com/UNI.pe',
     time: '08:00 – 18:00',
     max_edit_date: '2026-07-10T23:59:59Z',
     title: 'Encuentro Internacional de Ingeniería UNI - Fase I',
@@ -403,6 +413,9 @@ export const db = {
         let recapVideoId = '';
         let recapImages = [];
         let report = '';
+        let instagramUrl = '';
+        let linkedinUrl = '';
+        let facebookUrl = '';
 
         if (descText.includes('---RECAP---')) {
           const parts = descText.split('---RECAP---');
@@ -412,6 +425,9 @@ export const db = {
             recapVideoId = recap.recapVideoId || '';
             recapImages = recap.recapImages || [];
             report = recap.report || '';
+            instagramUrl = recap.instagramUrl || '';
+            linkedinUrl = recap.linkedinUrl || '';
+            facebookUrl = recap.facebookUrl || '';
           } catch (e) {}
         }
 
@@ -427,13 +443,17 @@ export const db = {
           status: ev.status,
           isPaid: ev.is_paid,
           imageUrl: ev.image_url,
+          themeColor: ev.theme_color,
           category: ev.category,
           tags: ev.tags ? ev.tags.split(',') : [],
           registrationOpen: ev.registration_open,
           max_edit_date: ev.max_edit_date,
           recapVideoId,
           recapImages,
-          report
+          report,
+          instagramUrl,
+          linkedinUrl,
+          facebookUrl
         };
       })
       localStorage.setItem(EVENTS_KEY, JSON.stringify(mappedEvents))
@@ -691,14 +711,15 @@ export const db = {
 
     if (supabase) {
       let finalDesc = newEvent.description || '';
-      if (newEvent.status === 'post') {
-        const recapObj = {
-          recapVideoId: newEvent.recapVideoId || '',
-          recapImages: newEvent.recapImages || [],
-          report: newEvent.report || ''
-        };
-        finalDesc = `${newEvent.description || ''} ---RECAP--- ${JSON.stringify(recapObj)}`;
-      }
+      const recapObj = {
+        recapVideoId: newEvent.recapVideoId || '',
+        recapImages: newEvent.recapImages || [],
+        report: newEvent.report || '',
+        instagramUrl: newEvent.instagramUrl || '',
+        linkedinUrl: newEvent.linkedinUrl || '',
+        facebookUrl: newEvent.facebookUrl || ''
+      };
+      finalDesc = `${newEvent.description || ''} ---RECAP--- ${JSON.stringify(recapObj)}`;
 
       supabase.from('eventos').insert({
         id: newEvent.id,
@@ -713,7 +734,7 @@ export const db = {
         is_paid: newEvent.isPaid || false,
         image_url: newEvent.imageUrl,
         category: newEvent.category,
-        tags: newEvent.tags ? newEvent.tags.split(',').map(t => t.trim()).join(',') : '',
+        tags: Array.isArray(newEvent.tags) ? newEvent.tags.join(',') : (newEvent.tags || ''),
         registration_open: newEvent.registrationOpen,
         max_edit_date: newEvent.max_edit_date || null
       }).then(({ error }) => { if (error) console.error("Error al crear evento en Supabase:", error) })
@@ -734,14 +755,15 @@ export const db = {
 
       if (supabase) {
         let finalDesc = updatedEvent.description || '';
-        if (updatedEvent.status === 'post') {
-          const recapObj = {
-            recapVideoId: updatedEvent.recapVideoId || '',
-            recapImages: updatedEvent.recapImages || [],
-            report: updatedEvent.report || ''
-          };
-          finalDesc = `${updatedEvent.description || ''} ---RECAP--- ${JSON.stringify(recapObj)}`;
-        }
+        const recapObj = {
+          recapVideoId: updatedEvent.recapVideoId || '',
+          recapImages: updatedEvent.recapImages || [],
+          report: updatedEvent.report || '',
+          instagramUrl: updatedEvent.instagramUrl || '',
+          linkedinUrl: updatedEvent.linkedinUrl || '',
+          facebookUrl: updatedEvent.facebookUrl || ''
+        };
+        finalDesc = `${updatedEvent.description || ''} ---RECAP--- ${JSON.stringify(recapObj)}`;
 
         supabase.from('eventos').update({
           title: updatedEvent.title,
@@ -755,7 +777,7 @@ export const db = {
           is_paid: updatedEvent.isPaid,
           image_url: updatedEvent.imageUrl,
           category: updatedEvent.category,
-          tags: updatedEvent.tags ? updatedEvent.tags.split(',').map(t => t.trim()).join(',') : '',
+          tags: Array.isArray(updatedEvent.tags) ? updatedEvent.tags.join(',') : (updatedEvent.tags || ''),
           registration_open: updatedEvent.registrationOpen,
           max_edit_date: updatedEvent.max_edit_date || null
         }).eq('id', updatedEvent.id)
@@ -979,7 +1001,60 @@ export const db = {
   // --- PARTICIPANTES / USUARIOS ---
   getUsers() {
     const storedUsers = localStorage.getItem(USERS_KEY)
-    return storedUsers ? JSON.parse(storedUsers) : []
+    if (!storedUsers) return []
+    
+    let users = JSON.parse(storedUsers)
+    let needsMigration = false
+    
+    const generateUniqueCodeForMigration = (allUsers) => {
+      let code = ''
+      let isUnique = false
+      while (!isUnique) {
+        const num = Math.floor(10000 + Math.random() * 90000)
+        code = `UNI150-${num}`
+        
+        let found = false
+        for (const u of allUsers) {
+          if (u.tickets && u.tickets.some(t => t.qrCode === code)) {
+            found = true
+            break
+          }
+        }
+        if (!found) {
+          isUnique = true
+        }
+      }
+      return code
+    }
+
+    users = users.map(u => {
+      if (u.tickets) {
+        const updatedTickets = u.tickets.map(t => {
+          if (t.qrCode && (t.qrCode.startsWith('UNI-150-TICKET-') || !t.qrCode.startsWith('UNI150-'))) {
+            needsMigration = true
+            const newCode = generateUniqueCodeForMigration(users)
+            
+            if (supabase) {
+              supabase.from('inscripciones').update({ qr_code: newCode })
+                .eq('user_dni', u.dni)
+                .eq('event_id', t.eventId)
+                .then(({ error }) => { if (error) console.error("Error migrating ticket in Supabase:", error) })
+            }
+            
+            return { ...t, qrCode: newCode }
+          }
+          return t
+        })
+        return { ...u, tickets: updatedTickets }
+      }
+      return u
+    })
+
+    if (needsMigration) {
+      localStorage.setItem(USERS_KEY, JSON.stringify(users))
+    }
+    
+    return users
   },
   saveUsers(users) {
     localStorage.setItem(USERS_KEY, JSON.stringify(users))
@@ -1054,6 +1129,27 @@ export const db = {
     if (!user) return false
     return (user.tickets || []).some(t => String(t.eventId) === String(eventId))
   },
+  generateUniqueTicketCode() {
+    const users = this.getUsers()
+    let code = ''
+    let isUnique = false
+    while (!isUnique) {
+      const num = Math.floor(10000 + Math.random() * 90000)
+      code = `UNI150-${num}`
+      
+      let found = false
+      for (const u of users) {
+        if (u.tickets && u.tickets.some(t => t.qrCode === code)) {
+          found = true
+          break
+        }
+      }
+      if (!found) {
+        isUnique = true
+      }
+    }
+    return code
+  },
   registerUserToEvent(userEmail, eventId, conferencesSelected = [], companionsSelected = []) {
     const users = this.getUsers()
     const userIdx = users.findIndex(u => u.email === userEmail)
@@ -1089,7 +1185,7 @@ export const db = {
     const cleanEvents = (user.registeredEvents || []).filter(e => String(e.id) !== String(eventId))
 
     const newTicketId = `t-${Date.now()}`
-    const qrCodeContent = `UNI-150-TICKET-${event.id}-${user.dni}-${Math.floor(100000 + Math.random() * 900000)}`
+    const qrCodeContent = this.generateUniqueTicketCode()
 
     const ticket = {
       id: newTicketId,

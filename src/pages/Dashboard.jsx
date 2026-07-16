@@ -264,29 +264,23 @@ export default function Dashboard() {
 
   const handleCancelRegistration = (eventId) => {
     const confirmText = '¿Está seguro de que desea cancelar su inscripción a este evento? Se liberará su cupo y se anularán sus pases de acceso.'
-    const executeCancel = () => {
-      const updatedEvents = (user.registeredEvents || []).filter(e => e.id !== eventId)
-      const updatedTickets = (user.tickets || []).filter(t => t.eventId !== eventId)
-      
-      const storedUsers = JSON.parse(localStorage.getItem('uni_eventos_users') || '[]')
-      const userIdx = storedUsers.findIndex(u => u.email === user.email)
-      if (userIdx !== -1) {
-        storedUsers[userIdx].registeredEvents = updatedEvents
-        storedUsers[userIdx].tickets = updatedTickets
-        localStorage.setItem('uni_eventos_users', JSON.stringify(storedUsers))
-        
-        updateProfile({
-          registeredEvents: updatedEvents,
-          tickets: updatedTickets
-        })
-        
+    
+    if (window.confirm(confirmText)) {
+      const res = db.unregisterUserFromEvent(user.email, eventId)
+      if (res.success) {
+        const updatedUsers = db.getUsers()
+        const updatedUser = updatedUsers.find(u => u.email === user.email)
+        if (updatedUser) {
+          updateProfile({
+            registeredEvents: updatedUser.registeredEvents || [],
+            tickets: updatedUser.tickets || []
+          })
+        }
         showAlert('Su inscripción al evento ha sido cancelada con éxito.', 'Inscripción Cancelada', 'success')
         setSelectedEventDetails(null)
+      } else {
+        showAlert(res.message, 'Error', 'error')
       }
-    }
-
-    if (window.confirm(confirmText)) {
-      executeCancel()
     }
   }
 
@@ -455,10 +449,10 @@ export default function Dashboard() {
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
       {/* Header bar banner */}
-      <div className="bg-[#800404] text-white py-6">
-        <div className="max-w-7xl mx-auto px-4 flex flex-col md:flex-row items-center gap-6 justify-between">
-          <div className="flex items-center gap-4">
-            <div className="relative group w-20 h-20 rounded-full overflow-hidden border-4 border-white/20 shadow-md bg-white/10 flex items-center justify-center">
+      <div className="bg-[#800404] text-white py-4 sm:py-5">
+        <div className="max-w-7xl mx-auto px-4 flex flex-col md:flex-row items-start md:items-center gap-4 justify-between w-full">
+          <div className="flex items-start gap-4 text-left w-full">
+            <div className="relative group w-20 h-20 rounded-full overflow-hidden border-4 border-white/20 shadow-md bg-white/10 flex items-center justify-center shrink-0">
               <img 
                 src={user.profilePic || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=200'} 
                 alt="Profile" 
@@ -484,53 +478,46 @@ export default function Dashboard() {
                 </button>
               </div>
             </div>
-            <div>
+            <div className="flex-1 min-w-0">
               <span className="bg-white/25 text-white text-[9px] font-black tracking-widest px-2 py-0.5 uppercase">
                 Panel Universitario
               </span>
-              <h1 className="text-xl sm:text-2xl md:text-3xl font-black mt-1 leading-tight">{user.nombres} {user.apellidos}</h1>
+              <h1 className="text-xl sm:text-2xl md:text-3xl font-black mt-1 leading-tight break-words">{user.nombres} {user.apellidos}</h1>
               <p className="text-[10px] sm:text-xs text-white/70 mt-0.5 break-all sm:break-normal">{user.email} · DNI: {user.dni}</p>
             </div>
           </div>
           
-          <div className="flex gap-2">
-            {!user.verified && (
-              <div className="bg-amber-500/25 border border-amber-500 text-amber-200 px-4 py-2 text-xs flex items-center gap-2 font-medium">
-                <AlertCircle size={14} className="shrink-0 text-amber-300" />
-                <span>Correo sin verificar. Por favor valida tu cuenta.</span>
-              </div>
-            )}
-            <div className="bg-white/10 px-4 py-2 border border-white/15 text-center text-xs">
-              <p className="text-white/60">Eventos Inscritos</p>
-              <p className="text-xl font-black mt-0.5">{user.registeredEvents?.length || 0}</p>
+          {!user.verified && (
+            <div className="bg-amber-500/25 border border-amber-500 text-amber-200 px-4 py-2 text-xs flex items-center gap-2 font-medium">
+              <AlertCircle size={14} className="shrink-0 text-amber-300" />
+              <span>Correo sin verificar. Por favor valida tu cuenta.</span>
             </div>
-          </div>
+          )}
         </div>
       </div>
 
       {/* Main Grid content */}
-      <div className="max-w-7xl mx-auto px-4 py-6 sm:py-10 w-full flex-1 grid grid-cols-1 lg:grid-cols-4 gap-6 sm:gap-8">
+      <div className="max-w-7xl mx-auto px-4 py-3 sm:py-10 w-full flex-1 grid grid-cols-1 lg:grid-cols-4 gap-3 sm:gap-8">
         
-        {/* Sidebar Nav (Desktop) */}
+        {/* Sidebar Nav (Desktop / Mobile Grid) */}
         <aside className="lg:col-span-1">
-          <div className="flex lg:flex-col gap-1 overflow-x-auto scrollbar-hide pb-2 lg:pb-0">
+          <div className="grid grid-cols-3 lg:flex lg:flex-col gap-1 w-full pb-1 lg:pb-0">
           {[
-            { id: 'eventos', label: 'Mis Eventos', icon: <Calendar size={18} /> },
-            { id: 'certificados', label: 'Certificados', icon: <Award size={18} /> },
-            { id: 'perfil', label: 'Perfil Personal', icon: <User size={18} /> },
-            { id: 'configuracion', label: 'Configuración', icon: <Settings size={18} /> }
+            { id: 'eventos', label: 'Mis Eventos', icon: <Calendar size={15} /> },
+            { id: 'certificados', label: 'Certificados', icon: <Award size={15} /> },
+            { id: 'perfil', label: 'Perfil Personal', icon: <User size={15} /> }
           ].map(tab => (
             <button
               key={tab.id}
               onClick={() => handleTabChange(tab.id)}
-              className={`flex items-center gap-2 lg:gap-3 px-3 lg:px-4 py-2.5 lg:py-3 text-xs lg:text-sm font-bold transition-all border-b-2 lg:border-b-0 lg:border-l-4 cursor-pointer whitespace-nowrap shrink-0 lg:shrink lg:w-full ${
+              className={`flex items-center justify-center lg:justify-start gap-1.5 lg:gap-3 px-2 lg:px-4 py-2.5 lg:py-3 text-[10px] sm:text-xs lg:text-sm font-bold transition-all border-b-2 lg:border-b-0 lg:border-l-4 cursor-pointer whitespace-nowrap ${
                 activeTab === tab.id
                   ? 'bg-white border-[#800404] text-[#800404] shadow-sm'
                   : 'border-transparent text-gray-500 hover:bg-gray-100 hover:text-gray-900'
               }`}
             >
               {tab.icon}
-              {tab.label}
+              <span className="truncate">{tab.label}</span>
             </button>
           ))}
           </div>
@@ -636,6 +623,13 @@ export default function Dashboard() {
                                 >
                                   <Download size={14} />
                                   Descargar PDF
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleCancelRegistration(ticket.eventId)}
+                                  className="flex-1 md:w-40 flex items-center justify-center gap-2 border border-red-200 hover:border-red-600 text-red-600 hover:bg-red-50 py-2 text-xs font-bold transition-all cursor-pointer bg-white"
+                                >
+                                  Cancelar inscripción
                                 </button>
                               </div>
                             </div>
@@ -1198,26 +1192,17 @@ export default function Dashboard() {
               
               <h3 className="font-black text-gray-900 text-lg leading-tight mb-6">{activeQrModal.eventTitle}</h3>
 
-              {/* QR Code Simulation Area */}
+              {/* QR Code Area */}
               <div className="bg-gray-50 border border-gray-200 p-6 max-w-[210px] mx-auto mb-6 flex flex-col items-center">
-                <div className="w-40 h-40 bg-white p-3 border border-gray-300 relative flex flex-col justify-between">
-                  {/* Fake QR pattern design */}
-                  <div className="flex justify-between w-full">
-                    <div className="w-11 h-11 bg-black border border-white" />
-                    <div className="w-11 h-11 bg-black border border-white" />
-                  </div>
-                  <div className="w-16 h-16 bg-black absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center justify-center">
-                    <span className="text-[7px] text-white font-bold leading-none uppercase tracking-tighter">UNI 150</span>
-                  </div>
-                  <div className="flex justify-between items-end w-full">
-                    <div className="w-11 h-11 bg-black border border-white" />
-                    <div className="w-11 h-11 flex flex-col justify-end items-end gap-1 p-0.5">
-                      <div className="w-2 h-2 bg-black" />
-                      <div className="w-5 h-5 bg-black" />
-                    </div>
-                  </div>
+                <div className="w-40 h-40 bg-white p-2 border border-gray-300 flex items-center justify-center">
+                  <img 
+                    src={`https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(activeQrModal.qrCode)}`}
+                    alt="Código QR de la entrada"
+                    className="w-full h-full object-contain"
+                    loading="lazy"
+                  />
                 </div>
-                <p className="text-[10px] text-gray-400 mt-3 font-semibold">DNI: {user.dni}</p>
+                <p className="text-[10px] text-gray-400 mt-3 font-semibold">DNI: {user.dni || 'No registrado'}</p>
                 <p className="text-[9px] text-gray-400 font-mono select-all truncate max-w-full overflow-hidden mt-1">{activeQrModal.qrCode}</p>
               </div>
 
