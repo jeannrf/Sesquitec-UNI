@@ -350,8 +350,8 @@ export default function Home() {
   const handleTransitionEnd = () => {
     setIsTransitioning(false)
     if (carouselIndex === 0) {
-      setCarouselIndex(banners.length)
-    } else if (carouselIndex === banners.length + 1) {
+      setCarouselIndex(carouselBanners.length)
+    } else if (carouselIndex === carouselBanners.length + 1) {
       setCarouselIndex(1)
     }
   }
