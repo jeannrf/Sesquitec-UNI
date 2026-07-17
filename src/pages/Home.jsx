@@ -140,16 +140,34 @@ const getCleanDate = (dateStr) => {
 function EventCard({ ev, onInscribe }) {
   const bgImg = ev.imageUrl || 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?auto=format&fit=crop&q=80&w=800'
   const isPost = ev.status === 'post' || ev.status === 'PASADO' || ev.status === 'FINALIZADO'
+  const [isExpanded, setIsExpanded] = useState(false)
+
+  const handleCardClick = (e) => {
+    // If clicking a link or button inside, let it navigate/act
+    if (e.target.closest('a') || e.target.closest('button')) {
+      return
+    }
+    setIsExpanded(prev => !prev)
+  }
 
   return (
-    <div className="event-card relative overflow-hidden cursor-pointer group h-72">
+    <div 
+      onClick={handleCardClick}
+      className="event-card relative overflow-hidden cursor-pointer group h-72"
+    >
       {/* Background Cover Photo */}
       <div
         className="absolute inset-0 bg-cover bg-center transition-transform duration-500 group-hover:scale-110"
-        style={{ backgroundImage: `url(${bgImg})` }}
+        style={{ 
+          backgroundImage: `url(${bgImg})`,
+          transform: isExpanded ? 'scale(1.1)' : undefined
+        }}
       />
       {/* Dark overlay for readability */}
-      <div className="absolute inset-0 bg-black/45 z-[1] transition-opacity duration-300 group-hover:opacity-10" />
+      <div 
+        className="absolute inset-0 bg-black/45 z-[1] transition-opacity duration-300 group-hover:opacity-10" 
+        style={isExpanded ? { opacity: 0.1 } : undefined}
+      />
 
       {/* Static: status + date (visible by default) */}
       <div className="relative z-10 h-full flex flex-col justify-between p-5">
@@ -164,7 +182,7 @@ function EventCard({ ev, onInscribe }) {
         </div>
 
         {/* Title visible by default, fades on hover */}
-        <div className="event-card-title">
+        <div className="event-card-title" style={isExpanded ? { opacity: 0 } : undefined}>
           <p className="text-white/80 text-xs font-bold uppercase tracking-wider mb-1">{ev.date}</p>
           <h3 className="text-white font-black text-lg leading-tight drop-shadow-md">{ev.title}</h3>
           {ev.tags && ev.tags.length > 0 && (
@@ -180,7 +198,10 @@ function EventCard({ ev, onInscribe }) {
       </div>
 
       {/* Hover overlay – slides up from bottom, covering the background photo */}
-      <div className="event-card-overlay absolute inset-0 z-20 bg-[#800404] p-5 flex flex-col justify-between">
+      <div 
+        className="event-card-overlay absolute inset-0 z-20 bg-[#800404] p-5 flex flex-col justify-between"
+        style={isExpanded ? { transform: 'translateY(0)' } : undefined}
+      >
         <div>
           <div className="flex items-start justify-between mb-3">
             <span className="bg-white text-[#800404] text-xs font-black px-2.5 py-1 uppercase tracking-wider inline-block">
@@ -280,6 +301,7 @@ export default function Home() {
   const [meaningP1, setMeaningP1] = useState(() => db.getCmsValue('home_meaning_p1', 'Desde 1876, la Universidad Nacional de Ingeniería (UNI) ha sido un referente en la formación de profesionales, la Investigación y la Innovación, contribuyendo de manera decisiva al progreso del país. Durante estos 150 años, la ciencia ha impulsado la generación de conocimiento, la ingeniería ha transformado desafíos en soluciones para la industria, la infraestructura y la tecnología, y la arquitectura ha promovido el diseño de espacios sostenibles que mejoran la calidad de vida.'))
   const [meaningP2, setMeaningP2] = useState(() => db.getCmsValue('home_meaning_p2', 'El legado de la UNI se refleja en miles de egresados que, con talento, ética y compromiso, lideran proyectos de alto impacto en los sectores público y privado, impulsan el desarrollo científico y tecnológico, y contribuyen a construir un Perú más competitivo y un mundo más innovador y sostenible.'))
   const [meaningInfo, setMeaningInfo] = useState(() => db.getCmsValue('home_meaning_info', 'El Sesquicentenario de la UNI conmemora 150 años de liderazgo académico, desde su fundación en 1876 por el Ing. Eduardo de Habich.'))
+  const [meaningImage, setMeaningImage] = useState(() => db.getCmsValue('home_meaning_image', 'https://images.unsplash.com/photo-1606857521015-7f9fcf423740?auto=format&fit=crop&q=80&w=800'))
 
   // "Propuesta de la UNI para el Futuro del Perú 2026-2050"
   const [proposalTitle, setProposalTitle] = useState(() => db.getCmsValue('home_proposal_title', 'Propuesta de la UNI para el Futuro del Perú 2026-2050 –'))
@@ -297,6 +319,10 @@ export default function Home() {
   const [proposalB3Title, setProposalB3Title] = useState(() => db.getCmsValue('home_proposal_b3_title', 'Presentación Final'))
   const [proposalB3Desc, setProposalB3Desc] = useState(() => db.getCmsValue('home_proposal_b3_desc', 'Presentación de la Propuesta de la UNI para el desarrollo del Perú.'))
   const [proposalB3Detail, setProposalB3Detail] = useState(() => db.getCmsValue('home_proposal_b3_detail', 'La Presentación Final recopila e integra la propuesta final oficial de la UNI para el desarrollo nacional proyectado hacia el 2050.'))
+
+  const [proposalB1Image, setProposalB1Image] = useState(() => db.getCmsValue('home_proposal_b1_image', '/home/propuestaUNI/libro-primera-version.png'))
+  const [proposalB2Image, setProposalB2Image] = useState(() => db.getCmsValue('home_proposal_b2_image', '/home/propuestaUNI/libro-segunda-version.png'))
+  const [proposalB3Image, setProposalB3Image] = useState(() => db.getCmsValue('home_proposal_b3_image', '/home/propuestaUNI/libro-presentacion-final.png'))
 
   useEffect(() => {
     setHeroTitle(db.getCmsValue('home_hero_title', 'Sesquicentenario UNI 150 Años'))
@@ -317,6 +343,7 @@ export default function Home() {
     setMeaningP1(db.getCmsValue('home_meaning_p1', 'Desde 1876, la Universidad Nacional de Ingeniería (UNI) ha sido un referente en la formación de profesionales, la Investigación y la Innovación, contribuyendo de manera decisiva al progreso del país. Durante estos 150 años, la ciencia ha impulsado la generación de conocimiento, la ingeniería ha transformado desafíos en soluciones para la industria, la infraestructura y la tecnología, y la arquitectura ha promovido el diseño de espacios sostenibles que mejoran la calidad de vida.'))
     setMeaningP2(db.getCmsValue('home_meaning_p2', 'El legado de la UNI se refleja en miles de egresados que, con talento, ética y compromiso, lideran proyectos de alto impacto en los sectores público y privado, impulsan el desarrollo científico y tecnológico, y contribuyen a construir un Perú más competitivo y un mundo más innovador y sostenible.'))
     setMeaningInfo(db.getCmsValue('home_meaning_info', 'El Sesquicentenario de la UNI conmemora 150 años de liderazgo académico, desde su fundación en 1876 por el Ing. Eduardo de Habich.'))
+    setMeaningImage(db.getCmsValue('home_meaning_image', 'https://images.unsplash.com/photo-1606857521015-7f9fcf423740?auto=format&fit=crop&q=80&w=800'))
 
     setProposalTitle(db.getCmsValue('home_proposal_title', 'Propuesta de la UNI para el Futuro del Perú 2026-2050 –'))
     setProposalSubtitle(db.getCmsValue('home_proposal_subtitle', 'Libro de Oro del Sesquicentenario'))
@@ -333,6 +360,10 @@ export default function Home() {
     setProposalB3Title(db.getCmsValue('home_proposal_b3_title', 'Presentación Final'))
     setProposalB3Desc(db.getCmsValue('home_proposal_b3_desc', 'Presentación de la Propuesta de la UNI para el desarrollo del Perú.'))
     setProposalB3Detail(db.getCmsValue('home_proposal_b3_detail', 'La Presentación Final recopila e integra la propuesta final oficial de la UNI para el desarrollo nacional proyectado hacia el 2050.'))
+
+    setProposalB1Image(db.getCmsValue('home_proposal_b1_image', '/home/propuestaUNI/libro-primera-version.png'))
+    setProposalB2Image(db.getCmsValue('home_proposal_b2_image', '/home/propuestaUNI/libro-segunda-version.png'))
+    setProposalB3Image(db.getCmsValue('home_proposal_b3_image', '/home/propuestaUNI/libro-presentacion-final.png'))
   }, [])
 
   const handleNext = () => {
@@ -617,7 +648,7 @@ export default function Home() {
             <div className="absolute inset-0 bg-[#800404] translate-x-3 translate-y-3 z-0" />
             <div className="relative z-10 overflow-hidden border border-gray-250 bg-white">
               <img 
-                src="https://images.unsplash.com/photo-1606857521015-7f9fcf423740?auto=format&fit=crop&q=80&w=800" 
+                src={meaningImage} 
                 alt="150 Años de la UNI" 
                 className="w-full h-80 object-cover grayscale-[35%] group-hover:grayscale-0 transition-all duration-700 group-hover:scale-105"
               />
@@ -648,12 +679,13 @@ export default function Home() {
           </div>
 
           {/* Grid of Books */}
+          {/* Grid of Books */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-8 sm:gap-12 max-w-5xl mx-auto">
             {/* Book 1: Primera Versión */}
             <div className="flex flex-col items-center group">
               <div className="relative overflow-hidden rounded-xl shadow-md hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 mb-5 max-w-[280px]">
                 <img 
-                  src="/home/propuestaUNI/libro-primera-version.png" 
+                  src={proposalB1Image} 
                   alt="Primera Versión" 
                   className="w-full object-cover transition-transform duration-500 group-hover:scale-105"
                 />
@@ -674,7 +706,7 @@ export default function Home() {
             <div className="flex flex-col items-center group">
               <div className="relative overflow-hidden rounded-xl shadow-md hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 mb-5 max-w-[280px]">
                 <img 
-                  src="/home/propuestaUNI/libro-segunda-version.png" 
+                  src={proposalB2Image} 
                   alt="Segunda Versión" 
                   className="w-full object-cover transition-transform duration-500 group-hover:scale-105"
                 />
@@ -695,7 +727,7 @@ export default function Home() {
             <div className="flex flex-col items-center group">
               <div className="relative overflow-hidden rounded-xl shadow-md hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 mb-5 max-w-[280px]">
                 <img 
-                  src="/home/propuestaUNI/libro-presentacion-final.png" 
+                  src={proposalB3Image} 
                   alt="Presentación Final" 
                   className="w-full object-cover transition-transform duration-500 group-hover:scale-105"
                 />

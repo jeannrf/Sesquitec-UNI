@@ -102,6 +102,7 @@ export default function Admin() {
     meaningP1: '',
     meaningP2: '',
     meaningInfo: '',
+    meaningImage: '',
 
     // Proposal section
     proposalTitle: '',
@@ -111,14 +112,17 @@ export default function Admin() {
     proposalB1Title: '',
     proposalB1Desc: '',
     proposalB1Detail: '',
+    proposalB1Image: '',
 
     proposalB2Title: '',
     proposalB2Desc: '',
     proposalB2Detail: '',
+    proposalB2Image: '',
 
     proposalB3Title: '',
     proposalB3Desc: '',
-    proposalB3Detail: ''
+    proposalB3Detail: '',
+    proposalB3Image: ''
   })
 
   // Eventos states
@@ -177,6 +181,7 @@ export default function Admin() {
       meaningP1: db.getCmsValue('home_meaning_p1', 'Desde 1876, la Universidad Nacional de Ingeniería (UNI) ha sido un referente en la formación de profesionales, la Investigación y la Innovación, contribuyendo de manera decisiva al progreso del país. Durante estos 150 años, la ciencia ha impulsado la generación de conocimiento, la ingeniería ha transformado desafíos en soluciones para la industria, la infraestructura y la tecnología, y la arquitectura ha promovido el diseño de espacios sostenibles que mejoran la calidad de vida.'),
       meaningP2: db.getCmsValue('home_meaning_p2', 'El legado de la UNI se refleja en miles de egresados que, con talento, ética y compromiso, lideran proyectos de alto impacto en los sectores público y privado, impulsan el desarrollo científico y tecnológico, y contribuyen a construir un Perú más competitivo y un mundo más innovador y sostenible.'),
       meaningInfo: db.getCmsValue('home_meaning_info', 'El Sesquicentenario de la UNI conmemora 150 años de liderazgo académico, desde su fundación en 1876 por el Ing. Eduardo de Habich.'),
+      meaningImage: db.getCmsValue('home_meaning_image', 'https://images.unsplash.com/photo-1606857521015-7f9fcf423740?auto=format&fit=crop&q=80&w=800'),
 
       proposalTitle: db.getCmsValue('home_proposal_title', 'Propuesta de la UNI para el Futuro del Perú 2026-2050 –'),
       proposalSubtitle: db.getCmsValue('home_proposal_subtitle', 'Libro de Oro del Sesquicentenario'),
@@ -185,14 +190,17 @@ export default function Admin() {
       proposalB1Title: db.getCmsValue('home_proposal_b1_title', 'Primera Versión'),
       proposalB1Desc: db.getCmsValue('home_proposal_b1_desc', 'Etapa de Análisis y Diagnóstico de los 150 años de la UNI'),
       proposalB1Detail: db.getCmsValue('home_proposal_b1_detail', 'La Primera Versión comprende la etapa de Análisis y Diagnóstico integral de los 150 años de trayectoria de la UNI y su impacto nacional.'),
+      proposalB1Image: db.getCmsValue('home_proposal_b1_image', '/home/propuestaUNI/libro-primera-version.png'),
 
       proposalB2Title: db.getCmsValue('home_proposal_b2_title', 'Segunda Versión'),
       proposalB2Desc: db.getCmsValue('home_proposal_b2_desc', 'Elaboración de propuestas de las 11 facultades UNI'),
       proposalB2Detail: db.getCmsValue('home_proposal_b2_detail', 'La Segunda Versión documenta la elaboración de propuestas técnicas y académicas específicas de las 11 facultades de la UNI.'),
+      proposalB2Image: db.getCmsValue('home_proposal_b2_image', '/home/propuestaUNI/libro-segunda-version.png'),
 
       proposalB3Title: db.getCmsValue('home_proposal_b3_title', 'Presentación Final'),
       proposalB3Desc: db.getCmsValue('home_proposal_b3_desc', 'Presentación de la Propuesta de la UNI para el desarrollo del Perú.'),
-      proposalB3Detail: db.getCmsValue('home_proposal_b3_detail', 'La Presentación Final recopila e integra la propuesta final oficial de la UNI para el desarrollo nacional proyectado hacia el 2050.')
+      proposalB3Detail: db.getCmsValue('home_proposal_b3_detail', 'La Presentación Final recopila e integra la propuesta final oficial de la UNI para el desarrollo nacional proyectado hacia el 2050.'),
+      proposalB3Image: db.getCmsValue('home_proposal_b3_image', '/home/propuestaUNI/libro-presentacion-final.png')
     })
 
     // 2. Eventos
@@ -282,6 +290,7 @@ export default function Admin() {
     db.updateCmsValue('home_meaning_p1', cmsHomeForm.meaningP1)
     db.updateCmsValue('home_meaning_p2', cmsHomeForm.meaningP2)
     db.updateCmsValue('home_meaning_info', cmsHomeForm.meaningInfo)
+    db.updateCmsValue('home_meaning_image', cmsHomeForm.meaningImage)
 
     // Save proposal values:
     db.updateCmsValue('home_proposal_title', cmsHomeForm.proposalTitle)
@@ -291,14 +300,17 @@ export default function Admin() {
     db.updateCmsValue('home_proposal_b1_title', cmsHomeForm.proposalB1Title)
     db.updateCmsValue('home_proposal_b1_desc', cmsHomeForm.proposalB1Desc)
     db.updateCmsValue('home_proposal_b1_detail', cmsHomeForm.proposalB1Detail)
+    db.updateCmsValue('home_proposal_b1_image', cmsHomeForm.proposalB1Image)
 
     db.updateCmsValue('home_proposal_b2_title', cmsHomeForm.proposalB2Title)
     db.updateCmsValue('home_proposal_b2_desc', cmsHomeForm.proposalB2Desc)
     db.updateCmsValue('home_proposal_b2_detail', cmsHomeForm.proposalB2Detail)
+    db.updateCmsValue('home_proposal_b2_image', cmsHomeForm.proposalB2Image)
 
     db.updateCmsValue('home_proposal_b3_title', cmsHomeForm.proposalB3Title)
     db.updateCmsValue('home_proposal_b3_desc', cmsHomeForm.proposalB3Desc)
     db.updateCmsValue('home_proposal_b3_detail', cmsHomeForm.proposalB3Detail)
+    db.updateCmsValue('home_proposal_b3_image', cmsHomeForm.proposalB3Image)
 
     showAlert('Página de Inicio guardada correctamente.', 'Guardado exitoso', 'success')
   }
@@ -429,7 +441,8 @@ export default function Admin() {
     report: '',
     instagramUrl: '',
     linkedinUrl: '',
-    facebookUrl: ''
+    facebookUrl: '',
+    registrationUrl: ''
   })
 
   const handleOpenEventModal = (ev = null) => {
@@ -453,7 +466,8 @@ export default function Admin() {
         report: ev.report || '',
         instagramUrl: ev.instagramUrl || '',
         linkedinUrl: ev.linkedinUrl || '',
-        facebookUrl: ev.facebookUrl || ''
+        facebookUrl: ev.facebookUrl || '',
+        registrationUrl: ev.registrationUrl || ''
       })
     } else {
       setEditingEvent(null)
@@ -475,7 +489,8 @@ export default function Admin() {
         report: '',
         instagramUrl: '',
         linkedinUrl: '',
-        facebookUrl: ''
+        facebookUrl: '',
+        registrationUrl: ''
       })
     }
     setIsEventModalOpen(true)
@@ -499,7 +514,8 @@ export default function Admin() {
       instagramUrl: eventForm.instagramUrl || '',
       linkedinUrl: eventForm.linkedinUrl || '',
       facebookUrl: eventForm.facebookUrl || '',
-      recapVideoId: eventForm.recapVideoId || ''
+      recapVideoId: eventForm.recapVideoId || '',
+      registrationUrl: eventForm.registrationUrl || ''
     }
 
     if (editingEvent) {
@@ -1333,6 +1349,26 @@ export default function Admin() {
   const upcomingEvents = events.filter(e => e.status !== 'post')
   const finishedEvents = events.filter(e => e.status === 'post')
 
+  const getSortedEvents = (evList) => {
+    return [...evList].sort((a, b) => {
+      const getTimestamp = (id) => {
+        if (typeof id === 'string' && id.startsWith('evt-')) {
+          const num = parseInt(id.replace('evt-', ''));
+          return isNaN(num) ? 0 : num;
+        }
+        const seedOrder = {
+          'may1': 10, 'may2': 9, 'may3': 8,
+          'jun1': 20, 'jun2': 19, 'jun3': 18,
+          'jul1': 30, 'jul2': 29, 'jul3': 28,
+          'ago1': 40, 'ago2': 39,
+          'sep1': 50, 'sep2': 49, 'sep3': 48
+        };
+        return seedOrder[id] || 0;
+      };
+      return getTimestamp(b.id) - getTimestamp(a.id);
+    });
+  };
+
   // Prevent flash of page during auth loading
   if (loading) {
     return (
@@ -1444,129 +1480,186 @@ export default function Admin() {
         <div className="p-6">
           
           {/* TAB 1: DASHBOARD METRICS */}
-          {activeTab === 'dashboard' && (
-            <div className="space-y-6">
-              
-              {/* Metric Cards Grid */}
-              <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
-                {[
-                  { label: 'Usuarios', value: statTotalUsers, icon: Users, color: 'border-l-[#800404] text-[#800404]' },
-                  { label: 'Total Eventos', value: statTotalEvents, icon: Calendar, color: 'border-l-blue-600 text-blue-600' },
-                  { label: 'Conferencias', value: statTotalConferences, icon: Mic, color: 'border-l-indigo-600 text-indigo-600' },
-                  { label: 'Certificados', value: statTotalCertificates, icon: Award, color: 'border-l-amber-600 text-amber-600' },
-                  { label: 'Asistencias QR', value: statTotalCheckedIn, icon: QrCode, color: 'border-l-emerald-600 text-emerald-600' },
-                ].map((card, idx) => {
-                  const Icon = card.icon
-                  return (
-                    <div key={idx} className={`bg-white border border-gray-200 border-l-4 p-5 flex flex-col justify-between shadow-sm relative ${card.color}`}>
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-[10px] uppercase font-black tracking-wider text-gray-400">{card.label}</span>
-                        <Icon size={20} className="opacity-40" />
-                      </div>
-                      <p className="text-3xl font-black text-gray-900 leading-none">{card.value}</p>
-                    </div>
-                  )
-                })}
-              </div>
-
-              {/* Event Lists split */}
-              <div className="grid md:grid-cols-2 gap-6">
+          {/* TAB 1: DASHBOARD METRICS */}
+          {activeTab === 'dashboard' && (() => {
+            // Group registrations by category
+            const categories = ['Académico', 'Cultural', 'Egresados', 'Tecnología', 'Laboral'];
+            const categoryStats = categories.map(cat => {
+              const regCount = usersList.filter(u => 
+                u.registeredEvents && u.registeredEvents.some(re => {
+                  const ev = events.find(e => String(e.id) === String(re.id));
+                  return ev && ev.category === cat;
+                })
+              ).length;
+              return { label: cat, value: regCount };
+            });
+            const maxCategoryVal = Math.max(...categoryStats.map(c => c.value), 1);
+            
+            return (
+              <div className="space-y-6">
                 
-                {/* Upcoming Events Column */}
-                <div className="bg-white border border-gray-200 p-6 shadow-sm">
-                  <h3 className="text-base font-black text-gray-900 border-b border-gray-100 pb-3 mb-4 flex items-center gap-2">
-                    <span className="w-2.5 h-2.5 bg-red-600 rounded-full"></span>
-                    Eventos Próximos o Activos ({upcomingEvents.length})
-                  </h3>
-                  {upcomingEvents.length === 0 ? (
-                    <p className="text-sm text-gray-400 text-center py-6">No hay eventos próximos.</p>
-                  ) : (
-                    <div className="divide-y divide-gray-100 max-h-80 overflow-y-auto pr-1">
-                      {upcomingEvents.map(e => (
-                        <div key={e.id} className="py-3 flex items-start justify-between gap-4">
-                          <div>
-                            <p className="text-sm font-bold text-gray-800 leading-tight">{e.title}</p>
-                            <p className="text-xs text-gray-400 mt-1 flex items-center gap-2">
-                              <Calendar size={11} />{e.date} &nbsp;·&nbsp; <Clock size={11} />{e.time}
-                            </p>
-                          </div>
-                          <span className="shrink-0 bg-red-50 text-[#800404] text-[10px] font-bold px-2 py-0.5 border border-red-200 uppercase">
-                            {e.status === 'pre' ? 'Pre-evento' : 'Publicado'}
-                          </span>
+                {/* Metric Cards Grid */}
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+                  {[
+                    { label: 'Usuarios', value: statTotalUsers, icon: Users, color: 'border-l-[#800404] text-[#800404]' },
+                    { label: 'Total Eventos', value: statTotalEvents, icon: Calendar, color: 'border-l-blue-600 text-blue-600' },
+                    { label: 'Conferencias', value: statTotalConferences, icon: Mic, color: 'border-l-indigo-600 text-indigo-600' },
+                    { label: 'Certificados', value: statTotalCertificates, icon: Award, color: 'border-l-amber-600 text-amber-600' },
+                    { label: 'Asistencias QR', value: statTotalCheckedIn, icon: QrCode, color: 'border-l-emerald-600 text-emerald-600' },
+                  ].map((card, idx) => {
+                    const Icon = card.icon
+                    return (
+                      <div key={idx} className={`bg-white border border-gray-200 border-l-4 p-3 flex items-center justify-between shadow-sm relative ${card.color} transition-all hover:translate-y-[-1px] hover:shadow`}>
+                        <div className="space-y-0.5">
+                          <span className="text-[9px] uppercase font-black tracking-wider text-gray-400 block leading-tight">{card.label}</span>
+                          <p className="text-2xl font-black text-gray-900 leading-none">{card.value}</p>
                         </div>
-                      ))}
-                    </div>
-                  )}
+                        <Icon size={18} className="opacity-30 shrink-0 ml-2" />
+                      </div>
+                    )
+                  })}
                 </div>
 
-                {/* Finished Events Column */}
-                <div className="bg-white border border-gray-200 p-6 shadow-sm">
-                  <h3 className="text-base font-black text-gray-900 border-b border-gray-100 pb-3 mb-4 flex items-center gap-2">
-                    <span className="w-2.5 h-2.5 bg-gray-400 rounded-full"></span>
-                    Eventos Finalizados (Post-Evento) ({finishedEvents.length})
-                  </h3>
-                  {finishedEvents.length === 0 ? (
-                    <p className="text-sm text-gray-400 text-center py-6">No hay eventos finalizados.</p>
-                  ) : (
-                    <div className="divide-y divide-gray-100 max-h-80 overflow-y-auto pr-1">
-                      {finishedEvents.map(e => (
-                        <div key={e.id} className="py-3 flex items-start justify-between gap-4">
-                          <div>
-                            <p className="text-sm font-bold text-gray-800 leading-tight">{e.title}</p>
-                            <p className="text-xs text-gray-400 mt-1 flex items-center gap-2">
-                              <Calendar size={11} />{e.date}
-                            </p>
-                          </div>
-                          <span className="shrink-0 bg-gray-100 text-gray-500 text-[10px] font-bold px-2 py-0.5 border border-gray-200 uppercase">
-                            Finalizado
-                          </span>
-                        </div>
-                      ))}
+                {/* Main Dashboard Panel: Statistics & Operations */}
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                  
+                  {/* Left Column: Category Statistics & Analytics */}
+                  <div className="lg:col-span-1 bg-white border border-gray-200 p-6 shadow-sm flex flex-col justify-between">
+                    <div>
+                      <h3 className="text-base font-black text-gray-900 border-b border-gray-100 pb-3 mb-4 flex items-center gap-2">
+                        <span className="w-2.5 h-2.5 bg-[#800404]"></span>
+                        Distribución de Inscripciones
+                      </h3>
+                      <div className="space-y-4">
+                        {categoryStats.map((stat, i) => {
+                          const percent = Math.round((stat.value / maxCategoryVal) * 100) || 0;
+                          return (
+                            <div key={i} className="space-y-1">
+                              <div className="flex justify-between text-xs font-bold text-gray-700">
+                                <span>{stat.label}</span>
+                                <span>{stat.value} inscritos</span>
+                              </div>
+                              <div className="w-full bg-gray-100 h-2">
+                                <div 
+                                  className="bg-[#800404] h-full transition-all duration-500" 
+                                  style={{ width: `${percent}%` }}
+                                />
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
                     </div>
-                  )}
+                    
+                    <div className="mt-6 pt-4 border-t border-gray-100 text-center">
+                      <p className="text-xs text-gray-400">
+                        Porcentaje basado en el rendimiento de la categoría más popular.
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Center Column: Operations Monitor Table */}
+                  <div className="lg:col-span-2 bg-white border border-gray-200 p-6 shadow-sm">
+                    <h3 className="text-base font-black text-gray-900 border-b border-gray-100 pb-3 mb-4 flex items-center gap-2">
+                      <span className="w-2.5 h-2.5 bg-emerald-600"></span>
+                      Control Operativo de Eventos Activos
+                    </h3>
+                    <div className="overflow-x-auto">
+                      <table className="min-w-full text-left text-xs">
+                        <thead>
+                          <tr className="border-b border-gray-100 text-gray-400 font-bold uppercase">
+                            <th className="py-2">Evento</th>
+                            <th className="py-2 text-center">Inscritos</th>
+                            <th className="py-2 text-center">Asistieron</th>
+                            <th className="py-2 text-right">Asistencia (%)</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-50">
+                          {upcomingEvents.slice(0, 5).map(e => {
+                            const registeredCount = usersList.filter(u => 
+                              u.registeredEvents && u.registeredEvents.some(re => String(re.id) === String(e.id))
+                            ).length;
+                            const checkedInCount = usersList.filter(u => 
+                              u.tickets && u.tickets.some(t => String(t.eventId) === String(e.id) && t.status === 'Asistió')
+                            ).length;
+                            const rate = registeredCount > 0 ? Math.round((checkedInCount / registeredCount) * 100) : 0;
+                            
+                            return (
+                              <tr key={e.id} className="hover:bg-gray-50/50">
+                                <td className="py-3 pr-2">
+                                  <p className="font-bold text-gray-800 line-clamp-1">{e.title}</p>
+                                  <p className="text-[10px] text-gray-400 mt-0.5">{e.organizer}</p>
+                                </td>
+                                <td className="py-3 text-center font-bold text-gray-700">{registeredCount}</td>
+                                <td className="py-3 text-center font-bold text-emerald-700">{checkedInCount}</td>
+                                <td className="py-3 text-right">
+                                  <div className="flex items-center justify-end gap-2">
+                                    <span className="font-bold text-gray-700">{rate}%</span>
+                                    <div className="w-12 bg-gray-100 h-1.5 hidden sm:block">
+                                      <div 
+                                        className="bg-emerald-600 h-full" 
+                                        style={{ width: `${rate}%` }}
+                                      />
+                                    </div>
+                                  </div>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                          {upcomingEvents.length === 0 && (
+                            <tr>
+                              <td colSpan="4" className="py-6 text-center text-gray-400">No hay eventos activos para monitorear.</td>
+                            </tr>
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+
                 </div>
 
               </div>
-            </div>
-          )}
+            );
+          })()}
 
           {/* TAB 2: EVENTOS CRUD */}
           {activeTab === 'eventos' && (
             <div className="bg-white border border-gray-200 p-6 shadow-sm space-y-6">
               
               {/* Event Table Search Header */}
-              <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
-                <div className="flex gap-2 w-full sm:max-w-md relative">
+              <div className="flex flex-row gap-2 items-center justify-between">
+                <div className="flex-1 relative">
                   <input
                     type="text"
                     placeholder="Buscar evento..."
                     value={eventSearch}
                     onChange={e => setEventSearch(e.target.value)}
-                    className="w-full pl-9 pr-4 py-2 text-sm border border-gray-300 focus:outline-none focus:border-[#800404] bg-white text-gray-850"
+                    className="w-full pl-8 pr-3 h-[38px] text-xs sm:text-sm border border-gray-300 focus:outline-none focus:border-[#800404] bg-white text-gray-850"
                   />
-                  <Search size={16} className="absolute left-3 top-3 text-gray-400" />
+                  <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
                 </div>
-                <div className="flex gap-3 w-full sm:w-auto shrink-0 justify-end">
+                <div className="relative shrink-0 w-[88px] sm:w-32">
                   <select 
                     value={eventFilterStatus}
                     onChange={e => setEventFilterStatus(e.target.value)}
-                    className="border border-gray-300 px-3 py-2 text-sm focus:outline-none bg-white text-gray-700"
+                    className="border border-gray-300 pl-2 pr-6 h-[38px] text-xs sm:text-sm focus:outline-none bg-white text-gray-700 w-full appearance-none rounded-none cursor-pointer"
                   >
-                    <option value="all">Todos los estados</option>
-                    <option value="active">Publicado</option>
-                    <option value="post">Post-Evento/Finalizado</option>
+                    <option value="all">Todos</option>
+                    <option value="active">Activos</option>
+                    <option value="post">Finalizados</option>
                   </select>
-                  <button
-                    onClick={() => handleOpenEventModal(null)}
-                    className="bg-[#800404] hover:bg-[#5a0303] text-white text-sm font-black px-4 py-2.5 transition-colors flex items-center gap-2 rounded-none cursor-pointer"
-                  >
-                    <Plus size={16} /> Crear Evento
-                  </button>
+                  <ChevronDown size={14} className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400" />
                 </div>
+                <button
+                  onClick={() => handleOpenEventModal(null)}
+                  className="bg-[#800404] hover:bg-[#5a0303] text-white text-xs sm:text-sm font-black px-3 h-[38px] transition-colors flex items-center justify-center gap-1 shrink-0 cursor-pointer"
+                >
+                  <Plus size={14} /> <span>Crear</span>
+                </button>
               </div>
 
-              {/* Event Table View */}
-              <div className="overflow-x-auto border border-gray-150">
+              {/* Event Table View for Desktop */}
+              <div className="hidden md:block overflow-x-auto border border-gray-150">
                 <table className="min-w-full divide-y divide-gray-200 text-sm">
                   <thead className="bg-gray-50 font-black text-gray-700 uppercase tracking-wider text-xs">
                     <tr>
@@ -1578,7 +1671,7 @@ export default function Admin() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100 bg-white">
-                    {events
+                    {getSortedEvents(events)
                       .filter(e => {
                         const titleMatch = e.title.toLowerCase().includes(eventSearch.toLowerCase()) ||
                                            e.organizer.toLowerCase().includes(eventSearch.toLowerCase())
@@ -1624,7 +1717,7 @@ export default function Admin() {
                                   ? 'bg-gray-50 border-gray-200 text-gray-500'
                                   : 'bg-emerald-50 border-emerald-200 text-emerald-700'
                               }`}>
-                                {ev.status === 'post' ? 'Post-Evento' : 'Publicado'}
+                                {ev.status === 'post' ? 'Post-Evento' : 'Activo'}
                               </span>
                             </td>
                             <td className="px-6 py-4 text-right whitespace-nowrap">
@@ -1660,6 +1753,106 @@ export default function Admin() {
                       })}
                   </tbody>
                 </table>
+              </div>
+
+              {/* Event Cards View for Mobile */}
+              <div className="block md:hidden space-y-4">
+                {getSortedEvents(events)
+                  .filter(e => {
+                    const titleMatch = e.title.toLowerCase().includes(eventSearch.toLowerCase()) ||
+                                       e.organizer.toLowerCase().includes(eventSearch.toLowerCase())
+                    const statusMatch = eventFilterStatus === 'all' || 
+                                        (eventFilterStatus === 'active' && e.status !== 'post') ||
+                                        (eventFilterStatus === 'post' && e.status === 'post')
+                    return titleMatch && statusMatch
+                  })
+                  .map(ev => {
+                    const registeredCount = usersList.filter(u => 
+                      u.registeredEvents && u.registeredEvents.some(re => String(re.id) === String(ev.id))
+                    ).length
+
+                    return (
+                      <div key={ev.id} className="bg-white border border-gray-200 p-4 space-y-3 shadow-sm relative">
+                        {/* Title & Status */}
+                        <div>
+                          <div className="flex items-start justify-between gap-2">
+                            <h4 className="font-bold text-gray-900 text-sm leading-snug">{ev.title}</h4>
+                            <span className={`shrink-0 inline-block text-[8px] font-black px-1.5 py-0.5 uppercase border rounded-none ${
+                              ev.status === 'post' 
+                                ? 'bg-gray-50 border-gray-200 text-gray-500'
+                                : 'bg-emerald-50 border-emerald-200 text-emerald-700'
+                            }`}>
+                              {ev.status === 'post' ? 'Post-Evento' : 'Activo'}
+                            </span>
+                          </div>
+                          <p className="text-[11px] text-gray-400 mt-0.5">{ev.organizer}</p>
+                        </div>
+
+                        {/* Tags */}
+                        <div className="flex flex-wrap gap-1">
+                          <span className="bg-red-50 text-[#800404] text-[8px] font-bold px-1.5 py-0.5 uppercase border border-red-200/30 rounded-none">
+                            {ev.category}
+                          </span>
+                          {ev.tags && ev.tags.map(tag => (
+                            <span key={tag} className="bg-red-50 text-[#800404] text-[8px] font-bold px-1.5 py-0.5 uppercase border border-red-200/30 rounded-none">
+                              {tag}
+                            </span>
+                          ))}
+                        </div>
+
+                        {/* Metainfo block */}
+                        <div className="text-xs text-gray-600 bg-gray-50 p-2.5 border border-gray-150 space-y-2">
+                          <div className="grid grid-cols-2 gap-2 border-b border-gray-100 pb-1.5">
+                            <p className="flex items-center gap-1.5 min-w-0">
+                              <span className="font-bold text-gray-400 uppercase text-[9px] w-12 shrink-0">Fecha:</span> 
+                              <span className="truncate">{ev.date}</span>
+                            </p>
+                            <p className="flex items-center gap-1.5 min-w-0">
+                              <span className="font-bold text-gray-400 uppercase text-[9px] w-12 shrink-0">Hora:</span> 
+                              <span className="truncate">{ev.time}</span>
+                            </p>
+                          </div>
+                          <div className="grid grid-cols-2 gap-2">
+                            <p className="flex items-center gap-1.5 min-w-0">
+                              <span className="font-bold text-gray-400 uppercase text-[9px] w-12 shrink-0">Lugar:</span> 
+                              <span className="truncate" title={ev.location}>{ev.location}</span>
+                            </p>
+                            <p className="flex items-center gap-1.5 min-w-0">
+                              <span className="font-bold text-gray-400 uppercase text-[9px] w-12 shrink-0">Inscritos:</span> 
+                              <span className="truncate">{registeredCount}</span>
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Actions block */}
+                        <div className="flex items-center justify-end gap-2 pt-2.5 border-t border-gray-100">
+                          {ev.status !== 'post' && (
+                            <button
+                              onClick={() => {
+                                db.updateEvent({ ...ev, status: 'post' })
+                                refreshAllData()
+                              }}
+                              className="border border-gray-200 hover:border-gray-400 hover:bg-gray-50 text-gray-600 text-[10px] px-2.5 py-1.5 transition-all rounded-none cursor-pointer font-bold uppercase tracking-wider"
+                            >
+                              Finalizar
+                            </button>
+                          )}
+                          <button
+                            onClick={() => handleOpenEventModal(ev)}
+                            className="p-1.5 border border-gray-200 hover:border-gray-400 text-blue-600 hover:bg-blue-50 transition-all rounded-none cursor-pointer flex items-center gap-1 text-[10px] px-2.5 font-bold uppercase"
+                          >
+                            <Edit2 size={12} /> Editar
+                          </button>
+                          <button
+                            onClick={() => handleDeleteEvent(ev.id)}
+                            className="p-1.5 border border-gray-200 hover:border-gray-400 text-red-600 hover:bg-red-50 transition-all rounded-none cursor-pointer flex items-center gap-1 text-[10px] px-2.5 font-bold uppercase"
+                          >
+                            <Trash2 size={12} /> Eliminar
+                          </button>
+                        </div>
+                      </div>
+                    )
+                  })}
               </div>
 
             </div>
@@ -2714,6 +2907,51 @@ export default function Admin() {
                               className="w-full border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:border-[#800404] text-gray-800"
                             />
                           </div>
+                          <div>
+                            <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Imagen de la Sección</label>
+                            <div className="flex items-center gap-4 bg-gray-50 border border-gray-150 p-3">
+                              <div className="w-24 h-16 border border-gray-250 bg-white flex items-center justify-center shrink-0 overflow-hidden">
+                                {cmsHomeForm.meaningImage ? (
+                                  <img src={cmsHomeForm.meaningImage} alt="Preview Meaning" className="w-full h-full object-cover" />
+                                ) : (
+                                  <span className="text-[10px] text-gray-400 font-bold text-center">N/A</span>
+                                )}
+                              </div>
+                              <div className="flex flex-col gap-2 flex-1">
+                                <label className="text-center bg-gray-800 hover:bg-black text-white py-1.5 px-3 text-[10px] font-bold uppercase tracking-wider transition-colors cursor-pointer rounded-none block">
+                                  Subir Imagen
+                                  <input
+                                    type="file"
+                                    accept="image/*"
+                                    onChange={e => {
+                                      const file = e.target.files[0]
+                                      if (file) {
+                                        if (file.size > 2 * 1024 * 1024) {
+                                          showAlert('La imagen es demasiado grande. El límite es de 2MB.', 'Imagen Excede Límite', 'warning')
+                                          return
+                                        }
+                                        const reader = new FileReader()
+                                        reader.onloadend = () => {
+                                          setCmsHomeForm(prev => ({ ...prev, meaningImage: reader.result }))
+                                        }
+                                        reader.readAsDataURL(file)
+                                      }
+                                    }}
+                                    className="hidden"
+                                  />
+                                </label>
+                                {cmsHomeForm.meaningImage && (
+                                  <button
+                                    type="button"
+                                    onClick={() => setCmsHomeForm(prev => ({ ...prev, meaningImage: '' }))}
+                                    className="border border-red-200 hover:bg-red-50 text-red-650 py-1 text-[10px] font-black uppercase transition-colors rounded-none cursor-pointer"
+                                  >
+                                    Eliminar
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+                          </div>
                         </div>
                       </div>
                     )}
@@ -2781,6 +3019,51 @@ export default function Admin() {
                                 />
                               </div>
                               <div>
+                                <label className="block text-[10px] font-bold text-gray-500 uppercase mb-0.5">Imagen del Libro</label>
+                                <div className="flex items-center gap-2 bg-white border border-gray-200 p-2">
+                                  <div className="w-8 h-10 border border-gray-250 bg-white flex items-center justify-center shrink-0 overflow-hidden">
+                                    {cmsHomeForm.proposalB1Image ? (
+                                      <img src={cmsHomeForm.proposalB1Image} alt="Preview 1" className="w-full h-full object-contain" />
+                                    ) : (
+                                      <span className="text-[6px] text-gray-400 font-bold text-center">N/A</span>
+                                    )}
+                                  </div>
+                                  <div className="flex flex-col gap-1 flex-1">
+                                    <label className="text-center bg-gray-800 hover:bg-black text-white py-1 px-2 text-[8px] font-bold uppercase tracking-wider transition-colors cursor-pointer rounded-none block">
+                                      Subir
+                                      <input
+                                        type="file"
+                                        accept="image/*"
+                                        onChange={e => {
+                                          const file = e.target.files[0];
+                                          if (file) {
+                                            if (file.size > 2 * 1024 * 1024) {
+                                              showAlert('La imagen es demasiado grande. El límite es de 2MB.', 'Imagen Excede Límite', 'warning');
+                                              return;
+                                            }
+                                            const reader = new FileReader();
+                                            reader.onloadend = () => {
+                                              setCmsHomeForm(prev => ({ ...prev, proposalB1Image: reader.result }));
+                                            };
+                                            reader.readAsDataURL(file);
+                                          }
+                                        }}
+                                        className="hidden"
+                                      />
+                                    </label>
+                                    {cmsHomeForm.proposalB1Image && (
+                                      <button
+                                        type="button"
+                                        onClick={() => setCmsHomeForm(prev => ({ ...prev, proposalB1Image: '' }))}
+                                        className="border border-red-200 hover:bg-red-50 text-red-655 py-0.5 text-[8px] font-black uppercase transition-colors rounded-none cursor-pointer"
+                                      >
+                                        Eliminar
+                                      </button>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                              <div>
                                 <label className="block text-[10px] font-bold text-gray-500 uppercase mb-0.5">Detalle Popup</label>
                                 <textarea
                                   rows={3}
@@ -2813,6 +3096,51 @@ export default function Admin() {
                                 />
                               </div>
                               <div>
+                                <label className="block text-[10px] font-bold text-gray-500 uppercase mb-0.5">Imagen del Libro</label>
+                                <div className="flex items-center gap-2 bg-white border border-gray-200 p-2">
+                                  <div className="w-8 h-10 border border-gray-250 bg-white flex items-center justify-center shrink-0 overflow-hidden">
+                                    {cmsHomeForm.proposalB2Image ? (
+                                      <img src={cmsHomeForm.proposalB2Image} alt="Preview 2" className="w-full h-full object-contain" />
+                                    ) : (
+                                      <span className="text-[6px] text-gray-400 font-bold text-center">N/A</span>
+                                    )}
+                                  </div>
+                                  <div className="flex flex-col gap-1 flex-1">
+                                    <label className="text-center bg-gray-800 hover:bg-black text-white py-1 px-2 text-[8px] font-bold uppercase tracking-wider transition-colors cursor-pointer rounded-none block">
+                                      Subir
+                                      <input
+                                        type="file"
+                                        accept="image/*"
+                                        onChange={e => {
+                                          const file = e.target.files[0];
+                                          if (file) {
+                                            if (file.size > 2 * 1024 * 1024) {
+                                              showAlert('La imagen es demasiado grande. El límite es de 2MB.', 'Imagen Excede Límite', 'warning');
+                                              return;
+                                            }
+                                            const reader = new FileReader();
+                                            reader.onloadend = () => {
+                                              setCmsHomeForm(prev => ({ ...prev, proposalB2Image: reader.result }));
+                                            };
+                                            reader.readAsDataURL(file);
+                                          }
+                                        }}
+                                        className="hidden"
+                                      />
+                                    </label>
+                                    {cmsHomeForm.proposalB2Image && (
+                                      <button
+                                        type="button"
+                                        onClick={() => setCmsHomeForm(prev => ({ ...prev, proposalB2Image: '' }))}
+                                        className="border border-red-200 hover:bg-red-50 text-red-655 py-0.5 text-[8px] font-black uppercase transition-colors rounded-none cursor-pointer"
+                                      >
+                                        Eliminar
+                                      </button>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                              <div>
                                 <label className="block text-[10px] font-bold text-gray-500 uppercase mb-0.5">Detalle Popup</label>
                                 <textarea
                                   rows={3}
@@ -2843,6 +3171,51 @@ export default function Admin() {
                                   onChange={e => setCmsHomeForm(prev => ({ ...prev, proposalB3Desc: e.target.value }))}
                                   className="w-full border border-gray-300 px-2 py-1 text-xs focus:outline-none focus:border-[#800404] text-gray-850"
                                 />
+                              </div>
+                              <div>
+                                <label className="block text-[10px] font-bold text-gray-500 uppercase mb-0.5">Imagen del Libro</label>
+                                <div className="flex items-center gap-2 bg-white border border-gray-200 p-2">
+                                  <div className="w-8 h-10 border border-gray-250 bg-white flex items-center justify-center shrink-0 overflow-hidden">
+                                    {cmsHomeForm.proposalB3Image ? (
+                                      <img src={cmsHomeForm.proposalB3Image} alt="Preview 3" className="w-full h-full object-contain" />
+                                    ) : (
+                                      <span className="text-[6px] text-gray-400 font-bold text-center">N/A</span>
+                                    )}
+                                  </div>
+                                  <div className="flex flex-col gap-1 flex-1">
+                                    <label className="text-center bg-gray-800 hover:bg-black text-white py-1 px-2 text-[8px] font-bold uppercase tracking-wider transition-colors cursor-pointer rounded-none block">
+                                      Subir
+                                      <input
+                                        type="file"
+                                        accept="image/*"
+                                        onChange={e => {
+                                          const file = e.target.files[0];
+                                          if (file) {
+                                            if (file.size > 2 * 1024 * 1024) {
+                                              showAlert('La imagen es demasiado grande. El límite es de 2MB.', 'Imagen Excede Límite', 'warning');
+                                              return;
+                                            }
+                                            const reader = new FileReader();
+                                            reader.onloadend = () => {
+                                              setCmsHomeForm(prev => ({ ...prev, proposalB3Image: reader.result }));
+                                            };
+                                            reader.readAsDataURL(file);
+                                          }
+                                        }}
+                                        className="hidden"
+                                      />
+                                    </label>
+                                    {cmsHomeForm.proposalB3Image && (
+                                      <button
+                                        type="button"
+                                        onClick={() => setCmsHomeForm(prev => ({ ...prev, proposalB3Image: '' }))}
+                                        className="border border-red-200 hover:bg-red-50 text-red-655 py-0.5 text-[8px] font-black uppercase transition-colors rounded-none cursor-pointer"
+                                      >
+                                        Eliminar
+                                      </button>
+                                    )}
+                                  </div>
+                                </div>
                               </div>
                               <div>
                                 <label className="block text-[10px] font-bold text-gray-500 uppercase mb-0.5">Detalle Popup</label>
@@ -3511,6 +3884,21 @@ export default function Admin() {
                       placeholder="Ej: 08:00 – 18:00"
                     />
                   </div>
+
+                  {/* Row 3, Item 3: ¿Es un evento de Sesquitec? */}
+                  <div className="flex flex-col justify-end">
+                    <div className="bg-gray-50 p-2.5 border border-gray-150 flex items-center h-[38px] w-full shrink-0">
+                      <label className="flex items-center gap-2 text-xs font-black text-gray-700 cursor-pointer select-none">
+                        <input
+                          type="checkbox"
+                          checked={eventForm.isSesquitec}
+                          onChange={e => setEventForm(prev => ({ ...prev, isSesquitec: e.target.checked }))}
+                          className="border-gray-300 rounded-none cursor-pointer"
+                        />
+                        ¿Es un evento de Sesquitec?
+                      </label>
+                    </div>
+                  </div>
                 </div>
 
                   <div>
@@ -3569,9 +3957,21 @@ export default function Admin() {
 
                   <div className="border-t border-gray-150 pt-4 space-y-3">
                     <h5 className="text-xs font-black text-[#800404] uppercase tracking-wider">
-                      Enlaces y Redes Sociales del Evento
+                      Enlaces e Inscripción del Evento
                     </h5>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                      <label className="block text-xs font-bold text-gray-500 uppercase mb-1">
+                        Enlace de Inscripción Externa (Luma, Google Forms, etc.)
+                      </label>
+                      <input
+                        type="text"
+                        value={eventForm.registrationUrl || ''}
+                        onChange={e => setEventForm(prev => ({ ...prev, registrationUrl: e.target.value }))}
+                        className="w-full border border-gray-300 px-3 py-2 text-xs focus:outline-none focus:border-[#800404] text-gray-850"
+                        placeholder="Ej: https://lu.ma/evento-ejemplo... (Si se deja vacío, el evento no tendrá botón de inscripción)"
+                      />
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-1">
                       <div>
                         <label className="block text-xs font-bold text-gray-500 uppercase mb-1">
                           Instagram del Organizador / Evento

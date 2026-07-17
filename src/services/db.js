@@ -128,7 +128,8 @@ const initialEvents = [
     quota: 850,
     imageUrl: 'https://images.unsplash.com/photo-1540575467063-178a50c2df87?auto=format&fit=crop&q=80&w=800',
     category: 'Académico',
-    tags: ['FIC', 'FIM', 'FIIS', 'Internacional']
+    tags: ['FIC', 'FIM', 'FIIS', 'Internacional'],
+    isSesquitec: true
   },
   {
     id: 'jul2',
@@ -190,7 +191,8 @@ const initialEvents = [
     isPaid: true,
     imageUrl: 'https://images.unsplash.com/photo-1519671482749-fd09be7ccebf?auto=format&fit=crop&q=80&w=800',
     category: 'Egresados',
-    tags: ['Egresados', 'Gala', 'Social']
+    tags: ['Egresados', 'Gala', 'Social'],
+    isSesquitec: true
   },
   {
     id: 'sep1',
@@ -206,7 +208,8 @@ const initialEvents = [
     quota: 960,
     imageUrl: 'https://images.unsplash.com/photo-1475721027785-f74eccf877e2?auto=format&fit=crop&q=80&w=800',
     category: 'Académico',
-    tags: ['Internacional', 'Conferencias', 'Septiembre']
+    tags: ['Internacional', 'Conferencias', 'Septiembre'],
+    isSesquitec: true
   },
   {
     id: 'sep2',
@@ -416,6 +419,8 @@ export const db = {
         let instagramUrl = '';
         let linkedinUrl = '';
         let facebookUrl = '';
+        let registrationUrl = '';
+        let isSesquitec = false;
 
         if (descText.includes('---RECAP---')) {
           const parts = descText.split('---RECAP---');
@@ -428,6 +433,8 @@ export const db = {
             instagramUrl = recap.instagramUrl || '';
             linkedinUrl = recap.linkedinUrl || '';
             facebookUrl = recap.facebookUrl || '';
+            registrationUrl = recap.registrationUrl || '';
+            isSesquitec = recap.isSesquitec || false;
           } catch (e) {}
         }
 
@@ -453,7 +460,9 @@ export const db = {
           report,
           instagramUrl,
           linkedinUrl,
-          facebookUrl
+          facebookUrl,
+          registrationUrl,
+          isSesquitec
         };
       })
       localStorage.setItem(EVENTS_KEY, JSON.stringify(mappedEvents))
@@ -717,7 +726,9 @@ export const db = {
         report: newEvent.report || '',
         instagramUrl: newEvent.instagramUrl || '',
         linkedinUrl: newEvent.linkedinUrl || '',
-        facebookUrl: newEvent.facebookUrl || ''
+        facebookUrl: newEvent.facebookUrl || '',
+        registrationUrl: newEvent.registrationUrl || '',
+        isSesquitec: newEvent.isSesquitec || false
       };
       finalDesc = `${newEvent.description || ''} ---RECAP--- ${JSON.stringify(recapObj)}`;
 
@@ -761,7 +772,9 @@ export const db = {
           report: updatedEvent.report || '',
           instagramUrl: updatedEvent.instagramUrl || '',
           linkedinUrl: updatedEvent.linkedinUrl || '',
-          facebookUrl: updatedEvent.facebookUrl || ''
+          facebookUrl: updatedEvent.facebookUrl || '',
+          registrationUrl: updatedEvent.registrationUrl || '',
+          isSesquitec: updatedEvent.isSesquitec || false
         };
         finalDesc = `${updatedEvent.description || ''} ---RECAP--- ${JSON.stringify(recapObj)}`;
 
