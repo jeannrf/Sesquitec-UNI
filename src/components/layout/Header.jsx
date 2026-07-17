@@ -137,11 +137,11 @@ export default function Header() {
           {isStaff && (
             <button
               onClick={() => navigate('/admin?tab=asistencia-qr')}
-              className="flex items-center justify-center gap-1.5 bg-[#800404] hover:bg-[#5a0303] text-white p-2.5 sm:px-4 sm:py-2 text-xs sm:text-sm font-black transition-all cursor-pointer shadow-sm uppercase tracking-wider rounded-none"
+              className="flex items-center justify-center gap-1.5 bg-[#800404] hover:bg-[#5a0303] text-white px-2.5 py-2 sm:px-4 sm:py-2 text-xs sm:text-sm font-black transition-all cursor-pointer shadow-sm uppercase tracking-wider rounded-none shrink-0"
               title="Escanear QR"
             >
-              <QrCode size={20} className="sm:w-[16px] sm:h-[16px]" />
-              <span className="hidden sm:inline">Escanear QR</span>
+              <QrCode size={18} className="shrink-0" />
+              <span>Escanear</span>
             </button>
           )}
           
@@ -193,9 +193,6 @@ export default function Header() {
                     </button>
                     <button onClick={() => navigateToTab('certificados')} className="w-full flex items-center gap-2.5 px-4 py-2 text-left text-sm text-gray-700 hover:bg-red-50 hover:text-[#800404] transition-colors cursor-pointer">
                       <Award size={15} /> Certificados
-                    </button>
-                    <button onClick={() => navigateToTab('configuracion')} className="w-full flex items-center gap-2.5 px-4 py-2 text-left text-sm text-gray-700 hover:bg-red-50 hover:text-[#800404] transition-colors cursor-pointer">
-                      <Settings size={15} /> Configuración
                     </button>
                   </div>
                   <div className="border-t border-gray-100 py-1 bg-gray-50">
@@ -263,9 +260,6 @@ export default function Header() {
                     </button>
                     <button onClick={() => { setMobileProfileOpen(false); navigate('/dashboard?tab=certificados') }} className="w-full flex items-center gap-2.5 px-4 py-2.5 text-left text-sm text-gray-700 hover:bg-red-50 hover:text-[#800404] transition-colors cursor-pointer">
                       <Award size={15} /> Certificados
-                    </button>
-                    <button onClick={() => { setMobileProfileOpen(false); navigate('/dashboard?tab=configuracion') }} className="w-full flex items-center gap-2.5 px-4 py-2.5 text-left text-sm text-gray-700 hover:bg-red-50 hover:text-[#800404] transition-colors cursor-pointer">
-                      <Settings size={15} /> Configuración
                     </button>
                   </div>
                   <div className="border-t border-gray-100 py-1 bg-gray-50">

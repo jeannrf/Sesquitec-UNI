@@ -69,11 +69,12 @@ function EventCard({ event }) {
           </span>
         </div>
         <div className="flex-1 min-w-0">
-          <div className="flex flex-wrap items-center gap-3 text-xs text-gray-400 mb-1.5">
-            <span className="flex items-center gap-1"><Calendar size={12} />{event.date}</span>
-            <span className="flex items-center gap-1"><Clock size={12} />{event.time}</span>
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-gray-400 mb-1.5">
+            <span className="flex items-center gap-1"><Calendar size={12} className="text-gray-400 shrink-0" />{event.date}</span>
+            <span className="flex items-center gap-1"><Clock size={12} className="text-gray-400 shrink-0" />{event.time}</span>
+            <span className="flex items-center gap-1"><MapPin size={12} className="text-gray-400 shrink-0" />{event.location}</span>
             {event.isPaid && (
-              <span className="bg-[#800404] text-white text-xs font-bold px-2 py-0.5">PAGO · S/ 180</span>
+              <span className="bg-[#800404] text-white text-[10px] font-bold px-2 py-0.5">PAGO · S/ 180</span>
             )}
           </div>
           <h3 className="font-black text-gray-900 text-base sm:text-lg leading-tight">{event.title}</h3>
@@ -92,49 +93,74 @@ function EventCard({ event }) {
         <div className="shrink-0 text-gray-300">
           {open ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
         </div>
-      </div>
-
-      {open && (
-        <div className="border-t border-gray-100 p-5 bg-gray-50">
-          <div className="grid md:grid-cols-2 gap-6">
-            <div>
-              <p className="text-gray-600 text-sm leading-relaxed mb-4">{event.description}</p>
-              <div className="space-y-2 text-sm text-gray-500">
-                <div className="flex items-start gap-2">
-                  <MapPin size={14} className="mt-0.5 text-[#800404] shrink-0" />
-                  <span>{event.location}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Clock size={14} className="text-[#800404] shrink-0" />
-                  <span>{event.time}</span>
+      </div>      {open && (
+        <div className="border-t border-gray-100 p-5 bg-gray-50 animate-fade-in">
+          {isPost ? (
+            <div className="space-y-4">
+              <p className="text-gray-600 text-sm leading-relaxed text-justify">{event.description}</p>
+              
+              <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-gray-200/60">
+                <span className="text-xs font-black text-gray-500 uppercase tracking-wider">
+                  El evento ha finalizado
+                </span>
+                
+                <div className="flex items-center gap-3">
+                  {event.video && (
+                    <a 
+                      href={event.video} 
+                      target="_blank" 
+                      rel="noopener noreferrer" 
+                      className="inline-flex items-center gap-1.5 text-xs text-[#800404] hover:underline font-bold"
+                    >
+                      <Play size={12} className="fill-[#800404]" /> Ver video en YouTube
+                    </a>
+                  )}
+                  <button
+                    onClick={() => setIsRecapOpen(true)}
+                    className="bg-[#800404] hover:bg-[#5a0303] text-white font-black px-4 py-2 text-xs uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer rounded-none shadow-sm hover:shadow active:scale-95"
+                  >
+                    <Play size={10} className="fill-white animate-pulse" /> Ver Recap
+                  </button>
                 </div>
               </div>
             </div>
-            <div>
-              {!isPost ? (
-                <div className="space-y-3">
+          ) : (
+            <div className="space-y-4">
+              <p className="text-gray-600 text-sm leading-relaxed text-justify">{event.description}</p>
+              
+              <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-gray-200/60">
+                <div className="flex items-center gap-2">
                   {event.mapsUrl && (
-                    <a href={event.mapsUrl} className="flex items-center gap-2 text-sm text-[#800404] hover:underline font-medium">
-                      <MapPin size={14} />Ver en Google Maps
+                    <a 
+                      href={event.mapsUrl} 
+                      target="_blank" 
+                      rel="noopener noreferrer" 
+                      className="inline-flex items-center gap-1.5 text-xs text-[#800404] hover:underline font-bold"
+                    >
+                      <MapPin size={12} className="text-[#800404] shrink-0" /> Ver en Google Maps
                     </a>
                   )}
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => setIsDetailsOpen(true)}
-                      className="flex-1 text-center border border-[#800404] text-[#800404] font-black py-3 hover:bg-red-50 transition-colors text-sm bg-white cursor-pointer"
-                    >
-                      Ver Evento
-                    </button>
-                    {event.isPaid ? (
+                </div>
+                
+                <div className="flex items-center gap-3 w-full sm:w-auto">
+                  <button
+                    onClick={() => setIsDetailsOpen(true)}
+                    className="flex-1 sm:flex-initial text-center border border-[#800404] text-[#800404] font-black px-4 py-2 text-xs uppercase tracking-wider bg-white cursor-pointer"
+                  >
+                    Ver Evento
+                  </button>
+                  
+                  {event.isSesquitec ? (
+                    event.isPaid ? (
                       event.registrationOpen ? (
                         <Link
                           to="/encuentro-internacional"
-                          className="flex-1 text-center bg-[#800404] text-white font-black py-3 hover:bg-[#5a0303] transition-colors text-sm"
+                          className="flex-1 sm:flex-initial text-center bg-[#800404] text-white font-black px-4 py-2 text-xs uppercase tracking-wider flex items-center justify-center gap-1.5"
                         >
-                          Comprar entradas
+                          <UserPlus size={14} /> Comprar entradas
                         </Link>
                       ) : (
-                        <button disabled className="flex-1 text-center bg-gray-200 text-gray-400 font-bold py-3 text-sm cursor-not-allowed">
+                        <button disabled className="flex-1 sm:flex-initial text-center bg-gray-200 text-gray-400 font-bold px-4 py-2 text-xs uppercase tracking-wider cursor-not-allowed">
                           Cerrado
                         </button>
                       )
@@ -142,7 +168,7 @@ function EventCard({ event }) {
                       isUserAlreadyRegistered ? (
                         <Link
                           to="/dashboard?tab=eventos"
-                          className="flex-1 text-center bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-black py-3 text-sm border border-emerald-200 transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
+                          className="flex-1 sm:flex-initial text-center bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-black px-4 py-2 text-xs border border-emerald-200 transition-colors flex items-center justify-center gap-1.5 cursor-pointer uppercase tracking-wider"
                         >
                           <CheckCircle size={14} /> Ver mi inscripción
                         </Link>
@@ -150,7 +176,7 @@ function EventCard({ event }) {
                         <button
                           onClick={handleQuickRegister}
                           disabled={isRegistering}
-                          className="flex-1 text-center bg-[#800404] text-white font-black py-3 hover:bg-[#5a0303] transition-colors text-sm cursor-pointer flex items-center justify-center gap-1.5 disabled:opacity-60"
+                          className="flex-1 sm:flex-initial text-center bg-[#800404] text-white font-black px-4 py-2 text-xs cursor-pointer flex items-center justify-center gap-1.5 disabled:opacity-60 uppercase tracking-wider"
                         >
                           {isRegistering ? (
                             <span className="animate-pulse">Procesando...</span>
@@ -159,36 +185,29 @@ function EventCard({ event }) {
                           )}
                         </button>
                       )
-                    ) : null}
-                  </div>
-                </div>
-              ) : (
-                <div className="space-y-3 flex flex-col justify-between h-full min-h-[110px]">
-                  <div>
-                    <p className="text-sm font-black text-gray-700 mb-1 uppercase tracking-wider">El evento ha finalizado</p>
-                  </div>
-                  
-                  <div className="flex justify-end items-end mt-auto w-full">
-                    <button
-                      onClick={() => setIsRecapOpen(true)}
-                      className="bg-[#800404] hover:bg-[#5a0303] text-white font-bold px-3 py-1.5 text-[11px] uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer rounded-none shadow-sm w-auto whitespace-nowrap self-end hover:shadow-md active:scale-95"
+                    ) : (
+                      <button disabled className="flex-1 sm:flex-initial text-center bg-gray-200 text-gray-400 font-bold px-4 py-2 text-xs uppercase tracking-wider cursor-not-allowed">
+                        Cerrado
+                      </button>
+                    )
+                  ) : event.registrationUrl ? (
+                    <a
+                      href={event.registrationUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex-1 sm:flex-initial text-center bg-[#800404] text-white font-black px-4 py-2 text-xs uppercase tracking-wider flex items-center justify-center gap-1.5"
                     >
-                      <Play size={10} className="fill-white" /> Ver Recap
+                      <UserPlus size={14} /> Inscribirse
+                    </a>
+                  ) : (
+                    <button disabled className="flex-1 sm:flex-initial text-center bg-gray-100 text-gray-400 font-bold px-4 py-2 text-xs uppercase tracking-wider cursor-not-allowed border border-gray-250 opacity-60">
+                      Próximamente
                     </button>
-
-                    {event.video && (
-                      <div className="bg-white border border-gray-200 p-3 space-y-1.5 w-full text-right">
-                        <p className="text-[9px] font-bold text-gray-400 uppercase tracking-wide">Recursos del evento</p>
-                        <a href={event.video || '#'} className="inline-flex items-center gap-1.5 text-xs text-[#800404] hover:underline font-medium">
-                          <Play size={12} />Ver video en YouTube
-                        </a>
-                      </div>
-                    )}
-                  </div>
+                  )}
                 </div>
-              )}
+              </div>
             </div>
-          </div>
+          )}
         </div>
       )}
     </div>
@@ -256,20 +275,20 @@ function EventCard({ event }) {
                   </div>
                   {/* Social media profile links */}
                   {(event.instagramUrl || event.linkedinUrl || event.facebookUrl) && (
-                    <div className="flex items-center gap-1 border-l border-gray-300 pl-2 ml-1">
+                    <div className="flex items-center gap-1.5 border-l border-gray-300 pl-2 ml-1">
                       {event.instagramUrl && (
                         <a
                           href={event.instagramUrl}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-gray-400 hover:text-pink-600 transition-colors p-1"
+                          className="transition-opacity hover:opacity-80 p-0.5 flex items-center justify-center"
                           title="Visitar Instagram"
                         >
-                          <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <rect width="20" height="20" x="2" y="2" rx="5" ry="5"/>
-                            <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/>
-                            <line x1="17.5" x2="17.51" y1="6.5" y2="6.5"/>
-                          </svg>
+                          <img 
+                            src="/logos_redes_sociales/instagram_logo.webp" 
+                            alt="Instagram" 
+                            className="w-5.5 h-5.5 object-contain"
+                          />
                         </a>
                       )}
                       {event.linkedinUrl && (
@@ -277,14 +296,14 @@ function EventCard({ event }) {
                           href={event.linkedinUrl}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-gray-400 hover:text-blue-600 transition-colors p-1"
+                          className="transition-opacity hover:opacity-80 p-0.5 flex items-center justify-center"
                           title="Visitar LinkedIn"
                         >
-                          <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/>
-                            <rect width="4" height="12" x="2" y="9"/>
-                            <circle cx="4" cy="4" r="2"/>
-                          </svg>
+                          <img 
+                            src="/logos_redes_sociales/linkedin_logo.webp" 
+                            alt="LinkedIn" 
+                            className="w-5.5 h-5.5 object-contain"
+                          />
                         </a>
                       )}
                       {event.facebookUrl && (
@@ -292,12 +311,14 @@ function EventCard({ event }) {
                           href={event.facebookUrl}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-gray-400 hover:text-indigo-600 transition-colors p-1"
+                          className="transition-opacity hover:opacity-80 p-0.5 flex items-center justify-center"
                           title="Visitar Facebook"
                         >
-                          <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/>
-                          </svg>
+                          <img 
+                            src="/logos_redes_sociales/facebook_logo.png" 
+                            alt="Facebook" 
+                            className="w-5.5 h-5.5 object-contain"
+                          />
                         </a>
                       )}
                     </div>
@@ -319,26 +340,59 @@ function EventCard({ event }) {
 
             {/* Footer Buttons */}
             <div className="flex justify-end mt-6 gap-3">
-              {!isPost && event.registrationOpen && (
-                isUserAlreadyRegistered ? (
-                  <Link
-                    to="/dashboard?tab=eventos"
-                    className="bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 text-xs font-black px-6 py-2.5 uppercase tracking-wider cursor-pointer flex items-center gap-2"
+              {!isPost && (
+                event.isSesquitec ? (
+                  event.isPaid ? (
+                    event.registrationOpen ? (
+                      <Link
+                        to="/encuentro-internacional"
+                        className="bg-[#800404] hover:bg-[#5a0303] text-white text-xs font-black px-6 py-2.5 transition-colors uppercase tracking-wider cursor-pointer rounded-none flex items-center gap-2"
+                      >
+                        <UserPlus size={14} /> Comprar entradas
+                      </Link>
+                    ) : (
+                      <button disabled className="bg-gray-250 text-gray-400 text-xs font-bold px-6 py-2.5 uppercase tracking-wider cursor-not-allowed border border-gray-300">
+                        Cerrado
+                      </button>
+                    )
+                  ) : event.registrationOpen ? (
+                    isUserAlreadyRegistered ? (
+                      <Link
+                        to="/dashboard?tab=eventos"
+                        className="bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 text-xs font-black px-6 py-2.5 uppercase tracking-wider cursor-pointer flex items-center gap-2"
+                      >
+                        <CheckCircle size={14} /> Ver mi inscripción
+                      </Link>
+                    ) : (
+                      <button
+                        onClick={handleQuickRegister}
+                        disabled={isRegistering}
+                        className="bg-[#800404] hover:bg-[#5a0303] text-white text-xs font-black px-6 py-2.5 transition-colors uppercase tracking-wider cursor-pointer rounded-none flex items-center gap-2 disabled:opacity-60"
+                      >
+                        {isRegistering ? 'Procesando...' : (
+                          <>
+                            <UserPlus size={14} /> Inscribirse
+                          </>
+                        )}
+                      </button>
+                    )
+                  ) : (
+                    <button disabled className="bg-gray-250 text-gray-400 text-xs font-bold px-6 py-2.5 uppercase tracking-wider cursor-not-allowed border border-gray-300">
+                      Cerrado
+                    </button>
+                  )
+                ) : event.registrationUrl ? (
+                  <a
+                    href={event.registrationUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="bg-[#800404] hover:bg-[#5a0303] text-white text-xs font-black px-6 py-2.5 transition-colors uppercase tracking-wider cursor-pointer rounded-none flex items-center gap-2"
                   >
-                    <CheckCircle size={14} /> Ver mi inscripción
-                  </Link>
+                    <UserPlus size={14} /> Inscribirse
+                  </a>
                 ) : (
-                  <button
-                    onClick={handleQuickRegister}
-                    disabled={isRegistering}
-                    className="bg-[#800404] hover:bg-[#5a0303] text-white text-xs font-black px-6 py-2.5 transition-colors uppercase tracking-wider cursor-pointer rounded-none flex items-center gap-2 disabled:opacity-60"
-                  >
-                    {isRegistering ? 'Procesando...' : (
-                      <>
-                        <UserPlus size={14} />
-                        {event.isPaid ? 'Reservar' : 'Inscribirse'}
-                      </>
-                    )}
+                  <button disabled className="bg-gray-100 text-gray-400 text-xs font-bold px-6 py-2.5 uppercase tracking-wider cursor-not-allowed border border-gray-250 opacity-60">
+                    Próximamente
                   </button>
                 )
               )}
@@ -398,20 +452,20 @@ function EventCard({ event }) {
                   </div>
                   {/* Social media profile links */}
                   {(event.instagramUrl || event.linkedinUrl || event.facebookUrl) && (
-                    <div className="flex items-center gap-1 border-l border-gray-300 pl-2 ml-1.5">
+                    <div className="flex items-center gap-1.5 border-l border-gray-300 pl-2 ml-1.5">
                       {event.instagramUrl && (
                         <a
                           href={event.instagramUrl}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-gray-400 hover:text-pink-600 transition-colors p-0.5"
+                          className="transition-opacity hover:opacity-80 p-0.5 flex items-center justify-center"
                           title="Visitar Instagram del Organizador"
                         >
-                          <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <rect width="20" height="20" x="2" y="2" rx="5" ry="5"/>
-                            <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/>
-                            <line x1="17.5" x2="17.51" y1="6.5" y2="6.5"/>
-                          </svg>
+                          <img 
+                            src="/logos_redes_sociales/instagram_logo.webp" 
+                            alt="Instagram" 
+                            className="w-5.5 h-5.5 object-contain"
+                          />
                         </a>
                       )}
                       {event.linkedinUrl && (
@@ -419,14 +473,14 @@ function EventCard({ event }) {
                           href={event.linkedinUrl}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-gray-400 hover:text-blue-600 transition-colors p-0.5"
+                          className="transition-opacity hover:opacity-80 p-0.5 flex items-center justify-center"
                           title="Visitar LinkedIn del Organizador"
                         >
-                          <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/>
-                            <rect width="4" height="12" x="2" y="9"/>
-                            <circle cx="4" cy="4" r="2"/>
-                          </svg>
+                          <img 
+                            src="/logos_redes_sociales/linkedin_logo.webp" 
+                            alt="LinkedIn" 
+                            className="w-5.5 h-5.5 object-contain"
+                          />
                         </a>
                       )}
                       {event.facebookUrl && (
@@ -434,12 +488,14 @@ function EventCard({ event }) {
                           href={event.facebookUrl}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-gray-400 hover:text-indigo-600 transition-colors p-0.5"
+                          className="transition-opacity hover:opacity-80 p-0.5 flex items-center justify-center"
                           title="Visitar Facebook del Organizador"
                         >
-                          <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/>
-                          </svg>
+                          <img 
+                            src="/logos_redes_sociales/facebook_logo.png" 
+                            alt="Facebook" 
+                            className="w-5.5 h-5.5 object-contain"
+                          />
                         </a>
                       )}
                     </div>
@@ -519,13 +575,13 @@ function EventCard({ event }) {
                       href={event.instagramUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex items-center gap-1.5 px-3 py-1.5 border border-pink-200 bg-pink-50/40 text-pink-700 hover:bg-pink-50 text-xs font-bold uppercase transition-colors"
+                      className="flex items-center gap-2 px-3 py-1.5 border border-pink-200 bg-pink-50/40 text-pink-700 hover:bg-pink-50 text-xs font-bold uppercase transition-all duration-200 hover:shadow-sm"
                     >
-                      <svg className="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <rect width="20" height="20" x="2" y="2" rx="5" ry="5"/>
-                        <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/>
-                        <line x1="17.5" x2="17.51" y1="6.5" y2="6.5"/>
-                      </svg>
+                      <img 
+                        src="/logos_redes_sociales/instagram_logo.webp" 
+                        alt="Instagram" 
+                        className="w-5.5 h-5.5 shrink-0 object-contain"
+                      />
                       Instagram
                     </a>
                   )}
@@ -534,13 +590,13 @@ function EventCard({ event }) {
                       href={event.linkedinUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex items-center gap-1.5 px-3 py-1.5 border border-blue-200 bg-blue-50/40 text-blue-700 hover:bg-blue-50 text-xs font-bold uppercase transition-colors"
+                      className="flex items-center gap-2 px-3 py-1.5 border border-blue-200 bg-blue-50/40 text-blue-700 hover:bg-blue-50 text-xs font-bold uppercase transition-all duration-200 hover:shadow-sm"
                     >
-                      <svg className="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/>
-                        <rect width="4" height="12" x="2" y="9"/>
-                        <circle cx="4" cy="4" r="2"/>
-                      </svg>
+                      <img 
+                        src="/logos_redes_sociales/linkedin_logo.webp" 
+                        alt="LinkedIn" 
+                        className="w-5.5 h-5.5 shrink-0 object-contain"
+                      />
                       LinkedIn
                     </a>
                   )}
@@ -549,11 +605,13 @@ function EventCard({ event }) {
                       href={event.facebookUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex items-center gap-1.5 px-3 py-1.5 border border-indigo-200 bg-indigo-50/40 text-indigo-700 hover:bg-indigo-50 text-xs font-bold uppercase transition-colors"
+                      className="flex items-center gap-2 px-3 py-1.5 border border-indigo-200 bg-indigo-50/40 text-indigo-700 hover:bg-indigo-50 text-xs font-bold uppercase transition-all duration-200 hover:shadow-sm"
                     >
-                      <svg className="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/>
-                      </svg>
+                      <img 
+                        src="/logos_redes_sociales/facebook_logo.png" 
+                        alt="Facebook" 
+                        className="w-5.5 h-5.5 shrink-0 object-contain"
+                      />
                       Facebook
                     </a>
                   )}
@@ -562,12 +620,13 @@ function EventCard({ event }) {
                       href={event.recapVideoId.startsWith('http') ? event.recapVideoId : `https://www.youtube.com/watch?v=${event.recapVideoId}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex items-center gap-1.5 px-3 py-1.5 border border-red-200 bg-red-50/40 text-red-700 hover:bg-red-50 text-xs font-bold uppercase transition-colors"
+                      className="flex items-center gap-2 px-3 py-1.5 border border-red-200 bg-red-50/40 text-red-700 hover:bg-red-50 text-xs font-bold uppercase transition-all duration-200 hover:shadow-sm"
                     >
-                      <svg className="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M2.5 17a24.12 24.12 0 0 1 0-10 2 2 0 0 1 1.4-1.4 49.56 49.56 0 0 1 16.2 0A2 2 0 0 1 21.5 7a24.12 24.12 0 0 1 0 10 2 2 0 1 1-1.4 1.4 49.56 49.56 0 0 1-16.2 0A2 2 0 0 1 2.5 17z"/>
-                        <polygon points="10 15 15 12 10 9"/>
-                      </svg>
+                      <img 
+                        src="/logos_redes_sociales/youtube_logo.png" 
+                        alt="YouTube" 
+                        className="w-5.5 h-5.5 shrink-0 object-contain"
+                      />
                       YouTube
                     </a>
                   )}
@@ -735,71 +794,70 @@ export default function Cronograma() {
       </div>
 
       {/* Filters bar */}
-      <div className="bg-white border-b border-gray-200 sticky top-16 z-40 py-3 shadow-sm">
+      <div className="bg-white border-b border-gray-200 sticky top-16 z-40 py-2.5 shadow-sm">
         <div className="max-w-7xl mx-auto px-4">
-          {/* Main search and selectors row */}
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
-            {/* Search Input */}
-            <div className="flex flex-col md:col-span-6">
-              <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Buscar</span>
+          <div className="flex flex-row items-center gap-2 w-full">
+            {/* Search Input Container */}
+            <div className="flex-1 min-w-0">
+              <span className="hidden sm:block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Buscar</span>
               <div className="relative">
                 <input
                   type="text"
-                  placeholder="Buscar por título, organizador, palabra clave o etiquetas..."
+                  placeholder="Buscar..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full border border-gray-300 pl-10 pr-4 py-2 focus:border-[#800404] focus:outline-none transition-colors text-sm text-gray-800 bg-gray-50/50 rounded-none h-[38px]"
+                  className="w-full border border-gray-300 pl-8 pr-7 py-2 focus:border-[#800404] focus:outline-none transition-colors text-xs sm:text-sm text-gray-800 bg-gray-50/50 rounded-none h-[36px]"
                 />
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400">
+                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                   </svg>
                 </span>
                 {searchQuery && (
                   <button
                     onClick={() => setSearchQuery('')}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 cursor-pointer"
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 cursor-pointer"
                   >
-                    <X size={16} />
+                    <X size={14} />
                   </button>
                 )}
               </div>
             </div>
 
-            {/* Selectors grid: 3 columns on mobile, 6 columns span on desktop */}
-            <div className="grid grid-cols-3 md:col-span-6 gap-2 md:gap-3 items-end">
-              {/* Selector de Mes */}
-              <div className="flex flex-col min-w-0">
-                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Mes</span>
-                <select
-                  value={activeMonth}
-                  onChange={(e) => setActiveMonth(e.target.value)}
-                  className="border border-gray-300 px-2 sm:px-3 py-2 text-xs sm:text-sm text-gray-700 bg-white font-medium focus:border-[#800404] focus:outline-none cursor-pointer rounded-none h-[38px] w-full"
-                >
-                  {months.map(m => (
-                    <option key={m} value={m}>{m}</option>
-                  ))}
-                </select>
-              </div>
+            {/* Mes Selector */}
+            <div className="w-[85px] sm:w-[120px] shrink-0">
+              <span className="hidden sm:block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Mes</span>
+              <select
+                value={activeMonth}
+                onChange={(e) => setActiveMonth(e.target.value)}
+                className="border border-gray-300 px-1.5 sm:px-2.5 py-2 text-xs sm:text-sm text-gray-700 bg-white font-medium focus:border-[#800404] focus:outline-none cursor-pointer rounded-none h-[36px] w-full"
+              >
+                {months.map(m => (
+                  <option key={m} value={m}>{m}</option>
+                ))}
+              </select>
+            </div>
 
-              {/* Selector de Categoría */}
-              <div className="flex flex-col min-w-0">
-                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Categoría</span>
-                <select
-                  value={activeCategory}
-                  onChange={(e) => setActiveCategory(e.target.value)}
-                  className="border border-gray-300 px-2 sm:px-3 py-2 text-xs sm:text-sm text-gray-700 bg-white font-medium focus:border-[#800404] focus:outline-none cursor-pointer rounded-none h-[38px] w-full"
-                >
-                  <option value="Todos">Todas</option>
-                  <option value="Académico">Académico</option>
-                  <option value="Cultural">Cultural</option>
-                  <option value="Egresados">Egresados</option>
-                  <option value="Tecnología">Tecnología</option>
-                  <option value="Laboral">Laboral</option>
-                </select>
-              </div>
+            {/* Categoría Selector */}
+            <div className="w-[100px] sm:w-[140px] shrink-0">
+              <span className="hidden sm:block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Categoría</span>
+              <select
+                value={activeCategory}
+                onChange={(e) => setActiveCategory(e.target.value)}
+                className="border border-gray-300 px-1.5 sm:px-2.5 py-2 text-xs sm:text-sm text-gray-700 bg-white font-medium focus:border-[#800404] focus:outline-none cursor-pointer rounded-none h-[36px] w-full"
+              >
+                <option value="Todos">Todas</option>
+                <option value="Académico">Académico</option>
+                <option value="Cultural">Cultural</option>
+                <option value="Egresados">Egresados</option>
+                <option value="Tecnología">Tecnología</option>
+                <option value="Laboral">Laboral</option>
+              </select>
+            </div>
 
-              {/* Botón Limpiar Filtros */}
+            {/* Limpiar Filters Button */}
+            <div className="shrink-0">
+              <span className="hidden sm:block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1 invisible">Acción</span>
               <button
                 onClick={() => {
                   setSearchQuery('')
@@ -807,15 +865,18 @@ export default function Cronograma() {
                   setActiveCategory('Todos')
                   setSearchParams({})
                 }}
+                title="Limpiar filtros"
                 disabled={!(searchQuery || activeMonth !== 'Todos' || activeCategory !== 'Todos')}
-                className={`flex items-center justify-center gap-1 text-[10px] sm:text-xs font-black px-2 py-2 transition-colors uppercase tracking-wider rounded-none h-[38px] w-full ${
+                className={`flex items-center justify-center gap-1 text-[10px] sm:text-xs font-black px-2 py-2 transition-colors uppercase tracking-wider rounded-none h-[36px] w-[36px] sm:w-auto ${
                   (searchQuery || activeMonth !== 'Todos' || activeCategory !== 'Todos')
                     ? 'text-[#800404] hover:text-[#5a0303] border border-[#800404]/20 hover:bg-red-50/50 cursor-pointer'
                     : 'text-gray-350 border border-gray-200 bg-gray-50/80 cursor-not-allowed opacity-60'
                 }`}
               >
-                <X size={11} className="shrink-0" />
-                <span>Limpiar</span>
+                <svg className="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+                <span className="hidden sm:inline">Limpiar</span>
               </button>
             </div>
           </div>
@@ -823,30 +884,30 @@ export default function Cronograma() {
       </div>
 
       {/* Events list */}
-      <div className="max-w-7xl mx-auto px-4 py-10">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 border-b border-gray-200 pb-4">
-          <div>
+      <div className="max-w-7xl mx-auto px-4 pt-5 pb-10">
+        <div className="flex flex-col gap-1.5 mb-6 border-b border-gray-200 pb-4">
+          <div className="flex flex-row items-baseline justify-between gap-2">
             <h2 className="text-xl sm:text-2xl font-black text-gray-900 leading-tight">
               {activeMonth === 'Todos' ? 'Todos los Eventos' : `${activeMonth} 2026`}
             </h2>
-            {activeCategory !== 'Todos' || searchQuery ? (
-              <p className="text-xs font-bold text-[#800404] mt-1 uppercase tracking-wider">
-                Filtros activos: {[
-                  activeCategory !== 'Todos' && `Categoría: ${activeCategory}`,
-                  searchQuery && `Búsqueda: "${searchQuery}"`
-                ].filter(Boolean).join(' | ')}
-              </p>
-            ) : null}
+            <span className="text-xs sm:text-sm font-bold text-gray-400 shrink-0">
+              {filteredEvents.length} evento(s) encontrado(s)
+            </span>
           </div>
-          <span className="text-sm font-bold text-gray-400 shrink-0">
-            {filteredEvents.length} evento(s) encontrado(s)
-          </span>
+          {activeCategory !== 'Todos' || searchQuery ? (
+            <p className="text-xs font-bold text-[#800404] uppercase tracking-wider">
+              Filtros activos: {[
+                activeCategory !== 'Todos' && `Categoría: ${activeCategory}`,
+                searchQuery && `Búsqueda: "${searchQuery}"`
+              ].filter(Boolean).join(' | ')}
+            </p>
+          ) : null}
         </div>
 
         {filteredEvents.length === 0 ? (
-          <div className="text-center py-8 text-gray-300 bg-white border border-dashed border-gray-200">
-            <Calendar size={32} className="mx-auto mb-2 opacity-30 text-gray-400" />
-            <p className="text-sm text-gray-500 font-medium">
+          <div className="text-center py-4 px-4 text-gray-350 bg-white border border-dashed border-gray-200 flex flex-row items-center justify-center gap-2">
+            <Calendar size={18} className="opacity-30 text-gray-400 shrink-0" />
+            <p className="text-xs sm:text-sm text-gray-500 font-medium leading-none">
               No se encontraron eventos con los filtros seleccionados.
             </p>
           </div>
