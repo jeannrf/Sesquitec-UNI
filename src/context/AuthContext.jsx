@@ -103,6 +103,12 @@ export function AuthProvider({ children }) {
           localStorage.setItem('uni_eventos_users', JSON.stringify(parsedUsers))
         }
         setUsers(parsedUsers)
+        // Sincronizar todos los usuarios locales existentes a Supabase en segundo plano
+        parsedUsers.forEach(u => {
+          if (u.email !== 'admin@uni.pe' && u.email !== 'staff@uni.pe') {
+            db.syncUserToSupabase(u)
+          }
+        })
       } else {
         // Seed initial users for testing purposes
         parsedUsers = [
@@ -255,6 +261,9 @@ export function AuthProvider({ children }) {
     setUser(newUser)
     localStorage.setItem('uni_eventos_session', JSON.stringify({ email: newUser.email }))
 
+    // Sincronizar inmediatamente a Supabase
+    db.syncUserToSupabase(newUser)
+
     return { success: true, verificationCode }
   }
 
@@ -402,6 +411,9 @@ export function AuthProvider({ children }) {
     setUsers(updatedUsers)
     setUser(newUser)
     localStorage.setItem('uni_eventos_session', JSON.stringify({ email: newUser.email }))
+
+    // Sincronizar inmediatamente a Supabase
+    db.syncUserToSupabase(newUser)
 
     return { success: true }
   }

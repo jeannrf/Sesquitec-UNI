@@ -122,6 +122,36 @@ export default function Dashboard() {
     }
   }, [user, activeTab])
 
+  // Handle Mercado Pago return redirect fallback
+  useEffect(() => {
+    const paymentStatus = searchParams.get('payment_status')
+    if (paymentStatus === 'approved' && user) {
+      const isAlreadyRegistered = db.isUserRegistered(user.email, 'sep3')
+      
+      if (!isAlreadyRegistered) {
+        let savedComps = []
+        try {
+          const rawComps = localStorage.getItem('pending_companions_sep3')
+          if (rawComps) savedComps = JSON.parse(rawComps)
+        } catch (err) {
+          console.error(err)
+        }
+
+        const res = db.registerUserToEvent(user.email, 'sep3', [], savedComps)
+        
+        if (res.success) {
+          showAlert('¡Tu pago fue procesado con éxito y tus entradas han sido emitidas!', '¡Compra Completada!', 'success')
+          
+          searchParams.delete('payment_status')
+          setSearchParams(searchParams)
+        }
+      }
+      
+      localStorage.removeItem('pending_companions_sep3')
+      localStorage.removeItem('pending_qty_sep3')
+    }
+  }, [searchParams, user])
+
   const handleInputChange = (e) => {
     const { name, value } = e.target
     setProfileForm(prev => ({ ...prev, [name]: value }))

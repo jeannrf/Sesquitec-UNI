@@ -97,8 +97,11 @@ function PhaseActionSection({ phase, onOpenPayment }) {
       {/* Button */}
       <div className="w-full md:w-auto shrink-0 md:min-w-[240px]">
         {isRegistered ? (
-          <button disabled className="w-full bg-emerald-50 text-emerald-700 font-black py-3 px-6 text-sm border border-emerald-200 flex items-center justify-center gap-2 cursor-default rounded-none">
-            <CheckCircle size={16} /> Ya estás inscrito
+          <button 
+            onClick={() => navigate('/dashboard?tab=eventos')}
+            className="w-full bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-black py-3 px-6 text-sm border border-emerald-200 flex items-center justify-center gap-2 transition-colors cursor-pointer rounded-none"
+          >
+            <CheckCircle size={16} /> Ya estás inscrito · Ver mi ticket
           </button>
         ) : (
           <button
@@ -222,7 +225,7 @@ export default function EncuentroInternacional() {
 
   const handleStep0Submit = () => {
     if (validateStep0()) {
-      setPaymentStep(1)
+      startPaymentSimulation()
     }
   }
 
@@ -242,32 +245,52 @@ export default function EncuentroInternacional() {
     return Object.keys(errs).length === 0
   }
 
-  const startPaymentSimulation = () => {
+  const startPaymentSimulation = async () => {
     if (paymentMethod === 'card' || paymentMethod === 'yape') {
       if (!validatePaymentForm()) return
     }
     
-    setPaymentStep(3) // Loading / Webhook simulation step
+    setPaymentStep(3) // Loading / processing step
     setIsSimulatingWebhook(true)
 
-    setTimeout(() => {
-      const matchedCompanions = companions.map(c => ({
-        nombre: c.nombre.trim(),
-        apellido: c.apellido.trim(),
-        dni: c.dni.trim()
-      }))
+    try {
+      const response = await fetch('/api/payments/create-preference', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          quantity: ticketQuantity,
+          companions: companions,
+          userDni: user.dni,
+          userEmail: user.email,
+          eventId: 'sep3'
+        })
+      })
 
-      const result = db.registerUserToEvent(user.email, 'sep3', [], matchedCompanions)
-      
-      if (result.success) {
-        setConfirmedTicket(result.ticket)
-        setPaymentStep(4) // Success step
+      if (response.ok) {
+        const data = await response.json()
+        
+        // Guardamos los acompañantes pendientes localmente como respaldo
+        localStorage.setItem('pending_companions_sep3', JSON.stringify(companions))
+        localStorage.setItem('pending_qty_sep3', String(ticketQuantity))
+        
+        // Redirección al portal oficial de pruebas de Mercado Pago
+        setTimeout(() => {
+          window.location.href = data.initPoint
+        }, 1200)
       } else {
-        showAlert(result.message || 'El aforo se completó o hubo un error al registrar tu entrada.', 'Error de Compra', 'warning')
+        const err = await response.json()
+        showAlert(err.error || 'Ocurrió un error al conectar con Mercado Pago.', 'Error de Pasarela', 'error')
         setIsPaymentModalOpen(false)
+        setIsSimulatingWebhook(false)
       }
+    } catch (err) {
+      console.error(err)
+      showAlert('No se pudo conectar con el servidor local. Asegúrate de iniciar el backend.', 'Error de Conexión', 'error')
+      setIsPaymentModalOpen(false)
       setIsSimulatingWebhook(false)
-    }, 2500)
+    }
   }
 
   useEffect(() => {
