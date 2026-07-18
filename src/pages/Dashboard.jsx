@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useSearchParams, useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
-import { db } from '../services/db'
+import { db, idbStorage } from '../services/db'
 import { 
   Calendar, CreditCard, Award, User, Settings, ShieldAlert, 
   MapPin, Clock, Download, Eye, QrCode, Upload, CheckCircle, 
@@ -78,6 +78,8 @@ export default function Dashboard() {
   const [selectedEventDetails, setSelectedEventDetails] = useState(null)
   const [activeQrModal, setActiveQrModal] = useState(null) // Ticket object
   const [previewPhotoUrl, setPreviewPhotoUrl] = useState(null)
+  const [activePdfUrl, setActivePdfUrl] = useState(null)
+  const [activePdfCertCode, setActivePdfCertCode] = useState(null)
   
   // Account Migration state
   const [isMigrateModalOpen, setIsMigrateModalOpen] = useState(false)
@@ -391,55 +393,185 @@ export default function Dashboard() {
     URL.revokeObjectURL(url)
   }
 
-  // PDF Certificate Generator (Downloads vector SVG)
-  const downloadCertSvg = (cert) => {
-    const svgContent = `
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 700" width="1000" height="700" style="font-family: Georgia, Times, serif;">
-        <rect width="1000" height="700" fill="#fdfcf7" stroke="#800404" stroke-width="16"/>
-        <rect x="25" y="25" width="950" height="650" fill="none" stroke="#d4af37" stroke-width="3"/>
-        
-        <!-- Headers -->
-        <text x="500" y="110" font-size="18" font-weight="bold" fill="#800404" font-family="Arial, sans-serif" letter-spacing="3" text-anchor="middle">UNIVERSIDAD NACIONAL DE INGENIERÍA</text>
-        <line x1="400" y1="130" x2="600" y2="130" stroke="#d4af37" stroke-width="2"/>
-        <text x="500" y="160" font-size="12" font-style="italic" fill="#6b7280" font-family="Arial, sans-serif" letter-spacing="1" text-anchor="middle">COMISIÓN ORGANIZADORA DEL SESQUICENTENARIO</text>
-        
-        <!-- Certificate Word -->
-        <text x="500" y="240" font-size="42" font-weight="normal" fill="#111827" text-anchor="middle" letter-spacing="4">Otorgan el presente Diploma de</text>
-        <text x="500" y="300" font-size="34" font-weight="bold" fill="#800404" font-family="Arial, sans-serif" text-anchor="middle" letter-spacing="2">${cert.tipo.toUpperCase()}</text>
-        
-        <!-- Recipient -->
-        <text x="500" y="360" font-size="16" fill="#475569" text-anchor="middle">A:</text>
-        <text x="500" y="405" font-size="28" font-weight="bold" font-style="italic" fill="#111827" text-anchor="middle">${user.nombres.toUpperCase()} ${user.apellidos.toUpperCase()}</text>
-        <text x="500" y="440" font-size="14" fill="#475569" font-family="Arial, sans-serif" text-anchor="middle">Identificado con DNI N° ${user.dni}</text>
-        
-        <!-- Event -->
-        <text x="500" y="480" font-size="15" fill="#475569" text-anchor="middle">Por haber asistido y aprobado en calidad de asistente al evento académico:</text>
-        <text x="500" y="515" font-size="18" font-weight="bold" fill="#111827" font-family="Arial, sans-serif" text-anchor="middle">"${cert.evento}"</text>
-        <text x="500" y="545" font-size="13" fill="#6b7280" font-family="Arial, sans-serif" text-anchor="middle">Realizado el ${cert.fecha} con una duración de ${cert.horas} horas académicas extracurriculares.</text>
-        
-        <!-- Date -->
-        <text x="500" y="585" font-size="12" fill="#6b7280" font-family="Arial, sans-serif" text-anchor="middle">Emitido en Lima, el ${cert.emitido}.</text>
-        
-        <!-- Signatures & Verification -->
-        <!-- Left Sign: Rector -->
-        <line x1="200" y1="630" x2="380" y2="630" stroke="#9ca3af" stroke-width="1"/>
-        <text x="290" y="645" font-size="11" font-weight="bold" fill="#374151" font-family="Arial, sans-serif" text-anchor="middle">Dr. Alfonso López Chau</text>
-        <text x="290" y="660" font-size="9" fill="#6b7280" font-family="Arial, sans-serif" text-anchor="middle">Rector - Universidad Nacional de Ingeniería</text>
-        
-        <!-- Right Sign: Commission -->
-        <line x1="620" y1="630" x2="800" y2="630" stroke="#9ca3af" stroke-width="1"/>
-        <text x="710" y="645" font-size="11" font-weight="bold" fill="#374151" font-family="Arial, sans-serif" text-anchor="middle">Presidente Comisión Organizadora</text>
-        <text x="710" y="660" font-size="9" fill="#6b7280" font-family="Arial, sans-serif" text-anchor="middle">150 Años de Historia UNI</text>
-        
-        <!-- Validation code details at bottom -->
-        <text x="50" y="670" font-size="8" fill="#9ca3af" font-family="Arial, sans-serif">CÓDIGO DE VALIDACIÓN: ${cert.codigoValidacion}</text>
-      </svg>
-    `
-    const blob = new Blob([svgContent], { type: 'image/svg+xml' })
+  // View PDF Certificate
+  const handleViewCert = async (cert) => {
+    try {
+      // 1. Check IndexedDB
+      const fileBlob = await idbStorage.getFile(cert.id)
+      if (fileBlob) {
+        const url = URL.createObjectURL(fileBlob)
+        setActivePdfUrl(url)
+        setActivePdfCertCode(cert.codigoValidacion)
+        return
+      }
+    } catch (err) {
+      console.error("Error retrieving PDF from IndexedDB:", err)
+    }
+
+    // 2. Check pdfUrl
+    if (cert.pdfUrl) {
+      setActivePdfUrl(cert.pdfUrl)
+      setActivePdfCertCode(cert.codigoValidacion)
+      return
+    }
+
+    // 3. Fallback: generate simulated raw PDF
+    const pdfContent = `%PDF-1.4
+%âãÏÓ
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [3 0 R] /Count 1 >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /Resources << /Font << /F1 4 0 R >> >> /MediaBox [0 0 842 595] /Contents 5 0 R >>
+endobj
+4 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>
+endobj
+5 0 obj
+<< /Length 550 >>
+stream
+BT
+/F1 26 Tf
+180 480 Td
+(UNIVERSIDAD NACIONAL DE INGENIERIA) Tj
+/F1 16 Tf
+30 -60 Td
+(CERTIFICADO OFICIAL DE ${cert.tipo.toUpperCase()}) Tj
+/F1 12 Tf
+0 -40 Td
+(Otorgado a la participacion de:) Tj
+/F1 18 Tf
+0 -30 Td
+(${user.nombres.toUpperCase()} ${user.apellidos.toUpperCase()}) Tj
+/F1 11 Tf
+0 -40 Td
+(Por haber asistido satisfactoriamente al evento oficial de la celebracion del Sesquicentenario:) Tj
+/F1 14 Tf
+0 -25 Td
+(${cert.evento}) Tj
+/F1 10 Tf
+0 -35 Td
+(Emitido: ${cert.emitido}) Tj
+0 -20 Td
+(Codigo de Autenticidad: ${cert.codigoValidacion}) Tj
+0 -45 Td
+(Firma de Autoridad: Dr. Alfonso Fujimori Morel - Rector de la UNI) Tj
+ET
+endstream
+endobj
+xref
+0 6
+0000000000 65535 f 
+0000000015 00000 n 
+0000000074 00000 n 
+0000000131 00000 n 
+0000000249 00000 n 
+0000000322 00000 n 
+trailer
+<< /Size 6 /Root 1 0 R >>
+startxref
+920
+%%EOF`;
+    const blob = new Blob([pdfContent], { type: 'application/pdf' })
+    const url = URL.createObjectURL(blob)
+    setActivePdfUrl(url)
+    setActivePdfCertCode(cert.codigoValidacion)
+  }
+
+  // Download PDF Certificate
+  const handleDownloadCert = async (cert) => {
+    try {
+      // 1. Check IndexedDB
+      const fileBlob = await idbStorage.getFile(cert.id)
+      if (fileBlob) {
+        const url = URL.createObjectURL(fileBlob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = `Certificado-${cert.codigoValidacion}.pdf`
+        document.body.appendChild(a)
+        a.click()
+        document.body.removeChild(a)
+        URL.revokeObjectURL(url)
+        return
+      }
+    } catch (err) {
+      console.error("Error retrieving PDF from IndexedDB:", err)
+    }
+
+    // 2. Check pdfUrl
+    if (cert.pdfUrl) {
+      window.open(cert.pdfUrl, '_blank')
+      return
+    }
+
+    // 3. Fallback: generate simulated raw PDF
+    const pdfContent = `%PDF-1.4
+%âãÏÓ
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [3 0 R] /Count 1 >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /Resources << /Font << /F1 4 0 R >> >> /MediaBox [0 0 842 595] /Contents 5 0 R >>
+endobj
+4 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>
+endobj
+5 0 obj
+<< /Length 550 >>
+stream
+BT
+/F1 26 Tf
+180 480 Td
+(UNIVERSIDAD NACIONAL DE INGENIERIA) Tj
+/F1 16 Tf
+30 -60 Td
+(CERTIFICADO OFICIAL DE ${cert.tipo.toUpperCase()}) Tj
+/F1 12 Tf
+0 -40 Td
+(Otorgado a la participacion de:) Tj
+/F1 18 Tf
+0 -30 Td
+(${user.nombres.toUpperCase()} ${user.apellidos.toUpperCase()}) Tj
+/F1 11 Tf
+0 -40 Td
+(Por haber asistido satisfactoriamente al evento oficial de la celebracion del Sesquicentenario:) Tj
+/F1 14 Tf
+0 -25 Td
+(${cert.evento}) Tj
+/F1 10 Tf
+0 -35 Td
+(Emitido: ${cert.emitido}) Tj
+0 -20 Td
+(Codigo de Autenticidad: ${cert.codigoValidacion}) Tj
+0 -45 Td
+(Firma de Autoridad: Dr. Alfonso Fujimori Morel - Rector de la UNI) Tj
+ET
+endstream
+endobj
+xref
+0 6
+0000000000 65535 f 
+0000000015 00000 n 
+0000000074 00000 n 
+0000000131 00000 n 
+0000000249 00000 n 
+0000000322 00000 n 
+trailer
+<< /Size 6 /Root 1 0 R >>
+startxref
+920
+%%EOF`;
+    const blob = new Blob([pdfContent], { type: 'application/pdf' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = `certificado-${cert.id}.svg`
+    a.download = `Certificado-${cert.codigoValidacion}.pdf`
     document.body.appendChild(a)
     a.click()
     document.body.removeChild(a)
@@ -793,30 +925,25 @@ export default function Dashboard() {
                     <div key={cert.id} className="border border-gray-200 p-6 flex flex-col md:flex-row items-center justify-between gap-6 hover:border-[#800404] transition-all">
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-2">
-                          <span className="bg-amber-50 text-amber-700 text-[10px] font-black px-2.5 py-0.5 border border-amber-200 uppercase">
-                            {cert.tipo}
-                          </span>
-                          <span className="text-[10px] text-gray-400">Código: {cert.codigoValidacion}</span>
+                          <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Código: {cert.codigoValidacion}</span>
                         </div>
                         <h3 className="font-black text-gray-900 text-lg leading-tight mb-2">{cert.evento}</h3>
                         
                         <div className="flex flex-wrap gap-4 text-xs text-gray-500 mt-2">
-                          <span>Fecha: {cert.fecha}</span>
-                          <span>Horas: <strong className="text-[#800404]">{cert.horas}h extracurriculares</strong></span>
                           <span>Emitido: {cert.emitido}</span>
                         </div>
                       </div>
 
                       <div className="flex gap-2 w-full md:w-auto pt-4 md:pt-0 border-t md:border-t-0 pl-0 border-gray-200">
                         <button
-                          onClick={() => navigate(`/validar?code=${cert.codigoValidacion}`)}
+                          onClick={() => handleViewCert(cert)}
                           className="flex-1 md:flex-initial flex items-center justify-center gap-1.5 border border-[#800404] text-[#800404] hover:bg-red-50 text-xs font-bold px-4 py-2.5 transition-colors cursor-pointer"
                         >
-                          <CheckSquare size={14} />
-                          Validar
+                          <Eye size={14} />
+                          Ver
                         </button>
                         <button
-                          onClick={() => downloadCertSvg(cert)}
+                          onClick={() => handleDownloadCert(cert)}
                           className="flex-1 md:flex-initial flex items-center justify-center gap-1.5 bg-[#800404] hover:bg-[#5a0303] text-white text-xs font-bold px-4 py-2.5 transition-colors cursor-pointer"
                         >
                           <Download size={14} />
@@ -1324,6 +1451,39 @@ export default function Dashboard() {
               </button>
             </div>
           </form>
+        </div>
+      )}
+      {/* PDF VIEWER MODAL OVERLAY */}
+      {activePdfUrl && (
+        <div className="fixed inset-0 z-[100] bg-black/75 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white w-full max-w-4xl h-[85vh] flex flex-col shadow-2xl relative border-t-8 border-t-[#800404] rounded-none">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 shrink-0">
+              <h3 className="text-base font-black text-gray-900">
+                Visualización de Certificado ({activePdfCertCode})
+              </h3>
+              <button 
+                onClick={() => {
+                  if (activePdfUrl.startsWith('blob:')) {
+                    URL.revokeObjectURL(activePdfUrl);
+                  }
+                  setActivePdfUrl(null);
+                  setActivePdfCertCode(null);
+                }}
+                className="p-1.5 hover:bg-gray-100 text-gray-500 hover:text-gray-800 transition-colors cursor-pointer"
+              >
+                <X size={18} />
+              </button>
+            </div>
+            {/* Modal Body: iframe */}
+            <div className="flex-1 bg-gray-100 overflow-hidden relative">
+              <iframe
+                src={`${activePdfUrl}#toolbar=0&navpanes=0`}
+                title="Certificado PDF"
+                className="w-full h-full border-none"
+              />
+            </div>
+          </div>
         </div>
       )}
     </div>

@@ -524,7 +524,7 @@ export default function Home() {
           <div className="flex flex-col gap-2.5 justify-between h-full min-w-0">
             {/* Card 1: Encuentro Internacional */}
             <Link 
-              to="/cronograma?filtro=conferencias" 
+              to="/encuentro-internacional?fase=sep1" 
               className="relative overflow-hidden group flex-1 h-[120px] lg:h-auto min-h-[110px] border border-gray-150 flex flex-col justify-end p-4 text-white shadow-sm"
             >
               <div 
@@ -545,7 +545,7 @@ export default function Home() {
 
             {/* Card 2: Feria Tecnológica */}
             <Link 
-              to="/cronograma?filtro=feria" 
+              to="/encuentro-internacional?fase=sep2" 
               className="relative overflow-hidden group flex-1 h-[120px] lg:h-auto min-h-[110px] border border-gray-150 flex flex-col justify-end p-4 text-white shadow-sm"
             >
               <div 
@@ -566,7 +566,7 @@ export default function Home() {
 
             {/* Card 3: Cena de Reconocimiento */}
             <Link 
-              to="/cena-gala" 
+              to="/encuentro-internacional?fase=sep3" 
               className="relative overflow-hidden group flex-1 h-[120px] lg:h-auto min-h-[110px] border border-[#d4af37]/35 flex flex-col justify-end p-4 text-white shadow-sm"
             >
               <div 
