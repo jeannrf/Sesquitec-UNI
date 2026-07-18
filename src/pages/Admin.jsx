@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom'
 import jsQR from 'jsqr'
 import { useAuth } from '../context/AuthContext'
 import { db, idbStorage } from '../services/db'
-import { supabase } from '../services/supabaseClient'
 import { useAlert } from '../context/AlertContext'
 import { 
   LayoutDashboard, Calendar, Mic, Users, QrCode, Award, 
@@ -396,10 +395,10 @@ export default function Admin() {
     if (isSyncing) return
     setIsSyncing(true)
     try {
-      const syncSuccess = await db.syncFromSupabase()
+      const syncSuccess = await db.syncFromFirebase()
       refreshAllData()
       if (syncSuccess) {
-        showAlert('Los datos se han sincronizado correctamente con Supabase.', 'Sincronización Exitosa', 'success')
+        showAlert('Los datos se han sincronizado correctamente con Firebase.', 'Sincronización Exitosa', 'success')
       } else {
         showAlert('No se pudo establecer conexión con el servidor. Se cargaron los datos locales.', 'Aviso', 'warning')
       }

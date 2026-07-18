@@ -4,6 +4,7 @@ import { BrowserRouter } from 'react-router-dom'
 import { AuthProvider } from './context/AuthContext'
 import { AlertProvider } from './context/AlertContext'
 import './index.css'
+import './services/firebase'
 import App from './App.jsx'
 
 createRoot(document.getElementById('root')).render(

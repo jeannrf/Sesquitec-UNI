@@ -1,5 +1,7 @@
 import { createContext, useContext, useState, useEffect } from 'react'
 import { db } from '../services/db'
+import { signInWithPopup } from 'firebase/auth'
+import { auth, googleProvider } from '../services/firebase'
 
 const AuthContext = createContext(null)
 
@@ -103,10 +105,10 @@ export function AuthProvider({ children }) {
           localStorage.setItem('uni_eventos_users', JSON.stringify(parsedUsers))
         }
         setUsers(parsedUsers)
-        // Sincronizar todos los usuarios locales existentes a Supabase en segundo plano
+        // Sincronizar todos los usuarios locales existentes a Firebase en segundo plano
         parsedUsers.forEach(u => {
           if (u.email !== 'admin@uni.pe' && u.email !== 'staff@uni.pe') {
-            db.syncUserToSupabase(u)
+            db.syncUserToFirebase(u)
           }
         })
       } else {
@@ -177,9 +179,9 @@ export function AuthProvider({ children }) {
       // La carga local es síncrona/inmediata, dejamos de mostrar "loading" para que la UI renderice
       setLoading(false)
 
-      // Sincronizar desde Supabase asíncronamente en segundo plano
+      // Sincronizar desde Firebase asíncronamente en segundo plano
       try {
-        const syncSuccess = await db.syncFromSupabase()
+        const syncSuccess = await db.syncFromFirebase()
         if (syncSuccess) {
           const updatedUsers = localStorage.getItem('uni_eventos_users')
           if (updatedUsers) {
@@ -195,7 +197,7 @@ export function AuthProvider({ children }) {
           }
         }
       } catch (syncError) {
-        console.error("Error durante la sincronización en segundo plano con Supabase:", syncError)
+        console.error("Error durante la sincronización en segundo plano con Firestore:", syncError)
       }
     }
 
@@ -209,7 +211,7 @@ export function AuthProvider({ children }) {
     localStorage.setItem('uni_eventos_session', JSON.stringify({ email: updatedUser.email }))
     setUsers(updatedUsers)
     setUser(updatedUser)
-    db.syncUserToSupabase(updatedUser)
+    db.syncUserToFirebase(updatedUser)
   }
 
   // Register standard email/password
@@ -261,8 +263,8 @@ export function AuthProvider({ children }) {
     setUser(newUser)
     localStorage.setItem('uni_eventos_session', JSON.stringify({ email: newUser.email }))
 
-    // Sincronizar inmediatamente a Supabase
-    db.syncUserToSupabase(newUser)
+    // Sincronizar inmediatamente a Firebase
+    db.syncUserToFirebase(newUser)
 
     return { success: true, verificationCode }
   }
@@ -368,10 +370,54 @@ export function AuthProvider({ children }) {
       setUser(newUser)
       localStorage.setItem('uni_eventos_session', JSON.stringify({ email: newUser.email }))
 
-      // 5. Sync to Supabase
-      db.syncUserToSupabase(newUser)
+      // 5. Sync to Firebase
+      db.syncUserToFirebase(newUser)
 
       return { success: true, isNew: false }
+    }
+  }
+
+  // Real Google Sign-in flow via Firebase Authentication popup
+  const loginWithGoogleFirebase = async () => {
+    try {
+      const result = await signInWithPopup(auth, googleProvider)
+      const firebaseUser = result.user
+
+      let nombres = ''
+      let apellidos = ''
+      if (firebaseUser.displayName) {
+        const parts = firebaseUser.displayName.trim().split(/\s+/)
+        if (parts.length > 1) {
+          nombres = parts[0]
+          apellidos = parts.slice(1).join(' ')
+        } else {
+          nombres = parts[0]
+          apellidos = '-'
+        }
+      } else {
+        nombres = firebaseUser.email.split('@')[0]
+        apellidos = '-'
+      }
+
+      const googleUserData = {
+        nombres: nombres,
+        apellidos: apellidos,
+        email: firebaseUser.email,
+        picture: firebaseUser.photoURL
+      }
+
+      return loginWithGoogle(googleUserData)
+    } catch (error) {
+      console.error("Error signing in with Google via Firebase Auth:", error)
+      let friendlyError = 'Ocurrió un error al iniciar sesión con Google.'
+      if (error.code === 'auth/popup-closed-by-user') {
+        friendlyError = 'El inicio de sesión fue cancelado por el usuario.'
+      } else if (error.code === 'auth/cancelled-popup-request') {
+        friendlyError = 'La ventana de inicio de sesión fue cerrada.'
+      } else if (error.code === 'auth/operation-not-allowed') {
+        friendlyError = 'El inicio de sesión con Google no está habilitado en tu Firebase Console.'
+      }
+      return { success: false, error: friendlyError }
     }
   }
 
@@ -412,8 +458,8 @@ export function AuthProvider({ children }) {
     setUser(newUser)
     localStorage.setItem('uni_eventos_session', JSON.stringify({ email: newUser.email }))
 
-    // Sincronizar inmediatamente a Supabase
-    db.syncUserToSupabase(newUser)
+    // Sincronizar inmediatamente a Firebase
+    db.syncUserToFirebase(newUser)
 
     return { success: true }
   }
@@ -509,7 +555,7 @@ export function AuthProvider({ children }) {
 
     setUsers(updatedUsers)
     setUser(updatedUser)
-    db.syncUserToSupabase(updatedUser)
+    db.syncUserToFirebase(updatedUser)
 
     return { success: true }
   }
@@ -536,6 +582,7 @@ export function AuthProvider({ children }) {
       resendVerificationCode,
       login,
       loginWithGoogle,
+      loginWithGoogleFirebase,
       completeGoogleRegistration,
       recoverPassword,
       resetPassword,
