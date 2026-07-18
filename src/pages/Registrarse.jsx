@@ -4,7 +4,7 @@ import { useAuth } from '../context/AuthContext'
 import { Mail, Lock, User, Phone, Landmark, AlertCircle, CheckCircle, ArrowRight } from 'lucide-react'
 
 export default function Registrarse() {
-  const { register, verifyEmail, resendVerificationCode, loginWithGoogle, completeGoogleRegistration, user } = useAuth()
+  const { register, verifyEmail, resendVerificationCode, loginWithGoogleFirebase, completeGoogleRegistration, user } = useAuth()
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
 
@@ -297,74 +297,33 @@ export default function Registrarse() {
     }
   }
 
-  // REAL GOOGLE OAUTH FLOW USING GOOGLE IDENTITY SERVICES
-  const triggerGoogleLogin = () => {
+  // REAL GOOGLE OAUTH FLOW USING FIREBASE AUTHENTICATION
+  const triggerGoogleLogin = async () => {
     setError('')
-    const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID
+    setSuccess('')
 
-    if (!clientId || clientId === 'YOUR_GOOGLE_CLIENT_ID') {
-      console.warn('VITE_GOOGLE_CLIENT_ID no configurado en .env. Usando simulación local.')
+    const hasFirebaseKeys = import.meta.env.VITE_FIREBASE_API_KEY && 
+      !import.meta.env.VITE_FIREBASE_API_KEY.includes('tu-api-key')
+
+    if (!hasFirebaseKeys) {
+      console.warn('VITE_FIREBASE_API_KEY no configurado en .env. Usando simulación local.')
       triggerMockGoogleLogin()
       return
     }
 
     try {
-      if (!window.google) {
-        setError('El SDK de Google no se ha cargado. Por favor, recarga la página.')
-        return
+      const res = await loginWithGoogleFirebase()
+      if (res.success) {
+        setSuccess('¡Registro e inicio de sesión con Google exitoso!')
+        setTimeout(() => {
+          navigate(redirectPath)
+        }, 1000)
+      } else {
+        setError(res.error)
       }
-
-      const client = window.google.accounts.oauth2.initTokenClient({
-        client_id: clientId,
-        scope: 'https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/userinfo.email',
-        callback: async (tokenResponse) => {
-          if (tokenResponse.error) {
-            setError(`Error de autenticación: ${tokenResponse.error_description || tokenResponse.error}`)
-            return
-          }
-
-          try {
-            const res = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
-              headers: { Authorization: `Bearer ${tokenResponse.access_token}` }
-            })
-            const googleUser = await res.json()
-
-            if (!googleUser || googleUser.error) {
-              setError('No se pudo obtener la información del usuario de Google.')
-              return
-            }
-
-            const mappedUser = {
-              nombres: googleUser.given_name || googleUser.name || '',
-              apellidos: googleUser.family_name || '',
-              email: googleUser.email,
-              picture: googleUser.picture || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(googleUser.email)}`
-            }
-
-            handleGoogleCallback(mappedUser)
-          } catch (fetchErr) {
-            setError('No se pudo obtener la información de perfil de Google.')
-            console.error(fetchErr)
-          }
-        }
-      })
-
-      client.requestAccessToken({ prompt: 'select_account' })
     } catch (err) {
-      console.error('Error al iniciar flujo de Google:', err)
-      triggerMockGoogleLogin()
-    }
-  }
-
-  const handleGoogleCallback = (googleUser) => {
-    const res = loginWithGoogle(googleUser)
-    if (res.success) {
-      setSuccess('¡Registro e inicio de sesión con Google exitoso!')
-      setTimeout(() => {
-        navigate(redirectPath)
-      }, 1000)
-    } else {
-      setError(res.error)
+      setError('Error al registrarse con Google.')
+      console.error(err)
     }
   }
 

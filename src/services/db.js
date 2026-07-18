@@ -1,8 +1,9 @@
 // Módulo de servicio de Base de Datos para Sesquitec-UNI
 // Maneja datos persistentes en localStorage para eventos, ponencias, certificados y logs de QR.
-// Fase 4: Sincronización asíncrona bidireccional con Supabase / PostgreSQL.
+// Fase 4: Sincronización asíncrona bidireccional con Firebase Cloud Firestore.
 
-import { supabase } from './supabaseClient'
+import { firestore } from './firebase'
+import { collection, doc, getDocs, setDoc, updateDoc, deleteDoc, writeBatch, query, where } from 'firebase/firestore'
 
 const EVENTS_KEY = 'uni_eventos_events'
 const CONFERENCES_KEY = 'uni_eventos_conferences'
@@ -388,27 +389,23 @@ export const db = {
     }
   },
 
-  // Sincronizar desde Supabase en la nube (PostgreSQL) y actualizar el cache de localStorage
-  async syncFromSupabase() {
-    if (!supabase) {
-      console.log("Supabase no configurado. Operando en modo local (localStorage).");
+  // Sincronizar desde Firebase Cloud Firestore y actualizar el cache de localStorage
+  async syncFromFirebase() {
+    if (!firestore) {
+      console.log("Firestore no configurado. Operando en modo local (localStorage).");
       return false;
     }
     try {
-      console.log("Sincronizando datos desde Supabase...");
+      console.log("Sincronizando datos desde Firestore...");
 
       // 1. Obtener Eventos
-      const { data: eventos, error: evError } = await supabase
-        .from('eventos')
-        .select('*')
-      
-      if (evError) throw evError;
+      const eventosSnap = await getDocs(collection(firestore, 'eventos'));
+      const eventos = eventosSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
-      // Si Supabase está conectado pero vacío (primera ejecución), sembrar las tablas
-      if (!eventos || eventos.length === 0) {
-        console.log("Base de datos remota vacía. Sembrando datos iniciales en Supabase...");
-        await this.seedSupabase();
-        return this.syncFromSupabase(); // re-sincronizar después de sembrar
+      if (eventos.length === 0) {
+        console.log("Base de datos remota vacía. Sembrando datos iniciales en Firestore...");
+        await this.seedFirestore();
+        return this.syncFromFirebase(); // re-sincronizar después de sembrar
       }
 
       const mappedEvents = eventos.map(ev => {
@@ -448,13 +445,13 @@ export const db = {
           description: descText,
           quota: ev.quota,
           status: ev.status,
-          isPaid: ev.is_paid,
-          imageUrl: ev.image_url,
-          themeColor: ev.theme_color,
+          isPaid: ev.is_paid || ev.isPaid || false,
+          imageUrl: ev.image_url || ev.imageUrl || '',
+          themeColor: ev.theme_color || ev.themeColor || '',
           category: ev.category,
-          tags: ev.tags ? ev.tags.split(',') : [],
-          registrationOpen: ev.registration_open,
-          max_edit_date: ev.max_edit_date,
+          tags: ev.tags ? (typeof ev.tags === 'string' ? ev.tags.split(',') : ev.tags) : [],
+          registrationOpen: ev.registration_open !== undefined ? ev.registration_open : (ev.registrationOpen !== undefined ? ev.registrationOpen : true),
+          max_edit_date: ev.max_edit_date || ev.maxEditDate || null,
           recapVideoId,
           recapImages,
           report,
@@ -464,221 +461,199 @@ export const db = {
           registrationUrl,
           isSesquitec
         };
-      })
-      localStorage.setItem(EVENTS_KEY, JSON.stringify(mappedEvents))
+      });
+      localStorage.setItem(EVENTS_KEY, JSON.stringify(mappedEvents));
 
       // 2. Obtener Ponencias
-      const { data: ponencias, error: ponError } = await supabase
-        .from('ponencias')
-        .select('*')
-      if (!ponError && ponencias) {
-        const mappedConfs = ponencias.map(p => ({
-          id: p.id,
-          eventId: p.event_id,
+      const ponenciasSnap = await getDocs(collection(firestore, 'ponencias'));
+      const mappedConfs = ponenciasSnap.docs.map(doc => {
+        const p = doc.data();
+        return {
+          id: doc.id,
+          eventId: p.event_id || p.eventId,
           title: p.title,
           speaker: p.speaker,
           room: p.room,
           time: p.time,
           duration: p.duration,
           quota: p.quota
-        }))
-        localStorage.setItem(CONFERENCES_KEY, JSON.stringify(mappedConfs))
-      }
+        };
+      });
+      localStorage.setItem(CONFERENCES_KEY, JSON.stringify(mappedConfs));
 
       // 3. Obtener Certificados
-      const { data: certificados, error: certError } = await supabase
-        .from('certificados')
-        .select('*')
-      if (!certError && certificados) {
-        const mappedCerts = certificados.map(c => {
-          // Intentar resolver nombre de evento por event_id
-          const matchedEv = mappedEvents.find(e => e.id === c.event_id)
-          return {
-            id: c.id,
-            dni: c.dni,
-            titular: c.titular,
-            evento: matchedEv ? matchedEv.title : (c.event_id || 'Evento Oficial'),
-            fecha: c.fecha,
-            horas: c.horas,
-            emitido: c.emitido,
-            tipo: c.tipo,
-            codigoValidacion: c.codigo_validacion,
-            pdfUrl: c.pdf_url
-          }
-        })
-        localStorage.setItem(CERTIFICATES_KEY, JSON.stringify(mappedCerts))
-      }
+      const certificadosSnap = await getDocs(collection(firestore, 'certificados'));
+      const mappedCerts = certificadosSnap.docs.map(doc => {
+        const c = doc.data();
+        const matchedEv = mappedEvents.find(e => e.id === (c.event_id || c.eventId));
+        return {
+          id: doc.id,
+          dni: c.dni,
+          titular: c.titular,
+          evento: matchedEv ? matchedEv.title : (c.evento || c.event_id || c.eventId || 'Evento Oficial'),
+          fecha: c.fecha,
+          horas: c.horas,
+          emitido: c.emitido,
+          tipo: c.tipo,
+          codigoValidacion: c.codigo_validacion || c.codigoValidacion,
+          pdfUrl: c.pdf_url || c.pdfUrl || ''
+        };
+      });
+      localStorage.setItem(CERTIFICATES_KEY, JSON.stringify(mappedCerts));
 
       // 4. Obtener Usuarios e Inscripciones
-      const { data: usuarios, error: userError } = await supabase
-        .from('usuarios')
-        .select('*')
-      if (userError) throw userError;
+      const usuariosSnap = await getDocs(collection(firestore, 'usuarios'));
+      const inscripcionesSnap = await getDocs(collection(firestore, 'inscripciones'));
+      const inscripciones = inscripcionesSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
-      const { data: inscripciones, error: inscError } = await supabase
-        .from('inscripciones')
-        .select('*')
+      const mappedUsers = usuariosSnap.docs.map(docDoc => {
+        const u = docDoc.data();
+        const userTickets = inscripciones
+          .filter(ins => ins.user_dni === u.dni || ins.userDni === u.dni)
+          .map(ins => {
+            const ev = mappedEvents.find(e => e.id === (ins.event_id || ins.eventId));
+            return {
+              id: `tkt-${ins.id}`,
+              eventId: ins.event_id || ins.eventId,
+              eventTitle: ev ? ev.title : (ins.eventTitle || ins.event_id || ins.eventId),
+              qrCode: ins.qr_code || ins.qrCode,
+              status: ins.status === 'Registrado' ? 'Por asistir' : (ins.status === 'Asistió' ? 'Asistió' : 'Cancelado'),
+              date: ev ? ev.date : '',
+              location: ev ? ev.location : '',
+              conferences: ins.ponencias || ins.conferences || [],
+              acompanantes: ins.acompanantes || ins.companions || []
+            };
+          });
 
-      if (usuarios) {
-        const mappedUsers = usuarios.map(u => {
-          const userTickets = (inscripciones || [])
-            .filter(ins => ins.user_dni === u.dni)
-            .map(ins => {
-              const ev = mappedEvents.find(e => e.id === ins.event_id)
-              return {
-                id: `tkt-${ins.id}`,
-                eventId: ins.event_id,
-                eventTitle: ev ? ev.title : ins.event_id,
-                qrCode: ins.qr_code,
-                status: ins.status === 'Registrado' ? 'Por asistir' : (ins.status === 'Asistió' ? 'Asistió' : 'Cancelado'),
-                date: ev ? ev.date : '',
-                location: ev ? ev.location : '',
-                conferences: ins.ponencias || [],
-                acompanantes: ins.acompanantes || []
-              }
-            })
+        const userCerts = mappedCerts.filter(c => c.dni === u.dni);
 
-          const userCerts = (certificados || [])
-            .filter(c => c.dni === u.dni)
-            .map(c => {
-              const ev = mappedEvents.find(e => e.id === c.event_id)
-              return {
-                id: c.id,
-                evento: ev ? ev.title : c.event_id,
-                fecha: c.fecha,
-                horas: c.horas,
-                emitido: c.emitido,
-                tipo: c.tipo,
-                codigoValidacion: c.codigo_validacion
-              }
-            })
+        const userRegEvents = userTickets.map(t => ({
+          id: t.eventId,
+          title: t.eventTitle,
+          date: t.date,
+          location: t.location,
+          status: t.status === 'Por asistir' ? 'Confirmado' : t.status,
+          conferences: t.conferences || []
+        }));
 
-          const userRegEvents = userTickets.map(t => ({
-            id: t.eventId,
-            title: t.eventTitle,
-            date: t.date,
-            location: t.location,
-            status: t.status === 'Por asistir' ? 'Confirmado' : t.status,
-            conferences: t.conferences || []
-          }))
-
-          return {
-            nombres: u.nombres,
-            apellidos: u.apellidos,
-            email: u.email,
-            dni: u.dni,
-            telefono: u.telefono || '',
-            institucion: u.institucion || '',
-            password: u.password,
-            verified: u.verified,
-            role: u.role,
-            profilePic: u.profile_pic || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(u.nombres + ' ' + u.apellidos)}`,
-            registeredEvents: userRegEvents,
-            tickets: userTickets,
-            certificates: userCerts
-          }
-        })
-        localStorage.setItem(USERS_KEY, JSON.stringify(mappedUsers))
-      }
+        return {
+          nombres: u.nombres,
+          apellidos: u.apellidos,
+          email: u.email,
+          dni: u.dni,
+          telefono: u.telefono || '',
+          institucion: u.institucion || '',
+          password: u.password || '',
+          verified: u.verified || false,
+          role: u.role || 'USER',
+          profilePic: u.profile_pic || u.profilePic || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(u.nombres + ' ' + u.apellidos)}`,
+          registeredEvents: userRegEvents,
+          tickets: userTickets,
+          certificates: userCerts
+        };
+      });
+      localStorage.setItem(USERS_KEY, JSON.stringify(mappedUsers));
 
       // 5. Obtener QR Logs
-      const { data: qrLogs, error: logError } = await supabase
-        .from('qr_logs')
-        .select('*')
-      if (!logError && qrLogs) {
-        const mappedLogs = qrLogs.map(l => ({
-          id: l.id,
+      const qrLogsSnap = await getDocs(collection(firestore, 'qr_logs'));
+      const mappedLogs = qrLogsSnap.docs.map(doc => {
+        const l = doc.data();
+        return {
+          id: doc.id,
           timestamp: l.timestamp,
-          ticketId: l.ticket_id,
-          eventTitle: l.event_title,
-          userDni: l.user_dni,
-          userName: l.user_name,
-          status: l.status,
-          scannedBy: l.scanned_by,
-          tipo: l.tipo
-        }))
-        localStorage.setItem(QR_LOGS_KEY, JSON.stringify(mappedLogs))
-      }
+          ticketId: l.ticket_id || l.ticketId || '',
+          eventTitle: l.event_title || l.eventTitle || '',
+          userDni: l.user_dni || l.userDni || '',
+          userName: l.user_name || l.userName || '',
+          status: l.status || '',
+          scannedBy: l.scanned_by || l.scannedBy || '',
+          tipo: l.tipo || ''
+        };
+      });
+      localStorage.setItem(QR_LOGS_KEY, JSON.stringify(mappedLogs));
 
       // 6. Obtener Páginas CMS
-      const { data: cmsRows, error: cmsError } = await supabase
-        .from('cms_paginas')
-        .select('*')
-      if (!cmsError && cmsRows) {
-        cmsRows.forEach(row => {
-          localStorage.setItem(`${CMS_KEY}_${row.key}`, JSON.stringify(row.value))
-        })
-      }
+      const cmsSnap = await getDocs(collection(firestore, 'cms_paginas'));
+      cmsSnap.docs.forEach(doc => {
+        const row = doc.data();
+        localStorage.setItem(`${CMS_KEY}_${doc.id}`, JSON.stringify(row.value));
+      });
 
-      console.log("Sincronización exitosa.");
+      console.log("Sincronización de Firestore exitosa.");
       return true;
     } catch (e) {
-      console.error("Error al sincronizar datos de Supabase:", e)
-      return false
+      console.error("Error al sincronizar datos de Firestore:", e);
+      return false;
     }
   },
 
-  // Sembrar datos de prueba iniciales en Supabase
-  async seedSupabase() {
-    if (!supabase) return;
+  // Sembrar datos de prueba iniciales en Firestore
+  async seedFirestore() {
+    if (!firestore) return;
     try {
+      const batch = writeBatch(firestore);
+
       // 1. Insertar Eventos
-      const mappedEvents = initialEvents.map(ev => ({
-        id: ev.id,
-        title: ev.title,
-        organizer: ev.organizer,
-        date: ev.date,
-        time: ev.time,
-        location: ev.location,
-        description: ev.description,
-        quota: ev.quota,
-        status: ev.status,
-        is_paid: ev.isPaid || false,
-        image_url: ev.imageUrl,
-        category: ev.category,
-        tags: ev.tags ? ev.tags.join(',') : '',
-        registration_open: ev.registrationOpen !== false,
-        max_edit_date: ev.max_edit_date || null
-      }))
-      await supabase.from('eventos').insert(mappedEvents)
+      initialEvents.forEach(ev => {
+        const ref = doc(firestore, 'eventos', ev.id);
+        batch.set(ref, {
+          title: ev.title,
+          organizer: ev.organizer,
+          date: ev.date,
+          time: ev.time,
+          location: ev.location,
+          description: ev.description,
+          quota: ev.quota,
+          status: ev.status,
+          is_paid: ev.isPaid || false,
+          image_url: ev.imageUrl || '',
+          category: ev.category,
+          tags: ev.tags ? ev.tags.join(',') : '',
+          registration_open: ev.registrationOpen !== false,
+          max_edit_date: ev.max_edit_date || null
+        });
+      });
 
       // 2. Insertar Ponencias
-      const mappedConfs = initialConferences.map(c => ({
-        id: c.id,
-        event_id: c.eventId,
-        title: c.title,
-        speaker: c.speaker,
-        room: c.room,
-        time: c.time,
-        duration: c.duration,
-        quota: c.quota
-      }))
-      await supabase.from('ponencias').insert(mappedConfs)
+      initialConferences.forEach(c => {
+        const ref = doc(firestore, 'ponencias', c.id);
+        batch.set(ref, {
+          event_id: c.eventId,
+          title: c.title,
+          speaker: c.speaker,
+          room: c.room,
+          time: c.time,
+          duration: c.duration,
+          quota: c.quota
+        });
+      });
 
       // 3. Insertar Certificados
-      const mappedCerts = initialCertificates.map(c => ({
-        id: c.id,
-        dni: c.dni,
-        titular: c.titular,
-        event_id: c.evento.includes('Simposio') ? 'jun1' : (c.evento.includes('Foro') ? 'jun2' : null),
-        fecha: c.fecha,
-        horas: c.horas,
-        emitido: c.emitido,
-        tipo: c.tipo,
-        codigo_validacion: c.codigoValidacion,
-        pdf_url: ''
-      }))
-      await supabase.from('certificados').insert(mappedCerts)
+      initialCertificates.forEach(c => {
+        const ref = doc(firestore, 'certificados', c.id);
+        batch.set(ref, {
+          dni: c.dni,
+          titular: c.titular,
+          event_id: c.evento.includes('Simposio') ? 'jun1' : (c.evento.includes('Foro') ? 'jun2' : null),
+          fecha: c.fecha,
+          horas: c.horas,
+          emitido: c.emitido,
+          tipo: c.tipo,
+          codigo_validacion: c.codigoValidacion,
+          pdf_url: ''
+        });
+      });
 
-      console.log("Semilla sembrada con éxito en Supabase.");
+      await batch.commit();
+      console.log("Semilla sembrada con éxito en Firestore.");
     } catch (e) {
-      console.error("Error al sembrar semillas en Supabase:", e);
+      console.error("Error al sembrar semillas en Firestore:", e);
     }
   },
 
-  // Sincronizar un usuario específico a Supabase
-  async syncUserToSupabase(user) {
-    if (!supabase) return;
+  // Sincronizar un usuario específico a Firestore
+  async syncUserToFirebase(user) {
+    if (!firestore) return;
     try {
       const dbUser = {
         nombres: user.nombres,
@@ -687,15 +662,14 @@ export const db = {
         email: user.email,
         telefono: user.telefono || '',
         institucion: user.institucion || '',
-        password: user.password,
+        password: user.password || '',
         role: user.role || 'USER',
         verified: user.verified || false,
         profile_pic: user.profilePic || ''
-      }
-      const { error } = await supabase.from('usuarios').upsert(dbUser, { onConflict: 'email' })
-      if (error) throw error;
+      };
+      await setDoc(doc(firestore, 'usuarios', user.email.toLowerCase()), dbUser);
     } catch (e) {
-      console.error("Error al sincronizar usuario a Supabase:", e);
+      console.error("Error al sincronizar usuario a Firestore:", e);
     }
   },
 
@@ -718,7 +692,7 @@ export const db = {
     events.push(newEvent)
     this.saveEvents(events)
 
-    if (supabase) {
+    if (firestore) {
       let finalDesc = newEvent.description || '';
       const recapObj = {
         recapVideoId: newEvent.recapVideoId || '',
@@ -732,8 +706,7 @@ export const db = {
       };
       finalDesc = `${newEvent.description || ''} ---RECAP--- ${JSON.stringify(recapObj)}`;
 
-      supabase.from('eventos').insert({
-        id: newEvent.id,
+      setDoc(doc(firestore, 'eventos', newEvent.id), {
         title: newEvent.title,
         organizer: newEvent.organizer,
         date: newEvent.date,
@@ -743,12 +716,12 @@ export const db = {
         quota: newEvent.quota,
         status: newEvent.status,
         is_paid: newEvent.isPaid || false,
-        image_url: newEvent.imageUrl,
-        category: newEvent.category,
+        image_url: newEvent.imageUrl || '',
+        category: newEvent.category || '',
         tags: Array.isArray(newEvent.tags) ? newEvent.tags.join(',') : (newEvent.tags || ''),
-        registration_open: newEvent.registrationOpen,
+        registration_open: newEvent.registrationOpen !== false,
         max_edit_date: newEvent.max_edit_date || null
-      }).then(({ error }) => { if (error) console.error("Error al crear evento en Supabase:", error) })
+      }).catch(err => console.error("Error al crear evento en Firestore:", err))
     }
 
     return newEvent
@@ -764,7 +737,7 @@ export const db = {
       }
       this.saveEvents(events)
 
-      if (supabase) {
+      if (firestore) {
         let finalDesc = updatedEvent.description || '';
         const recapObj = {
           recapVideoId: updatedEvent.recapVideoId || '',
@@ -778,7 +751,7 @@ export const db = {
         };
         finalDesc = `${updatedEvent.description || ''} ---RECAP--- ${JSON.stringify(recapObj)}`;
 
-        supabase.from('eventos').update({
+        updateDoc(doc(firestore, 'eventos', updatedEvent.id), {
           title: updatedEvent.title,
           organizer: updatedEvent.organizer,
           date: updatedEvent.date,
@@ -787,14 +760,13 @@ export const db = {
           description: finalDesc,
           quota: parseInt(updatedEvent.quota) || 0,
           status: updatedEvent.status,
-          is_paid: updatedEvent.isPaid,
-          image_url: updatedEvent.imageUrl,
-          category: updatedEvent.category,
+          is_paid: updatedEvent.isPaid || false,
+          image_url: updatedEvent.imageUrl || '',
+          category: updatedEvent.category || '',
           tags: Array.isArray(updatedEvent.tags) ? updatedEvent.tags.join(',') : (updatedEvent.tags || ''),
-          registration_open: updatedEvent.registrationOpen,
+          registration_open: updatedEvent.registrationOpen !== false,
           max_edit_date: updatedEvent.max_edit_date || null
-        }).eq('id', updatedEvent.id)
-          .then(({ error }) => { if (error) console.error("Error al actualizar evento en Supabase:", error) })
+        }).catch(err => console.error("Error al actualizar evento en Firestore:", err))
       }
 
       return true
@@ -810,9 +782,9 @@ export const db = {
     const filteredConfs = conferences.filter(c => c.eventId !== eventId)
     this.saveConferences(filteredConfs)
 
-    if (supabase) {
-      supabase.from('eventos').delete().eq('id', eventId)
-        .then(({ error }) => { if (error) console.error("Error al eliminar evento en Supabase:", error) })
+    if (firestore) {
+      deleteDoc(doc(firestore, 'eventos', eventId))
+        .catch(err => console.error("Error al eliminar evento en Firestore:", err))
     }
 
     return true
@@ -837,9 +809,8 @@ export const db = {
     conferences.push(newConf)
     this.saveConferences(conferences)
 
-    if (supabase) {
-      supabase.from('ponencias').insert({
-        id: newConf.id,
+    if (firestore) {
+      setDoc(doc(firestore, 'ponencias', newConf.id), {
         event_id: newConf.eventId,
         title: newConf.title,
         speaker: newConf.speaker,
@@ -847,7 +818,7 @@ export const db = {
         time: newConf.time,
         duration: newConf.duration,
         quota: newConf.quota
-      }).then(({ error }) => { if (error) console.error("Error al crear ponencia en Supabase:", error) })
+      }).catch(err => console.error("Error al crear ponencia en Firestore:", err))
     }
 
     return newConf
@@ -864,8 +835,8 @@ export const db = {
       }
       this.saveConferences(conferences)
 
-      if (supabase) {
-        supabase.from('ponencias').update({
+      if (firestore) {
+        updateDoc(doc(firestore, 'ponencias', updatedConf.id), {
           event_id: updatedConf.eventId,
           title: updatedConf.title,
           speaker: updatedConf.speaker,
@@ -873,8 +844,7 @@ export const db = {
           time: updatedConf.time,
           duration: parseInt(updatedConf.duration) || 60,
           quota: parseInt(updatedConf.quota) || 100
-        }).eq('id', updatedConf.id)
-          .then(({ error }) => { if (error) console.error("Error al actualizar ponencia en Supabase:", error) })
+        }).catch(err => console.error("Error al actualizar ponencia en Firestore:", err))
       }
 
       return true
@@ -886,9 +856,9 @@ export const db = {
     const filtered = conferences.filter(c => c.id !== confId)
     this.saveConferences(filtered)
 
-    if (supabase) {
-      supabase.from('ponencias').delete().eq('id', confId)
-        .then(({ error }) => { if (error) console.error("Error al eliminar ponencia en Supabase:", error) })
+    if (firestore) {
+      deleteDoc(doc(firestore, 'ponencias', confId))
+        .catch(err => console.error("Error al eliminar ponencia en Firestore:", err))
     }
 
     return true
@@ -942,13 +912,12 @@ export const db = {
       }
     }
 
-    if (supabase) {
+    if (firestore) {
       const events = this.getEvents()
       const matchedEvent = events.find(e => e.title === cert.evento)
       const eventId = matchedEvent ? matchedEvent.id : null
 
-      supabase.from('certificados').insert({
-        id: newCert.id,
+      setDoc(doc(firestore, 'certificados', newCert.id), {
         dni: newCert.dni,
         titular: newCert.titular,
         event_id: eventId,
@@ -958,7 +927,7 @@ export const db = {
         tipo: newCert.tipo,
         codigo_validacion: newCert.codigoValidacion,
         pdf_url: newCert.pdfUrl || ''
-      }).then(({ error }) => { if (error) console.error("Error al crear certificado en Supabase:", error) })
+      }).catch(err => console.error("Error al crear certificado en Firestore:", err))
     }
 
     return newCert
@@ -968,9 +937,9 @@ export const db = {
     const filtered = certs.filter(c => c.id !== certId)
     this.saveCertificates(filtered)
 
-    if (supabase) {
-      supabase.from('certificados').delete().eq('id', certId)
-        .then(({ error }) => { if (error) console.error("Error al eliminar certificado en Supabase:", error) })
+    if (firestore) {
+      deleteDoc(doc(firestore, 'certificados', certId))
+        .catch(err => console.error("Error al eliminar certificado en Firestore:", err))
     }
 
     return true
@@ -994,9 +963,8 @@ export const db = {
     logs.unshift(newLog)
     this.saveQrLogs(logs)
 
-    if (supabase) {
-      supabase.from('qr_logs').insert({
-        id: newLog.id,
+    if (firestore) {
+      setDoc(doc(firestore, 'qr_logs', newLog.id), {
         timestamp: newLog.timestamp,
         ticket_id: newLog.ticketId || '',
         event_title: newLog.eventTitle || '',
@@ -1005,7 +973,7 @@ export const db = {
         status: newLog.status || '',
         scanned_by: newLog.scannedBy || '',
         tipo: newLog.tipo || ''
-      }).then(({ error }) => { if (error) console.error("Error al registrar log QR en Supabase:", error) })
+      }).catch(err => console.error("Error al registrar log QR en Firestore:", err))
     }
 
     return newLog
@@ -1047,11 +1015,9 @@ export const db = {
             needsMigration = true
             const newCode = generateUniqueCodeForMigration(users)
             
-            if (supabase) {
-              supabase.from('inscripciones').update({ qr_code: newCode })
-                .eq('user_dni', u.dni)
-                .eq('event_id', t.eventId)
-                .then(({ error }) => { if (error) console.error("Error migrating ticket in Supabase:", error) })
+            if (firestore) {
+              updateDoc(doc(firestore, 'inscripciones', `${u.dni}_${t.eventId}`), { qr_code: newCode })
+                .catch(err => console.error("Error migrating ticket in Firestore:", err))
             }
             
             return { ...t, qrCode: newCode }
@@ -1091,12 +1057,10 @@ export const db = {
     if (updated) {
       this.saveUsers(updatedUsers)
 
-      if (supabase) {
+      if (firestore) {
         const dbStatus = newStatus === 'Por asistir' ? 'Registrado' : (newStatus === 'Asistió' ? 'Asistió' : 'Cancelado')
-        supabase.from('inscripciones').update({ status: dbStatus })
-          .eq('user_dni', dni)
-          .eq('event_id', eventId)
-          .then(({ error }) => { if (error) console.error("Error al actualizar estado del ticket en Supabase:", error) })
+        updateDoc(doc(firestore, 'inscripciones', `${dni}_${eventId}`), { status: dbStatus })
+          .catch(err => console.error("Error al actualizar estado del ticket en Firestore:", err))
       }
 
       return true
@@ -1107,18 +1071,20 @@ export const db = {
   updateUserRole(dni, newRole) {
     const users = this.getUsers()
     let updated = false
+    let userEmail = ''
     const updatedUsers = users.map(u => {
       if (u.dni === dni) {
         updated = true
+        userEmail = u.email
         return { ...u, role: newRole }
       }
       return u
     })
     if (updated) {
       this.saveUsers(updatedUsers)
-      if (supabase) {
-        supabase.from('usuarios').update({ role: newRole }).eq('dni', dni)
-          .then(({ error }) => { if (error) console.error("Error al actualizar rol del usuario en Supabase:", error) })
+      if (firestore && userEmail) {
+        updateDoc(doc(firestore, 'usuarios', userEmail.toLowerCase()), { role: newRole })
+          .catch(err => console.error("Error al actualizar rol del usuario en Firestore:", err))
       }
       return true
     }
@@ -1229,16 +1195,15 @@ export const db = {
     users[userIdx] = user
     this.saveUsers(users)
 
-    if (supabase) {
-      supabase.from('inscripciones').upsert({
+    if (firestore) {
+      setDoc(doc(firestore, 'inscripciones', `${user.dni}_${eventId}`), {
         user_dni: user.dni,
         event_id: eventId,
         status: 'Registrado',
         qr_code: ticket.qrCode,
         ponencias: conferencesSelected,
         acompanantes: companionsSelected
-      }, { onConflict: 'user_dni,event_id' })
-      .then(({ error }) => { if (error) console.error("Error al registrar/actualizar inscripción en Supabase:", error) })
+      }).catch(err => console.error("Error al registrar/actualizar inscripción en Firestore:", err))
     }
 
     return { success: true, message: '¡Inscripción exitosa!', ticket }
@@ -1264,11 +1229,9 @@ export const db = {
     users[userIdx] = user
     this.saveUsers(users)
 
-    if (supabase) {
-      supabase.from('inscripciones').delete()
-        .eq('user_dni', user.dni)
-        .eq('event_id', eventId)
-        .then(({ error }) => { if (error) console.error("Error al eliminar inscripción en Supabase:", error) })
+    if (firestore) {
+      deleteDoc(doc(firestore, 'inscripciones', `${user.dni}_${eventId}`))
+        .catch(err => console.error("Error al eliminar inscripción en Firestore:", err))
     }
 
     return { success: true, message: 'Inscripción cancelada correctamente.' }
@@ -1289,12 +1252,9 @@ export const db = {
 
   updateCmsValue(key, value) {
     localStorage.setItem(`${CMS_KEY}_${key}`, JSON.stringify(value))
-    if (supabase) {
-      supabase.from('cms_paginas')
-        .upsert({ key, value })
-        .then(({ error }) => {
-          if (error) console.error(`Error al actualizar CMS para ${key} en Supabase:`, error)
-        })
+    if (firestore) {
+      setDoc(doc(firestore, 'cms_paginas', key), { value })
+        .catch(err => console.error(`Error al actualizar CMS para ${key} en Firestore:`, err))
     }
     return true
   }
