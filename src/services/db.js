@@ -1300,3 +1300,70 @@ export const db = {
   }
 }
 
+// IndexedDB storage for local PDF files to prevent localStorage quota issues
+const DB_NAME = 'SesquitecDB';
+const DB_VERSION = 1;
+const STORE_NAME = 'certificate_files';
+
+function getIDBDatabase() {
+  return new Promise((resolve, reject) => {
+    const request = indexedDB.open(DB_NAME, DB_VERSION);
+    request.onupgradeneeded = (e) => {
+      const dbInstance = e.target.result;
+      if (!dbInstance.objectStoreNames.contains(STORE_NAME)) {
+        dbInstance.createObjectStore(STORE_NAME);
+      }
+    };
+    request.onsuccess = (e) => resolve(e.target.result);
+    request.onerror = (e) => reject(e.target.error);
+  });
+}
+
+export const idbStorage = {
+  async saveFile(certId, fileBlob) {
+    try {
+      const dbInstance = await getIDBDatabase();
+      return new Promise((resolve, reject) => {
+        const tx = dbInstance.transaction(STORE_NAME, 'readwrite');
+        const store = tx.objectStore(STORE_NAME);
+        const req = store.put(fileBlob, certId);
+        req.onsuccess = () => resolve(true);
+        req.onerror = () => reject(req.error);
+      });
+    } catch (err) {
+      console.error('IndexedDB saveFile error:', err);
+      return false;
+    }
+  },
+  async getFile(certId) {
+    try {
+      const dbInstance = await getIDBDatabase();
+      return new Promise((resolve, reject) => {
+        const tx = dbInstance.transaction(STORE_NAME, 'readonly');
+        const store = tx.objectStore(STORE_NAME);
+        const req = store.get(certId);
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => reject(req.error);
+      });
+    } catch (err) {
+      console.error('IndexedDB getFile error:', err);
+      return null;
+    }
+  },
+  async deleteFile(certId) {
+    try {
+      const dbInstance = await getIDBDatabase();
+      return new Promise((resolve, reject) => {
+        const tx = dbInstance.transaction(STORE_NAME, 'readwrite');
+        const store = tx.objectStore(STORE_NAME);
+        const req = store.delete(certId);
+        req.onsuccess = () => resolve(true);
+        req.onerror = () => reject(req.error);
+      });
+    } catch (err) {
+      console.error('IndexedDB deleteFile error:', err);
+      return false;
+    }
+  }
+};
+

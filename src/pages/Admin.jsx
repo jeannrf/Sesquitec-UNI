@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import jsQR from 'jsqr'
 import { useAuth } from '../context/AuthContext'
-import { db } from '../services/db'
+import { db, idbStorage } from '../services/db'
 import { supabase } from '../services/supabaseClient'
 import { useAlert } from '../context/AlertContext'
 import { 
@@ -1075,6 +1075,7 @@ export default function Admin() {
   const [isDragActive, setIsDragActive] = useState(false)
   const [uploadProgress, setUploadProgress] = useState(0)
   const [isUploading, setIsUploading] = useState(false)
+  const [selectedEventIdForCert, setSelectedEventIdForCert] = useState('')
   const fileInputRef = useRef(null)
 
   // Validation Test State inside admin
@@ -1116,9 +1117,10 @@ export default function Admin() {
           ? `${matchedUser.nombres} ${matchedUser.apellidos}` 
           : (dni ? cleanNameFromFileName(file.name, dni) : 'No registrado')
         
-        let evento = 'Conferencias Magistrales - Sesquicentenario UNI'
+        const selectedEv = events.find(e => e.id === selectedEventIdForCert)
+        let evento = selectedEv ? selectedEv.title : 'Conferencias Magistrales - Sesquicentenario UNI'
         let tipo = 'Participación'
-        if (matchedUser && matchedUser.tickets && matchedUser.tickets.length > 0) {
+        if (!selectedEv && matchedUser && matchedUser.tickets && matchedUser.tickets.length > 0) {
           evento = matchedUser.tickets[0].eventTitle
         }
         
@@ -1251,7 +1253,7 @@ export default function Admin() {
             const publicUrl = data?.publicUrl || ''
 
             // Registrar certificado en base de datos
-            db.createCertificate({
+            const cert = db.createCertificate({
               dni: item.dni,
               titular: item.titular,
               evento: item.evento,
@@ -1259,6 +1261,9 @@ export default function Admin() {
               tipo: item.tipo,
               pdfUrl: publicUrl
             })
+            if (item.file) {
+              await idbStorage.saveFile(cert.id, item.file)
+            }
 
             count++
           }
@@ -1280,37 +1285,39 @@ export default function Admin() {
       }
     } else {
       // Fallback: Simulación local
-      setUploadProgress(10)
-      const timer = setInterval(() => {
-        setUploadProgress(prev => {
-          if (prev >= 100) {
-            clearInterval(timer)
-            
-            let count = 0
-            uploadQueue.forEach(item => {
-              if (item.dni !== 'No encontrado') {
-                db.createCertificate({
-                  dni: item.dni,
-                  titular: item.titular,
-                  evento: item.evento,
-                  horas: 0,
-                  tipo: item.tipo,
-                  pdfUrl: ''
-                })
-                count++
-              }
+      try {
+        let count = 0
+        const total = uploadQueue.length
+
+        for (let i = 0; i < total; i++) {
+          const item = uploadQueue[i]
+          if (item.dni !== 'No encontrado') {
+            const cert = db.createCertificate({
+              dni: item.dni,
+              titular: item.titular,
+              evento: item.evento,
+              horas: 0,
+              tipo: item.tipo,
+              pdfUrl: ''
             })
-            
-            showAlert(`Carga masiva finalizada (Simulado). Se procesaron y emitieron ${count} certificados con éxito.`, 'Carga Exitosa', 'success');
-            setUploadQueue([])
-            setIsUploading(false)
-            setUploadProgress(0)
-            refreshAllData()
-            return 100
+            if (item.file) {
+              await idbStorage.saveFile(cert.id, item.file)
+            }
+            count++
           }
-          return prev + 15
-        })
-      }, 200)
+          setUploadProgress(Math.round(((i + 1) / total) * 100))
+        }
+
+        showAlert(`Carga masiva finalizada (Simulado). Se procesaron y emitieron ${count} certificados con éxito.`, 'Carga Exitosa', 'success');
+        setUploadQueue([])
+        setIsUploading(false)
+        setUploadProgress(0)
+        refreshAllData()
+      } catch (err) {
+        console.error("Error en simulación local de carga:", err)
+        setIsUploading(false)
+        setUploadProgress(0)
+      }
     }
   }
 
@@ -2617,6 +2624,21 @@ export default function Admin() {
                 <div>
                   <h3 className="text-base font-black text-gray-900 mb-1">Carga Masiva de Certificados</h3>
                   <p className="text-xs text-gray-400 mb-6">Sube múltiples archivos PDF de certificados o una carpeta completa. El sistema extraerá el DNI del nombre de archivo y lo asociará al participante.</p>
+
+                  {/* Seleccionar Evento correspondiente */}
+                  <div className="mb-6 max-w-md">
+                    <label className="block text-xs font-black text-gray-700 uppercase tracking-wider mb-2">Evento correspondiente para los certificados:</label>
+                    <select
+                      value={selectedEventIdForCert}
+                      onChange={(e) => setSelectedEventIdForCert(e.target.value)}
+                      className="w-full border border-gray-300 px-3.5 py-2.5 text-sm font-semibold focus:outline-none focus:border-[#800404] bg-white rounded-none shadow-sm cursor-pointer"
+                    >
+                      <option value="">-- Autodetectar desde inscripción de cada usuario --</option>
+                      {events.map(ev => (
+                        <option key={ev.id} value={ev.id}>{ev.title}</option>
+                      ))}
+                    </select>
+                  </div>
 
                   {/* Drag and drop zone with folder and zip support */}
                   <div 

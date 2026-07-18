@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
-import { Calendar, Clock, MapPin, Users, Award, ChevronRight, Star, Globe, Cpu, Utensils, ExternalLink, CheckCircle, UserPlus } from 'lucide-react'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
+import { Calendar, Clock, MapPin, Users, Award, ChevronRight, Star, Globe, Cpu, Utensils, ExternalLink, CheckCircle, UserPlus, Minus, Plus, X, CreditCard, Shield } from 'lucide-react'
 import { db } from '../services/db'
 import { useAuth } from '../context/AuthContext'
 import { useAlert } from '../context/AlertContext'
@@ -61,7 +61,7 @@ const phases = [
   }
 ]
 
-function PhaseActionSection({ phase }) {
+function PhaseActionSection({ phase, onOpenPayment }) {
   const { user, openAuth } = useAuth()
   const { showAlert } = useAlert()
   const [isRegistering, setIsRegistering] = useState(false)
@@ -74,6 +74,10 @@ function PhaseActionSection({ phase }) {
   const handleRegister = () => {
     if (!user) {
       navigate('/iniciar-sesion?redirect=/encuentro-internacional')
+      return
+    }
+    if (phase.isPaid) {
+      onOpenPayment()
       return
     }
     setIsRegistering(true)
@@ -130,7 +134,148 @@ const getPhaseIcon = (id) => {
 }
 
 export default function EncuentroInternacional() {
-  const [activePhaseId, setActivePhaseId] = useState('sep1')
+  const [searchParams] = useSearchParams()
+  const initialFase = searchParams.get('fase')
+  const [activePhaseId, setActivePhaseId] = useState(() => {
+    return (initialFase && ['sep1', 'sep2', 'sep3'].includes(initialFase)) ? initialFase : 'sep1'
+  })
+
+  const { user } = useAuth()
+  const { showAlert } = useAlert()
+  const navigate = useNavigate()
+
+  // Payment Modal States
+  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false)
+  const [paymentStep, setPaymentStep] = useState(0) // 0: Ticket select & Companions, 1: Checkout choice, 2: Simulated OTP/Payment form, 3: Processing, 4: Success
+  const [ticketQuantity, setTicketQuantity] = useState(1)
+  const [companions, setCompanions] = useState([])
+  const [paymentMethod, setPaymentMethod] = useState('') // 'card' | 'yape' | 'plin'
+  
+  // Yape Form
+  const [yapePhone, setYapePhone] = useState('')
+  const [yapeCode, setYapeCode] = useState('')
+  
+  // Card Form
+  const [cardNumber, setCardNumber] = useState('')
+  const [cardExpiry, setCardExpiry] = useState('')
+  const [cardCvv, setCardCvv] = useState('')
+  const [cardName, setCardName] = useState('')
+  
+  // Errors and loader
+  const [paymentErrors, setPaymentErrors] = useState({})
+  const [isSimulatingWebhook, setIsSimulatingWebhook] = useState(false)
+  const [confirmedTicket, setConfirmedTicket] = useState(null)
+
+  const handleOpenPaymentModal = () => {
+    if (!user) {
+      navigate('/iniciar-sesion?redirect=/encuentro-internacional?fase=sep3')
+      return
+    }
+    setTicketQuantity(1)
+    setCompanions([])
+    setPaymentStep(0)
+    setPaymentMethod('')
+    setYapePhone('')
+    setYapeCode('')
+    setCardNumber('')
+    setCardExpiry('')
+    setCardCvv('')
+    setCardName(user.nombres + ' ' + user.apellidos)
+    setPaymentErrors({})
+    setIsPaymentModalOpen(true)
+  }
+
+  const handleQuantityChange = (val) => {
+    const n = Math.max(1, Math.min(10, ticketQuantity + val))
+    setTicketQuantity(n)
+    const comps = [...companions]
+    while (comps.length < n - 1) {
+      comps.push({ nombre: '', apellido: '', dni: '' })
+    }
+    setCompanions(comps.slice(0, n - 1))
+  }
+
+  const updateCompanion = (index, field, val) => {
+    setCompanions(prev => {
+      const u = [...prev]
+      u[index] = { ...u[index], [field]: val }
+      return u
+    })
+  }
+
+  const validateStep0 = () => {
+    const errs = {}
+    companions.forEach((comp, idx) => {
+      if (!comp.nombre || !comp.nombre.trim()) {
+        errs[`comp_${idx}_nombre`] = 'Requerido'
+      }
+      if (!comp.apellido || !comp.apellido.trim()) {
+        errs[`comp_${idx}_apellido`] = 'Requerido'
+      }
+      if (!comp.dni || !/^\d{8}$/.test(comp.dni)) {
+        errs[`comp_${idx}_dni`] = 'DNI de 8 dígitos'
+      }
+    })
+    setPaymentErrors(errs)
+    return Object.keys(errs).length === 0
+  }
+
+  const handleStep0Submit = () => {
+    if (validateStep0()) {
+      setPaymentStep(1)
+    }
+  }
+
+  const validatePaymentForm = () => {
+    const errs = {}
+    if (paymentMethod === 'yape') {
+      if (!/^\d{9}$/.test(yapePhone)) errs.yapePhone = 'Celular inválido (9 dígitos)'
+      if (!/^\d{6}$/.test(yapeCode)) errs.yapeCode = 'Código de aprobación de 6 dígitos'
+    } else if (paymentMethod === 'card') {
+      const cleanNum = cardNumber.replace(/\s+/g, '')
+      if (!/^\d{16}$/.test(cleanNum)) errs.cardNumber = 'Tarjeta inválida (16 dígitos)'
+      if (!/^(0[1-9]|1[0-2])\/?([0-9]{2})$/.test(cardExpiry)) errs.cardExpiry = 'Vencimiento inválido (MM/AA)'
+      if (!/^\d{3}$/.test(cardCvv)) errs.cardCvv = 'CVV inválido'
+      if (!cardName.trim()) errs.cardName = 'Requerido'
+    }
+    setPaymentErrors(errs)
+    return Object.keys(errs).length === 0
+  }
+
+  const startPaymentSimulation = () => {
+    if (paymentMethod === 'card' || paymentMethod === 'yape') {
+      if (!validatePaymentForm()) return
+    }
+    
+    setPaymentStep(3) // Loading / Webhook simulation step
+    setIsSimulatingWebhook(true)
+
+    setTimeout(() => {
+      const matchedCompanions = companions.map(c => ({
+        nombre: c.nombre.trim(),
+        apellido: c.apellido.trim(),
+        dni: c.dni.trim()
+      }))
+
+      const result = db.registerUserToEvent(user.email, 'sep3', [], matchedCompanions)
+      
+      if (result.success) {
+        setConfirmedTicket(result.ticket)
+        setPaymentStep(4) // Success step
+      } else {
+        showAlert(result.message || 'El aforo se completó o hubo un error al registrar tu entrada.', 'Error de Compra', 'warning')
+        setIsPaymentModalOpen(false)
+      }
+      setIsSimulatingWebhook(false)
+    }, 2500)
+  }
+
+  useEffect(() => {
+    const faseParam = searchParams.get('fase')
+    if (faseParam && ['sep1', 'sep2', 'sep3'].includes(faseParam)) {
+      setActivePhaseId(faseParam)
+    }
+  }, [searchParams])
   const [dynamicSpeakers, setDynamicSpeakers] = useState(() => {
     const val = db.getCmsValue('meet_speakers', speakers)
     const list = Array.isArray(val) ? val : speakers
@@ -283,7 +428,7 @@ export default function EncuentroInternacional() {
 
             {/* Action Section */}
             <div className="border-t border-gray-100 pt-6">
-              <PhaseActionSection phase={activePhase} />
+              <PhaseActionSection phase={activePhase} onOpenPayment={handleOpenPaymentModal} />
             </div>
           </div>
         </div>
@@ -404,6 +549,472 @@ export default function EncuentroInternacional() {
           </div>
         </div>
       </div>
+      {/* CENA DE RECONOCIMIENTO SIMULATED MERCADO PAGO MODAL */}
+      {isPaymentModalOpen && (
+        <div className="fixed inset-0 z-[100] bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-white w-full max-w-2xl shadow-2xl relative border-t-8 border-t-[#800404] flex flex-col rounded-none max-h-[90vh]">
+            
+            {/* Modal Header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-150 shrink-0">
+              <div>
+                <h3 className="text-base font-black text-gray-900">
+                  Reserva de Entradas - Cena de Reconocimiento
+                </h3>
+                <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">
+                  Sesquicentenario UNI 150 Años
+                </p>
+              </div>
+              <button 
+                onClick={() => setIsPaymentModalOpen(false)}
+                className="p-1.5 hover:bg-gray-100 text-gray-500 hover:text-gray-800 transition-colors cursor-pointer"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="flex-1 overflow-y-auto p-6 space-y-6">
+              
+              {/* STEP 0: TICKET QUANTITY & COMPANIONS */}
+              {paymentStep === 0 && (
+                <div className="space-y-6">
+                  {/* Select Tickets */}
+                  <div className="bg-gray-50 border border-gray-200 p-5">
+                    <h4 className="font-black text-gray-800 mb-1 text-sm">Cantidad de Entradas</h4>
+                    <p className="text-xs text-gray-400 mb-4">Adquiere hasta 10 entradas para ti y tus invitados.</p>
+                    
+                    <div className="flex items-center gap-6">
+                      <div className="flex items-center gap-4">
+                        <button 
+                          onClick={() => handleQuantityChange(-1)} 
+                          disabled={ticketQuantity <= 1}
+                          className="w-10 h-10 border border-gray-300 flex items-center justify-center hover:border-[#800404] hover:text-[#800404] transition-colors disabled:opacity-30 cursor-pointer"
+                        >
+                          <Minus size={16} />
+                        </button>
+                        <span className="text-3xl font-black text-[#800404] w-10 text-center">{ticketQuantity}</span>
+                        <button 
+                          onClick={() => handleQuantityChange(1)} 
+                          disabled={ticketQuantity >= 10}
+                          className="w-10 h-10 border border-gray-300 flex items-center justify-center hover:border-[#800404] hover:text-[#800404] transition-colors disabled:opacity-30 cursor-pointer"
+                        >
+                          <Plus size={16} />
+                        </button>
+                      </div>
+
+                      <div className="h-10 w-px bg-gray-200" />
+
+                      <div>
+                        <p className="text-2xl font-black text-gray-900">S/ {(ticketQuantity * 180).toLocaleString()}</p>
+                        <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">Total a Pagar</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Companions form */}
+                  {companions.length > 0 && (
+                    <div className="space-y-4">
+                      <h4 className="font-black text-gray-800 text-xs uppercase tracking-wider text-[#800404]">Datos de tus Invitados / Acompañantes</h4>
+                      <div className="space-y-4 max-h-[300px] overflow-y-auto pr-2">
+                        {companions.map((comp, idx) => (
+                          <div key={idx} className="bg-gray-50 border border-gray-200 p-4 space-y-3 relative">
+                            <span className="absolute top-2 right-3 text-[10px] font-bold text-gray-350 uppercase tracking-widest">
+                              Invitado #{idx + 1}
+                            </span>
+                            <div className="grid sm:grid-cols-3 gap-3 pt-2">
+                              <div>
+                                <label className="block text-[10px] font-bold text-gray-600 uppercase mb-1">Nombre *</label>
+                                <input 
+                                  type="text" 
+                                  value={comp.nombre}
+                                  onChange={e => updateCompanion(idx, 'nombre', e.target.value)}
+                                  className={`w-full border px-2.5 py-1.5 text-xs focus:outline-none focus:border-[#800404] ${
+                                    paymentErrors[`comp_${idx}_nombre`] ? 'border-red-400 bg-red-50' : 'border-gray-300 bg-white'
+                                  }`}
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-[10px] font-bold text-gray-600 uppercase mb-1">Apellido *</label>
+                                  <input 
+                                  type="text" 
+                                  value={comp.apellido}
+                                  onChange={e => updateCompanion(idx, 'apellido', e.target.value)}
+                                  className={`w-full border px-2.5 py-1.5 text-xs focus:outline-none focus:border-[#800404] ${
+                                    paymentErrors[`comp_${idx}_apellido`] ? 'border-red-400 bg-red-50' : 'border-gray-300 bg-white'
+                                  }`}
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-[10px] font-bold text-gray-600 uppercase mb-1">DNI *</label>
+                                <input 
+                                  type="text" 
+                                  maxLength={8}
+                                  value={comp.dni}
+                                  onChange={e => updateCompanion(idx, 'dni', e.target.value.replace(/\D/g, ''))}
+                                  className={`w-full border px-2.5 py-1.5 text-xs focus:outline-none focus:border-[#800404] ${
+                                    paymentErrors[`comp_${idx}_dni`] ? 'border-red-400 bg-red-50' : 'border-gray-300 bg-white'
+                                  }`}
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* STEP 1: MERCADO PAGO SIMULATED CHECKOUT */}
+              {paymentStep === 1 && (
+                <div className="space-y-6">
+                  {/* Mercado Pago Header */}
+                  <div className="bg-[#009EE3] text-white p-5 -mx-6 -mt-6 flex items-center justify-between shadow-sm">
+                    <div className="flex items-center gap-2">
+                      <span className="bg-white text-[#009EE3] font-black text-xs px-2 py-0.5 rounded-sm tracking-tighter">
+                        mercado pago
+                      </span>
+                      <span className="text-[10px] font-bold uppercase tracking-wider opacity-85 border-l border-white/20 pl-2">
+                        Checkout Sandbox
+                      </span>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-[10px] opacity-75 uppercase tracking-wider">Total a pagar</p>
+                      <p className="text-xl font-black">S/ {(ticketQuantity * 180).toLocaleString()}</p>
+                    </div>
+                  </div>
+
+                  <h4 className="font-black text-gray-800 text-sm">Selecciona tu método de pago</h4>
+                  
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    {[
+                      { id: 'yape', label: 'Yape', icon: '💜', desc: 'Con código de Yape' },
+                      { id: 'plin', label: 'Plin', icon: '💚', desc: 'Código QR Plin' },
+                      { id: 'card', label: 'Tarjeta de Débito/Crédito', icon: '💳', desc: 'Visa, Mastercard, AMEX' },
+                    ].map(m => (
+                      <button 
+                        key={m.id}
+                        onClick={() => {
+                          setPaymentMethod(m.id)
+                          setPaymentErrors({})
+                        }}
+                        className={`border-2 p-4 text-left flex flex-col justify-between transition-all cursor-pointer rounded-none min-h-[110px] ${
+                          paymentMethod === m.id 
+                            ? 'border-[#009EE3] bg-sky-50/40 shadow-sm' 
+                            : 'border-gray-200 hover:border-gray-350 bg-white'
+                        }`}
+                      >
+                        <div className="flex justify-between items-center w-full">
+                          <span className="text-2xl">{m.icon}</span>
+                          <input 
+                            type="radio" 
+                            checked={paymentMethod === m.id} 
+                            readOnly
+                            className="text-[#009EE3]" 
+                          />
+                        </div>
+                        <div>
+                          <p className="font-black text-gray-900 text-xs mt-2">{m.label}</p>
+                          <p className="text-[9px] text-gray-400 mt-0.5">{m.desc}</p>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Dynamic sub-forms based on payment method choice */}
+                  {paymentMethod === 'yape' && (
+                    <div className="border border-purple-250 bg-purple-50/20 p-5 space-y-4 rounded-none">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="text-lg">💜</span>
+                        <h5 className="font-black text-purple-950 text-xs uppercase tracking-wider">Simulación de Pago con Yape</h5>
+                      </div>
+                      <div className="grid sm:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-[10px] font-bold text-purple-900 uppercase mb-1">Número de Celular Yape *</label>
+                          <input 
+                            type="text" 
+                            maxLength={9}
+                            placeholder="Ej: 987654321"
+                            value={yapePhone}
+                            onChange={e => setYapePhone(e.target.value.replace(/\D/g, ''))}
+                            className={`w-full border px-3 py-2 text-xs focus:outline-none focus:border-purple-600 bg-white ${
+                              paymentErrors.yapePhone ? 'border-red-400' : 'border-gray-300'
+                            }`}
+                          />
+                          {paymentErrors.yapePhone && <p className="text-red-500 text-[10px] mt-0.5">{paymentErrors.yapePhone}</p>}
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-bold text-purple-900 uppercase mb-1">Código de Aprobación Yape *</label>
+                          <input 
+                            type="text" 
+                            maxLength={6}
+                            placeholder="6 dígitos de la app Yape"
+                            value={yapeCode}
+                            onChange={e => setYapeCode(e.target.value.replace(/\D/g, ''))}
+                            className={`w-full border px-3 py-2 text-xs focus:outline-none focus:border-purple-600 bg-white ${
+                              paymentErrors.yapeCode ? 'border-red-400' : 'border-gray-300'
+                            }`}
+                          />
+                          {paymentErrors.yapeCode && <p className="text-red-500 text-[10px] mt-0.5">{paymentErrors.yapeCode}</p>}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {paymentMethod === 'card' && (
+                    <div className="border border-[#009EE3]/20 bg-sky-50/10 p-5 space-y-4 rounded-none">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="text-lg">💳</span>
+                        <h5 className="font-black text-[#009EE3] text-xs uppercase tracking-wider">Simulación de Pago con Tarjeta (Sandbox)</h5>
+                      </div>
+                      
+                      <div className="space-y-3">
+                        <div>
+                          <label className="block text-[10px] font-bold text-gray-600 uppercase mb-1">Número de Tarjeta *</label>
+                          <input 
+                            type="text" 
+                            maxLength={19}
+                            placeholder="4557 8812 3456 7890 (Sandbox test)"
+                            value={cardNumber}
+                            onChange={e => {
+                              const v = e.target.value.replace(/\D/g, '').replace(/(.{4})/g, '$1 ').trim();
+                              setCardNumber(v);
+                            }}
+                            className={`w-full border px-3 py-2 text-xs focus:outline-none focus:border-[#009EE3] bg-white ${
+                              paymentErrors.cardNumber ? 'border-red-400' : 'border-gray-300'
+                            }`}
+                          />
+                          {paymentErrors.cardNumber && <p className="text-red-500 text-[10px] mt-0.5">{paymentErrors.cardNumber}</p>}
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <label className="block text-[10px] font-bold text-gray-600 uppercase mb-1">Vencimiento *</label>
+                            <input 
+                              type="text" 
+                              maxLength={5}
+                              placeholder="MM/AA"
+                              value={cardExpiry}
+                              onChange={e => {
+                                let v = e.target.value.replace(/\D/g, '');
+                                if (v.length > 2) {
+                                  v = v.slice(0, 2) + '/' + v.slice(2, 4);
+                                }
+                                setCardExpiry(v);
+                              }}
+                              className={`w-full border px-3 py-2 text-xs focus:outline-none focus:border-[#009EE3] bg-white ${
+                                paymentErrors.cardExpiry ? 'border-red-400' : 'border-gray-300'
+                              }`}
+                            />
+                            {paymentErrors.cardExpiry && <p className="text-red-500 text-[10px] mt-0.5">{paymentErrors.cardExpiry}</p>}
+                          </div>
+                          <div>
+                            <label className="block text-[10px] font-bold text-gray-600 uppercase mb-1">CVV *</label>
+                            <input 
+                              type="text" 
+                              maxLength={3}
+                              placeholder="123"
+                              value={cardCvv}
+                              onChange={e => setCardCvv(e.target.value.replace(/\D/g, ''))}
+                              className={`w-full border px-3 py-2 text-xs focus:outline-none focus:border-[#009EE3] bg-white ${
+                                paymentErrors.cardCvv ? 'border-red-400' : 'border-gray-300'
+                              }`}
+                            />
+                            {paymentErrors.cardCvv && <p className="text-red-500 text-[10px] mt-0.5">{paymentErrors.cardCvv}</p>}
+                          </div>
+                        </div>
+
+                        <div>
+                          <label className="block text-[10px] font-bold text-gray-600 uppercase mb-1">Nombre en Tarjeta *</label>
+                          <input 
+                            type="text" 
+                            placeholder="Nombre del Titular"
+                            value={cardName}
+                            onChange={e => setCardName(e.target.value)}
+                            className="w-full border border-gray-300 px-3 py-2 text-xs focus:outline-none focus:border-[#009EE3] bg-white"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {paymentMethod === 'plin' && (
+                    <div className="border border-green-200 bg-green-50/20 p-6 text-center space-y-4 rounded-none">
+                      <div className="flex items-center justify-center gap-2 mb-1">
+                        <span className="text-lg">💚</span>
+                        <h5 className="font-black text-green-950 text-xs uppercase tracking-wider">Simulación de Pago con Código QR Plin</h5>
+                      </div>
+                      <p className="text-xs text-gray-550 max-w-sm mx-auto leading-relaxed">
+                        Escanea el código QR de prueba con tu aplicación bancaria para simular la confirmación.
+                      </p>
+                      <div className="w-40 h-40 bg-white border border-gray-200 p-2 mx-auto flex flex-col items-center justify-center shadow-inner relative">
+                        <div className="grid grid-cols-8 gap-0.5 w-full h-full opacity-90">
+                          {Array.from({ length: 64 }).map((_, idx) => (
+                            <div 
+                              key={idx} 
+                              className={`w-full h-full ${
+                                (idx % 2 === 0 && idx % 5 === 0) || idx < 8 || idx > 56 || idx % 9 === 0 ? 'bg-green-700' : 'bg-transparent'
+                              }`} 
+                            />
+                          ))}
+                        </div>
+                        <span className="absolute bg-white px-2 py-0.5 border border-green-200 text-[9px] font-black text-green-700 uppercase tracking-widest shadow-sm">
+                          PLIN QR TEST
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* STEP 3: WEBHOOK SIMULATOR / LOADER */}
+              {paymentStep === 3 && (
+                <div className="py-12 flex flex-col items-center text-center space-y-6">
+                  <div className="relative flex items-center justify-center">
+                    <div className="w-20 h-20 rounded-full border-4 border-amber-200 border-t-[#800404] animate-spin" />
+                    <span className="absolute text-xl font-bold text-[#800404]">150</span>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <h4 className="font-black text-gray-900 text-base">Procesando pago con Mercado Pago...</h4>
+                    <p className="text-xs text-gray-400 max-w-xs mx-auto leading-relaxed">
+                      Estamos validando el token de pago y recibiendo la confirmación del webhook seguro del banco. No cierres esta ventana.
+                    </p>
+                  </div>
+
+                  <div className="bg-amber-50 text-amber-800 text-[10px] font-semibold px-4 py-2 border border-amber-200/50 max-w-md">
+                    Nota: Se está simulando el flujo asíncrono seguro que valida el estado del pago directamente contra el API de Mercado Pago.
+                  </div>
+                </div>
+              )}
+
+              {/* STEP 4: SUCCESS DISPLAY */}
+              {paymentStep === 4 && confirmedTicket && (
+                <div className="space-y-6">
+                  <div className="text-center py-4">
+                    <div className="w-16 h-16 bg-emerald-50 text-emerald-650 rounded-full flex items-center justify-center mx-auto mb-4 border border-emerald-200 shadow-sm animate-bounce">
+                      <CheckCircle size={32} />
+                    </div>
+                    <h4 className="text-2xl font-black text-gray-900 leading-tight">¡Pago Aprobado con Éxito!</h4>
+                    <p className="text-xs text-gray-400 mt-1">El webhook de Mercado Pago ha sido confirmado oficialmente.</p>
+                  </div>
+
+                  {/* Virtual Ticket Cards container */}
+                  <div className="border border-gray-200 divide-y divide-gray-150">
+                    
+                    {/* Primary Ticket */}
+                    <div className="p-5 bg-stone-50/50 space-y-4">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <span className="bg-[#800404] text-white text-[9px] font-black px-2 py-0.5 uppercase tracking-wider">
+                            Entrada Titular
+                          </span>
+                          <h5 className="font-black text-gray-900 text-sm mt-1">{confirmedTicket.eventTitle}</h5>
+                        </div>
+                        <p className="text-[10px] font-mono text-gray-400 uppercase">CÓDIGO: {confirmedTicket.qrCode}</p>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-y-2 gap-x-4 text-xs">
+                        <div>
+                          <span className="text-gray-400 block font-medium">Asistente</span>
+                          <span className="font-bold text-gray-800">{user.nombres} {user.apellidos}</span>
+                        </div>
+                        <div>
+                          <span className="text-gray-400 block font-medium">DNI</span>
+                          <span className="font-bold text-gray-800">{user.dni}</span>
+                        </div>
+                        <div>
+                          <span className="text-gray-400 block font-medium">Ubicación</span>
+                          <span className="font-bold text-gray-800">{confirmedTicket.location}</span>
+                        </div>
+                        <div>
+                          <span className="text-gray-400 block font-medium">Fecha y Hora</span>
+                          <span className="font-bold text-gray-800">{confirmedTicket.date} · {confirmedTicket.time}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Companion Tickets if any */}
+                    {confirmedTicket.acompanantes && confirmedTicket.acompanantes.length > 0 && (
+                      <div className="p-5 space-y-4 bg-white">
+                        <span className="text-[10px] font-black text-amber-700 uppercase tracking-widest block">
+                          Entradas de Invitados ({confirmedTicket.acompanantes.length})
+                        </span>
+                        
+                        <div className="space-y-3">
+                          {confirmedTicket.acompanantes.map((c, i) => (
+                            <div key={i} className="border border-gray-100 p-3 bg-gray-50 flex items-center justify-between text-xs">
+                              <div>
+                                <p className="font-bold text-gray-800">{c.nombre} {c.apellido}</p>
+                                <p className="text-[10px] text-gray-400 mt-0.5">DNI: {c.dni}</p>
+                              </div>
+                              <span className="text-[9px] font-mono text-gray-400 bg-white px-2 py-0.5 border border-gray-200">
+                                QR-{confirmedTicket.qrCode.slice(0, 6)}-INV{i+1}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="bg-emerald-50 text-emerald-800 text-xs px-4 py-3 flex items-start gap-2 border border-emerald-200/50">
+                    <Shield size={16} className="shrink-0 text-emerald-600 mt-0.5" />
+                    <p className="leading-tight">
+                      <strong>Listo.</strong> Tus entradas ya están cargadas de forma oficial en tu cuenta. Puedes descargarlas o ver sus códigos QR accediendo a tu **Panel Universitario (Mis Eventos)**.
+                    </p>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Modal Footer */}
+            <div className="px-6 py-4 border-t border-gray-150 bg-gray-50 flex items-center justify-between shrink-0 font-sans">
+              
+              {/* Back actions */}
+              {paymentStep > 0 && paymentStep < 3 ? (
+                <button
+                  onClick={() => setPaymentStep(s => s - 1)}
+                  className="px-5 py-2 border border-gray-300 text-xs font-black text-gray-600 hover:bg-gray-100 transition-colors cursor-pointer rounded-none"
+                >
+                  Atrás
+                </button>
+              ) : (
+                <div />
+              )}
+
+              {/* Action buttons based on steps */}
+              {paymentStep === 0 && (
+                <button 
+                  onClick={handleStep0Submit}
+                  className="bg-[#800404] hover:bg-[#5a0303] text-white text-xs font-black px-6 py-2.5 transition-colors cursor-pointer rounded-none uppercase tracking-wider"
+                >
+                  Continuar al Pago · S/ {(ticketQuantity * 180).toLocaleString()}
+                </button>
+              )}
+
+              {paymentStep === 1 && (
+                <button 
+                  onClick={startPaymentSimulation}
+                  disabled={!paymentMethod}
+                  className="bg-[#009EE3] hover:bg-[#007ebb] text-white text-xs font-black px-6 py-2.5 transition-colors cursor-pointer rounded-none uppercase tracking-wider disabled:opacity-40"
+                >
+                  Pagar S/ {(ticketQuantity * 180).toLocaleString()} (Sandbox)
+                </button>
+              )}
+
+              {paymentStep === 4 && (
+                <button 
+                  onClick={() => setIsPaymentModalOpen(false)}
+                  className="bg-[#800404] hover:bg-[#5a0303] text-white text-xs font-black px-6 py-2.5 transition-colors cursor-pointer rounded-none uppercase tracking-wider"
+                >
+                  Finalizar
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
